@@ -17,30 +17,36 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace PHPSharp.Syntax
 {
-    public class SyntaxToken : SyntaxNode
+    public class AssignmentExpressionSyntax : ExpressionSyntax
     {
-        public SyntaxToken(SyntaxKind kind, int position, string text, object value)
+        public AssignmentExpressionSyntax(SyntaxToken identifierToken, SyntaxToken equalsToken, ExpressionSyntax expression)
         {
-            Kind = kind;
-            Position = position;
-            Text = text;
-            Value = value;
+            IdentifierToken = identifierToken;
+            EqualsToken = equalsToken;
+            Expression = expression;
         }
 
-        public override SyntaxKind Kind { get; }
+        #region Properties
 
-        public int Position { get; }
-        public string Text { get; }
-        public object Value { get; }
-        public TextSpan Span => new TextSpan(Position, Text.Length);
+        public override SyntaxKind Kind => SyntaxKind.AssignmentExpression;
+        public SyntaxToken IdentifierToken { get; }
+        public SyntaxToken EqualsToken { get; }
+        public ExpressionSyntax Expression { get; }
+
+        #endregion Properties
+
+        #region Methods
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            return Enumerable.Empty<SyntaxNode>();
+            yield return IdentifierToken;
+            yield return EqualsToken;
+            yield return Expression;
         }
+
+        #endregion Methods
     }
 }

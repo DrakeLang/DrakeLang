@@ -16,31 +16,39 @@
 // along with this program.  If not, see https://www.gnu.org/licenses/.
 //------------------------------------------------------------------------------
 
+using PHPSharp.Binding;
+using PHPSharp.Syntax;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PHPSharp.Syntax
+namespace PHPSharp
 {
-    public class SyntaxToken : SyntaxNode
+    public class Compilation
     {
-        public SyntaxToken(SyntaxKind kind, int position, string text, object value)
+        public Compilation(SyntaxTree syntaxTree)
         {
-            Kind = kind;
-            Position = position;
-            Text = text;
-            Value = value;
+            Syntax = syntaxTree;
         }
 
-        public override SyntaxKind Kind { get; }
+        public SyntaxTree Syntax { get; }
 
-        public int Position { get; }
-        public string Text { get; }
-        public object Value { get; }
-        public TextSpan Span => new TextSpan(Position, Text.Length);
+        #region Methods
 
-        public override IEnumerable<SyntaxNode> GetChildren()
+        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
         {
-            return Enumerable.Empty<SyntaxNode>();
+            Binder binder = new Binder(variables);
+            BoundExpression boundExpression = binder.BindExpression(Syntax.Root);
+
+            IEnumerable<Diagnostic> diagnostics = Syntax.Diagnostics.Concat(binder.Diagnostics);
+            if (diagnostics.Any())
+                return new EvaluationResult(diagnostics, null);
+
+            Evaluator evaluator = new Evaluator(boundExpression, variables);
+            string value = evaluator.Evaluate();
+
+            return new EvaluationResult(Enumerable.Empty<Diagnostic>(), value);
         }
+
+        #endregion Methods
     }
 }

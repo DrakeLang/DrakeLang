@@ -24,7 +24,7 @@ namespace PHPSharp.Syntax
 {
     public class SyntaxTree
     {
-        internal SyntaxTree(IEnumerable<string> diagnostics, ExpressionSyntax root, SyntaxToken endOfFileToken)
+        internal SyntaxTree(IEnumerable<Diagnostic> diagnostics, ExpressionSyntax root, SyntaxToken endOfFileToken)
         {
             Diagnostics = diagnostics;
             Root = root;
@@ -33,7 +33,7 @@ namespace PHPSharp.Syntax
 
         #region Properties
 
-        public IEnumerable<string> Diagnostics { get; }
+        public IEnumerable<Diagnostic> Diagnostics { get; }
         public ExpressionSyntax Root { get; }
         public SyntaxToken EndOfFileToken { get; }
 
@@ -70,7 +70,7 @@ namespace PHPSharp.Syntax
 
             Console.WriteLine();
 
-            indent += isLast ? "   " : "│   ";
+            indent += isLast ? "   " : "│  ";
 
             var lastChild = node.GetChildren().LastOrDefault();
 

@@ -17,12 +17,10 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp;
-using PHPSharp.Binding;
 using PHPSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace PHPSharpO
 {
@@ -50,10 +48,11 @@ namespace PHPSharpO
 
                         case "tree":
                             showTree ^= true;
-                            Console.WriteLine(showTree ? "Showing parse tree" : "Hiding parse trees");
+                            Console.WriteLine(showTree ? "Parse tree visible" : "Parse tree hidden");
                             break;
 
                         case "cls":
+                        case "clear":
                             Console.Clear();
                             break;
 
@@ -76,29 +75,38 @@ namespace PHPSharpO
         {
             string content = File.ReadAllText(path);
             SyntaxTree syntaxTree = SyntaxTree.Parse(content);
-            Binder binder = new Binder();
-            BoundExpression boundExpression = binder.BindExpression(syntaxTree.Root);
-
-            IEnumerable<string> diagnostics = syntaxTree.Diagnostics.Concat(binder.Diagnostics);
 
             if (showTree)
                 syntaxTree.PrintTree(ConsoleColor.DarkGray);
 
-            if (!diagnostics.Any())
-            {
-                Evaluator evaluator = new Evaluator(boundExpression);
-                string result = evaluator.Evaluate();
-
-                Console.WriteLine(result);
-            }
+            Compilation compilation = new Compilation(syntaxTree);
+            EvaluationResult result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
+            if (result.Diagnostics.Count == 0)
+                Console.WriteLine(result.Value);
             else
             {
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-
-                foreach (string diagnostic in diagnostics)
+                foreach (Diagnostic diagnostic in result.Diagnostics)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.WriteLine();
                     Console.WriteLine(diagnostic);
+                    Console.ResetColor();
 
-                Console.ResetColor();
+                    string prefix = content.Substring(0, diagnostic.Span.Start);
+                    string error = content.Substring(diagnostic.Span.Start, diagnostic.Span.Length);
+                    string suffix = content.Substring(diagnostic.Span.End);
+
+                    Console.Write("    ");
+                    Console.Write(prefix);
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.Write(error);
+                    Console.ResetColor();
+                    Console.Write(suffix);
+
+                    Console.WriteLine();
+                }
+
+                Console.WriteLine();
             }
         }
     }

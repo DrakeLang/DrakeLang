@@ -16,31 +16,27 @@
 // along with this program.  If not, see https://www.gnu.org/licenses/.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-using System.Linq;
-
-namespace PHPSharp.Syntax
+namespace PHPSharp
 {
-    public class SyntaxToken : SyntaxNode
+    public class Diagnostic
     {
-        public SyntaxToken(SyntaxKind kind, int position, string text, object value)
+        public Diagnostic(TextSpan span, string message)
         {
-            Kind = kind;
-            Position = position;
-            Text = text;
-            Value = value;
+            Span = span;
+            Message = message;
         }
 
-        public override SyntaxKind Kind { get; }
+        #region Properties
 
-        public int Position { get; }
-        public string Text { get; }
-        public object Value { get; }
-        public TextSpan Span => new TextSpan(Position, Text.Length);
+        public TextSpan Span { get; }
+        public string Message { get; }
 
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            return Enumerable.Empty<SyntaxNode>();
-        }
+        #endregion Properties
+
+        #region Methods
+
+        public override string ToString() => Message;
+
+        #endregion Methods
     }
 }

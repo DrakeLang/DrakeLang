@@ -42,6 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binding\Binder.cs" />
+    <Compile Include="Binding\BoundAssignmentExpression.cs" />
     <Compile Include="Binding\BoundBinaryExpression.cs" />
     <Compile Include="Binding\BoundBinaryOperator.cs" />
     <Compile Include="Binding\BoundBinaryOperatorKind.cs" />
@@ -52,11 +53,18 @@
     <Compile Include="Binding\BoundUnaryExpression.cs" />
     <Compile Include="Binding\BoundUnaryOperator.cs" />
     <Compile Include="Binding\BoundUnaryOperatorKind.cs" />
+    <Compile Include="Binding\BoundVariableExpression.cs" />
+    <Compile Include="Compilation.cs" />
+    <Compile Include="Diagnostic.cs" />
+    <Compile Include="DiagnosticBag.cs" />
+    <Compile Include="EvaluationResult.cs" />
+    <Compile Include="Syntax\AssignmentExpressionSyntax.cs" />
     <Compile Include="Syntax\BinaryExpressionSyntax.cs" />
     <Compile Include="Evaluator.cs" />
     <Compile Include="Syntax\ExpressionSyntax.cs" />
     <Compile Include="Syntax\Lexer.cs" />
     <Compile Include="Syntax\LiteralExpressionSyntax.cs" />
+    <Compile Include="Syntax\NameExpressionSyntax.cs" />
     <Compile Include="Syntax\ParenthesizedExpressionSyntax.cs" />
     <Compile Include="Syntax\Parser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -66,6 +74,8 @@
     <Compile Include="Syntax\SyntaxToken.cs" />
     <Compile Include="Syntax\SyntaxTree.cs" />
     <Compile Include="Syntax\UnaryExpressionSyntax.cs" />
+    <Compile Include="TextSpan.cs" />
+    <Compile Include="VariableSymbol.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

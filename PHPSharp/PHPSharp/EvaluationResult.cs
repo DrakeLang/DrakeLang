@@ -19,28 +19,17 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PHPSharp.Syntax
+namespace PHPSharp
 {
-    public class SyntaxToken : SyntaxNode
+    public class EvaluationResult
     {
-        public SyntaxToken(SyntaxKind kind, int position, string text, object value)
+        public EvaluationResult(IEnumerable<Diagnostic> diagnostics, object value)
         {
-            Kind = kind;
-            Position = position;
-            Text = text;
+            Diagnostics = diagnostics.ToArray();
             Value = value;
         }
 
-        public override SyntaxKind Kind { get; }
-
-        public int Position { get; }
-        public string Text { get; }
+        public IReadOnlyList<Diagnostic> Diagnostics { get; }
         public object Value { get; }
-        public TextSpan Span => new TextSpan(Position, Text.Length);
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            return Enumerable.Empty<SyntaxNode>();
-        }
     }
 }

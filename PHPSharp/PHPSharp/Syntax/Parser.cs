@@ -23,8 +23,6 @@ namespace PHPSharp.Syntax
     internal class Parser
     {
         private readonly SyntaxToken[] _tokens;
-
-        private readonly List<string> _diagnostics = new List<string>();
         private int _position;
 
         public Parser(string text)
@@ -42,18 +40,19 @@ namespace PHPSharp.Syntax
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
             _tokens = tokens.ToArray();
-            _diagnostics.AddRange(lexer.Diagnostics);
+            Diagnostics.AddRange(lexer.Diagnostics);
         }
 
         #region Properties
 
-        public IEnumerable<string> Diagnostics => _diagnostics;
+        public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
         #endregion Properties
 
         #region Private properties
 
         private SyntaxToken Current => Peek(0);
+        private SyntaxToken LookAhead => Peek(1);
 
         #endregion Private properties
 
@@ -64,8 +63,95 @@ namespace PHPSharp.Syntax
             ExpressionSyntax expression = ParseExpression();
             SyntaxToken endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
 
-            return new SyntaxTree(_diagnostics, expression, endOfFileToken);
+            return new SyntaxTree(Diagnostics, expression, endOfFileToken);
         }
+
+        #region Parse
+
+        private ExpressionSyntax ParseExpression(int parentPrecedence = 0)
+        {
+            ExpressionSyntax left;
+            if (Current.Kind == SyntaxKind.IdentifierToken &&
+                LookAhead.Kind == SyntaxKind.EqualsToken)
+            {
+                SyntaxToken identifierToken = NextToken();
+                SyntaxToken operatorToken = NextToken();
+                ExpressionSyntax right = ParseExpression();
+
+                left = new AssignmentExpressionSyntax(identifierToken, operatorToken, right);
+            }
+            else
+            {
+                int unaryOperatorPrecedence = Current.Kind.GetUnaryOperatorPrecedence();
+                if (unaryOperatorPrecedence != 0 && unaryOperatorPrecedence > parentPrecedence)
+                {
+                    SyntaxToken operatorToken = NextToken();
+                    ExpressionSyntax operand = ParseExpression(unaryOperatorPrecedence);
+
+                    left = new UnaryExpressionSyntax(operatorToken, operand);
+                }
+                else
+                {
+                    switch (Current.Kind)
+                    {
+                        case SyntaxKind.OpenParenthesisToken:
+                            SyntaxToken leftParenthesis = NextToken();
+                            ExpressionSyntax expression = ParseExpression();
+                            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+
+                            left = new ParenthesizedExpressionSyntax(leftParenthesis, expression, rightParenthesis);
+                            break;
+
+                        case SyntaxKind.TrueKeyword:
+                        case SyntaxKind.FalseKeyword:
+                            SyntaxToken keywordToken = NextToken();
+                            left = new LiteralExpressionSyntax(keywordToken, keywordToken.Kind == SyntaxKind.TrueKeyword);
+                            break;
+
+                        case SyntaxKind.IdentifierToken:
+                            SyntaxToken identifierToken = NextToken();
+                            left = new NameExpressionSyntax(identifierToken);
+                            break;
+
+                        default:
+                            SyntaxToken numberToken = MatchToken(SyntaxKind.NumberToken);
+                            left = new LiteralExpressionSyntax(numberToken);
+                            break;
+                    }
+                }
+            }
+
+            while (true)
+            {
+                int precedence = Current.Kind.GetBinaryOperatorPrecedence();
+                if (precedence != 0 && precedence > parentPrecedence)
+                {
+                    SyntaxToken operatorToken = NextToken();
+                    ExpressionSyntax right = ParseExpression(precedence);
+                    left = new BinaryExpressionSyntax(left, operatorToken, right);
+                }
+                else break;
+            }
+
+            return left;
+        }
+
+        private ExpressionSyntax ParseAssignmentExpression()
+        {
+            if (Current.Kind == SyntaxKind.IdentifierToken &&
+                LookAhead.Kind == SyntaxKind.EqualsEqualsToken)
+            {
+                SyntaxToken identifierToken = NextToken();
+                SyntaxToken operatorToken = NextToken();
+                ExpressionSyntax right = ParseAssignmentExpression();
+
+                return new AssignmentExpressionSyntax(identifierToken, operatorToken, right);
+            }
+
+            return ParseAssignmentExpression();
+        }
+
+        #endregion Parse
 
         #endregion Methods
 
@@ -93,59 +179,8 @@ namespace PHPSharp.Syntax
             if (Current.Kind == kind)
                 return NextToken();
 
-            _diagnostics.Add($"ERROR: Unexpected token <{Current.Kind}>, expected <{kind}>");
+            Diagnostics.ReportUnexpectedToken(Current.Span, Current.Kind, kind);
             return new SyntaxToken(kind, Current.Position, null, null);
-        }
-
-        private ExpressionSyntax ParseExpression(int parentPrecedence = 0)
-        {
-            ExpressionSyntax left;
-            int unaryOperatorPrecedence = Current.Kind.GetUnaryOperatorPrecedence();
-            if (unaryOperatorPrecedence != 0 && unaryOperatorPrecedence > parentPrecedence)
-            {
-                SyntaxToken operatorToken = NextToken();
-                ExpressionSyntax operand = ParseExpression(unaryOperatorPrecedence);
-
-                left = new UnaryExpressionSyntax(operatorToken, operand);
-            }
-            else
-            {
-                switch (Current.Kind)
-                {
-                    case SyntaxKind.OpenParenthesisToken:
-                        SyntaxToken leftParenthesis = NextToken();
-                        ExpressionSyntax expression = ParseExpression();
-                        SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
-
-                        left = new ParenthesizedExpressionSyntax(leftParenthesis, expression, rightParenthesis);
-                        break;
-
-                    case SyntaxKind.TrueKeyword:
-                    case SyntaxKind.FalseKeyword:
-                        SyntaxToken keywordToken = NextToken();
-                        left = new LiteralExpressionSyntax(keywordToken, keywordToken.Kind == SyntaxKind.TrueKeyword);
-                        break;
-
-                    default:
-                        SyntaxToken numberToken = MatchToken(SyntaxKind.NumberToken);
-                        left = new LiteralExpressionSyntax(numberToken);
-                        break;
-                }
-            }
-
-            while (true)
-            {
-                int precedence = Current.Kind.GetBinaryOperatorPrecedence();
-                if (precedence != 0 && precedence > parentPrecedence)
-                {
-                    SyntaxToken operatorToken = NextToken();
-                    ExpressionSyntax right = ParseExpression(precedence);
-                    left = new BinaryExpressionSyntax(left, operatorToken, right);
-                }
-                else break;
-            }
-
-            return left;
         }
 
         #endregion Private methods

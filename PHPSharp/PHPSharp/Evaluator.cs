@@ -18,38 +18,47 @@
 
 using PHPSharp.Binding;
 using System;
+using System.Collections.Generic;
 
 namespace PHPSharp
 {
     public class Evaluator
     {
         private readonly BoundExpression _root;
+        private readonly Dictionary<VariableSymbol, object> _variables;
 
-        public Evaluator(BoundExpression root)
+        public Evaluator(BoundExpression root, Dictionary<VariableSymbol, object> variables)
         {
             _root = root;
+            _variables = variables;
         }
 
         #region Methods
 
         public string Evaluate()
         {
-            string result = Evaluate(_root);
+            string result = EvaluateExpression(_root);
             return string.Format("<?php {0} ?>", result);
         }
 
-        private string Evaluate(BoundExpression node)
+        private string EvaluateExpression(BoundExpression node)
         {
             switch (node.Kind)
             {
                 case BoundNodeKind.LiteralExpression:
                     return EvaluateLiteral((BoundLiteralExpression)node);
 
-                case BoundNodeKind.BinaryExpression:
-                    return EvaluateBinary((BoundBinaryExpression)node);
+                case BoundNodeKind.VariableExpression:
+                    return EvaluateVariableExpression((BoundVariableExpression)node);
+
+                case BoundNodeKind.AssignmentExpression:
+                    return EvaluateAssignmentExpression((BoundAssignmentExpression)node);
 
                 case BoundNodeKind.UnaryExpression:
                     return EvaluateUnary((BoundUnaryExpression)node);
+
+                case BoundNodeKind.BinaryExpression:
+                    return EvaluateBinary((BoundBinaryExpression)node);
 
                 default:
                     throw new Exception($"Unexpected node '{node.Kind}'.");
@@ -71,10 +80,38 @@ namespace PHPSharp
             }
         }
 
+        private string EvaluateVariableExpression(BoundVariableExpression node)
+        {
+            return "$" + node.Variable.Name;
+        }
+
+        private string EvaluateAssignmentExpression(BoundAssignmentExpression node)
+        {
+            return "$" + node.Variable.Name + "=" + EvaluateExpression(node.Expression); 
+        }
+
+        private string EvaluateUnary(BoundUnaryExpression node)
+        {
+            switch (node.Op.Kind)
+            {
+                case BoundUnaryOperatorKind.Identity:
+                    return EvaluateExpression(node.Operand);
+
+                case BoundUnaryOperatorKind.Negation:
+                    return "-" + EvaluateExpression(node.Operand);
+
+                case BoundUnaryOperatorKind.LogicalNegation:
+                    return "!" + EvaluateExpression(node.Operand);
+
+                default:
+                    throw new Exception($"Unexpected unary operator '{node.Op.Kind}'.");
+            }
+        }
+
         private string EvaluateBinary(BoundBinaryExpression node)
         {
-            string left = "(" + Evaluate(node.Left);
-            string right = Evaluate(node.Right) + ")";
+            string left = "(" + EvaluateExpression(node.Left);
+            string right = EvaluateExpression(node.Right) + ")";
 
             switch (node.Op.Kind)
             {
@@ -104,24 +141,6 @@ namespace PHPSharp
 
                 default:
                     throw new Exception($"Unexpected binary operator '{node.Op.Kind}'.");
-            }
-        }
-
-        private string EvaluateUnary(BoundUnaryExpression node)
-        {
-            switch (node.Op.Kind)
-            {
-                case BoundUnaryOperatorKind.Identity:
-                    return Evaluate(node.Operand);
-
-                case BoundUnaryOperatorKind.Negation:
-                    return "-" + Evaluate(node.Operand);
-
-                case BoundUnaryOperatorKind.LogicalNegation:
-                    return "!" + Evaluate(node.Operand);
-
-                default:
-                    throw new Exception($"Unexpected unary operator '{node.Op.Kind}'.");
             }
         }
 

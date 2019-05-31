@@ -16,31 +16,18 @@
 // along with this program.  If not, see https://www.gnu.org/licenses/.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-using System.Linq;
-
-namespace PHPSharp.Syntax
+namespace PHPSharp
 {
-    public class SyntaxToken : SyntaxNode
+    public struct TextSpan
     {
-        public SyntaxToken(SyntaxKind kind, int position, string text, object value)
+        public TextSpan(int start, int length)
         {
-            Kind = kind;
-            Position = position;
-            Text = text;
-            Value = value;
+            Start = start;
+            Length = length;
         }
 
-        public override SyntaxKind Kind { get; }
-
-        public int Position { get; }
-        public string Text { get; }
-        public object Value { get; }
-        public TextSpan Span => new TextSpan(Position, Text.Length);
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            return Enumerable.Empty<SyntaxNode>();
-        }
+        public int Start { get; }
+        public int Length { get; }
+        public int End => Start + Length;
     }
 }

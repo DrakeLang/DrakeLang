@@ -22,7 +22,6 @@ namespace PHPSharp.Syntax
     {
         // Tokens
         BadToken,
-
         EndOfFileToken,
         NumberToken,
         PlusToken,
@@ -30,6 +29,7 @@ namespace PHPSharp.Syntax
         StarToken,
         SlashToken,
         BangToken,
+        EqualsToken,
         AmpersandAmpersandToken,
         PipePipeToken,
         EqualsEqualsToken,
@@ -40,14 +40,14 @@ namespace PHPSharp.Syntax
 
         // Keywords
         TrueKeyword,
-
         FalseKeyword,
 
         // Expressions
         LiteralExpression,
-
+        NameExpression,
         UnaryExpression,
         BinaryExpression,
         ParenthesizedExpression,
+        AssignmentExpression,
     }
 }

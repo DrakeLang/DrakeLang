@@ -13,34 +13,28 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program.  If not, see https://www.gnu.org/licenses/.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-using System.Linq;
+using System;
 
-namespace PHPSharp.Syntax
+namespace PHPSharp.Binding
 {
-    public class SyntaxToken : SyntaxNode
+    internal class BoundAssignmentExpression : BoundExpression
     {
-        public SyntaxToken(SyntaxKind kind, int position, string text, object value)
+        public BoundAssignmentExpression(VariableSymbol variable, BoundExpression expression)
         {
-            Kind = kind;
-            Position = position;
-            Text = text;
-            Value = value;
+            Variable = variable;
+            Expression = expression;
         }
 
-        public override SyntaxKind Kind { get; }
+        #region Properties
 
-        public int Position { get; }
-        public string Text { get; }
-        public object Value { get; }
-        public TextSpan Span => new TextSpan(Position, Text.Length);
+        public override Type Type => Variable.Type;
+        public override BoundNodeKind Kind => BoundNodeKind.AssignmentExpression;
+        public VariableSymbol Variable { get; }
+        public BoundExpression Expression { get; }
 
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            return Enumerable.Empty<SyntaxNode>();
-        }
+        #endregion Properties
     }
 }

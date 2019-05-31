@@ -16,15 +16,12 @@
 // along with this program.  If not, see https://www.gnu.org/licenses/.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-
 namespace PHPSharp.Syntax
 {
     internal class Lexer
     {
         private readonly string _text;
         private int _position;
-        private readonly List<string> _diagonstics = new List<string>();
 
         public Lexer(string text)
         {
@@ -33,7 +30,7 @@ namespace PHPSharp.Syntax
 
         #region Public properties
 
-        public IEnumerable<string> Diagnostics => _diagonstics;
+        public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
         #endregion Public properties
 
@@ -55,21 +52,23 @@ namespace PHPSharp.Syntax
             if (_position >= _text.Length)
                 return new SyntaxToken(SyntaxKind.EndOfFileToken, _position, "\0", null);
 
+            int start = _position;
+
             if (char.IsDigit(Current))
             {
-                int start = _position;
                 while (char.IsDigit(Current))
                     Next();
 
                 int length = _position - start;
                 string numberStr = _text.Substring(start, length);
-                int.TryParse(numberStr, out int value);
+                if (!int.TryParse(numberStr, out int value))
+                    Diagnostics.ReportInvalidNumber(new TextSpan(start, length), _text, typeof(int));
+
                 return new SyntaxToken(SyntaxKind.NumberToken, start, numberStr, value);
             }
 
             if (char.IsLetter(Current))
             {
-                int start = _position;
                 while (char.IsLetter(Current))
                     Next();
 
@@ -101,27 +100,42 @@ namespace PHPSharp.Syntax
 
                 case '&':
                     if (LookAhead == '&')
-                        return new SyntaxToken(SyntaxKind.AmpersandAmpersandToken, _position += 2, "&&", null);
+                    {
+                        _position += 2;
+                        return new SyntaxToken(SyntaxKind.AmpersandAmpersandToken, start, "&&", null);
+                    }
+
                     break;
 
                 case '|':
                     if (LookAhead == '|')
-                        return new SyntaxToken(SyntaxKind.PipePipeToken, _position += 2, "||", null);
+                    {
+                        _position += 2;
+                        return new SyntaxToken(SyntaxKind.PipePipeToken, start, "||", null);
+                    }
+
                     break;
 
                 case '=':
                     if (LookAhead == '=')
-                        return new SyntaxToken(SyntaxKind.EqualsEqualsToken, _position += 2, "==", null);
-                    break;
+                    {
+                        _position += 2;
+                        return new SyntaxToken(SyntaxKind.EqualsEqualsToken, start, "==", null);
+                    }
+                    else
+                        return new SyntaxToken(SyntaxKind.EqualsToken, _position++, "=", null);
 
                 case '!':
                     if (LookAhead == '=')
-                        return new SyntaxToken(SyntaxKind.BangEqualsToken, _position += 2, "!=", null);
+                    {
+                        _position += 2;
+                        return new SyntaxToken(SyntaxKind.BangEqualsToken, start, "!=", null);
+                    }
                     else
                         return new SyntaxToken(SyntaxKind.BangToken, _position++, "!", null);
             }
 
-            _diagonstics.Add($"ERROR: bad character input: '{Current}'");
+            Diagnostics.ReportBadCharacter(_position, Current);
             string text = _text.Substring(_position, 1);
             return new SyntaxToken(SyntaxKind.BadToken, _position++, text, null);
         }

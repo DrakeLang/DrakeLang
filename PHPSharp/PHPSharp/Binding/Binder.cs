@@ -19,16 +19,22 @@
 using PHPSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PHPSharp.Binding
 {
-    public class Binder
+    internal class Binder
     {
-        private readonly List<string> _diagnostics = new List<string>();
+        private readonly Dictionary<VariableSymbol, object> _variables;
+
+        public Binder(Dictionary<VariableSymbol, object> variables)
+        {
+            _variables = variables;
+        }
 
         #region Properties
 
-        public IEnumerable<string> Diagnostics => _diagnostics;
+        public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
         #endregion Properties
 
@@ -38,17 +44,23 @@ namespace PHPSharp.Binding
         {
             switch (syntax.Kind)
             {
+                case SyntaxKind.ParenthesizedExpression:
+                    return BindParenthesizedExpression((ParenthesizedExpressionSyntax)syntax);
+
                 case SyntaxKind.LiteralExpression:
                     return BindLiteralExpression((LiteralExpressionSyntax)syntax);
 
-                case SyntaxKind.ParenthesizedExpression:
-                    return BindExpression(((ParenthesizedExpressionSyntax)syntax).Expression);
+                case SyntaxKind.NameExpression:
+                    return BindNameExpression((NameExpressionSyntax)syntax);
 
-                case SyntaxKind.BinaryExpression:
-                    return BindBinaryExpression((BinaryExpressionSyntax)syntax);
+                case SyntaxKind.AssignmentExpression:
+                    return BindAssignmentExpression((AssignmentExpressionSyntax)syntax);
 
                 case SyntaxKind.UnaryExpression:
                     return BindUnaryExpression((UnaryExpressionSyntax)syntax);
+
+                case SyntaxKind.BinaryExpression:
+                    return BindBinaryExpression((BinaryExpressionSyntax)syntax);
 
                 default:
                     throw new Exception($"Unexpected syntax {syntax.Kind}");
@@ -59,10 +71,61 @@ namespace PHPSharp.Binding
 
         #region Private methods
 
+        private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax)
+        {
+            return BindExpression(syntax.Expression);
+        }
+
         private BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)
         {
             object value = syntax.Value ?? 0;
             return new BoundLiteralExpression(value);
+        }
+
+        private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
+        {
+            string name = syntax.IdentifierToken.Text;
+            VariableSymbol variable = _variables.Keys.FirstOrDefault(v => v.Name == name);
+
+            if (variable == null)
+            {
+                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
+                return new BoundLiteralExpression(0);
+            }
+
+            return new BoundVariableExpression(variable);
+        }
+
+        private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax)
+        {
+            string name = syntax.IdentifierToken.Text;
+            BoundExpression boundExpression = BindExpression(syntax.Expression);
+
+            VariableSymbol existingVariable = _variables.Keys.FirstOrDefault(v => v.Name == name);
+            if (existingVariable != null)
+                _variables.Remove(existingVariable);
+
+            VariableSymbol variable = new VariableSymbol(name, boundExpression.Type);
+            _variables[variable] = 
+                boundExpression.Type == typeof(int) ? default(int) :
+                boundExpression.Type == typeof(bool) ? (object)default(bool) :
+                throw new Exception($"Unsuported variable type: {boundExpression.Type}");
+
+            return new BoundAssignmentExpression(variable, boundExpression);
+        }
+
+        private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax)
+        {
+            BoundExpression boundOperand = BindExpression(syntax.Operand);
+            BoundUnaryOperator op = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, boundOperand.Type);
+
+            if (op == null)
+            {
+                Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundOperand.Type);
+                return boundOperand;
+            }
+
+            return new BoundUnaryExpression(op, boundOperand);
         }
 
         private BoundExpression BindBinaryExpression(BinaryExpressionSyntax syntax)
@@ -73,25 +136,11 @@ namespace PHPSharp.Binding
 
             if (op == null)
             {
-                _diagnostics.Add($"Binary operator '{syntax.OperatorToken.Text}' is not defined for types {boundLeft.Type} and {boundRight.Type}.");
+                Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundLeft.Type, boundRight.Type);
                 return boundLeft;
             }
 
             return new BoundBinaryExpression(boundLeft, op, boundRight);
-        }
-
-        private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax)
-        {
-            BoundExpression boundOperand = BindExpression(syntax.Operand);
-            BoundUnaryOperator op = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, boundOperand.Type);
-
-            if (op == null)
-            {
-                _diagnostics.Add($"Unary operator '{syntax.OperatorToken.Text}' is not defined for type {boundOperand.Type}.");
-                return boundOperand;
-            }
-
-            return new BoundUnaryExpression(op, boundOperand);
         }
 
         #endregion Private methods
