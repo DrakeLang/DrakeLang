@@ -35,8 +35,9 @@ namespace PHPSharp.Syntax
             {
                 token = lexer.Lex();
 
-                if (token.Kind != SyntaxKind.BadToken)
+                if (token.Kind != SyntaxKind.BadToken && token.Kind != SyntaxKind.WhitespaceToken)
                     tokens.Add(token);
+
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
             _tokens = tokens.ToArray();

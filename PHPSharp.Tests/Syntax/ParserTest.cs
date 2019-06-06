@@ -16,39 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-namespace PHPSharp.Syntax
+namespace PHPSharp.Tests.Syntax
 {
-    public enum SyntaxKind
+    public class ParserTest
     {
-        // Tokens
-        BadToken,
-        EndOfFileToken,
-        NumberToken,
-        PlusToken,
-        MinusToken,
-        StarToken,
-        SlashToken,
-        BangToken,
-        EqualsToken,
-        AmpersandAmpersandToken,
-        PipePipeToken,
-        EqualsEqualsToken,
-        BangEqualsToken,
-        OpenParenthesisToken,
-        CloseParenthesisToken,
-        IdentifierToken,
-        WhitespaceToken,
 
-        // Keywords
-        TrueKeyword,
-        FalseKeyword,
-
-        // Expressions
-        LiteralExpression,
-        NameExpression,
-        UnaryExpression,
-        BinaryExpression,
-        ParenthesizedExpression,
-        AssignmentExpression,
     }
 }
