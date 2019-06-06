@@ -16,6 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System;
+using System.Collections.Generic;
+
 namespace PHPSharp.Syntax
 {
     public static class SyntaxFacts
@@ -73,6 +76,26 @@ namespace PHPSharp.Syntax
 
                 default:
                     return SyntaxKind.IdentifierToken;
+            }
+        }
+
+        public static IEnumerable<SyntaxKind> GetUnaryOperatorKinds()
+        {
+            SyntaxKind[] kinds = (SyntaxKind[])Enum.GetValues(typeof(SyntaxKind));
+            foreach (SyntaxKind kind in kinds)
+            {
+                if (GetUnaryOperatorPrecedence(kind) > 0)
+                    yield return kind;
+            }
+        }
+
+        public static IEnumerable<SyntaxKind> GetBinaryOperatorKinds()
+        {
+            SyntaxKind[] kinds = (SyntaxKind[])Enum.GetValues(typeof(SyntaxKind));
+            foreach (SyntaxKind kind in kinds)
+            {
+                if (GetBinaryOperatorPrecedence(kind) > 0)
+                    yield return kind;
             }
         }
 
