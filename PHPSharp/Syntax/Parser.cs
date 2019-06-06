@@ -1,5 +1,4 @@
-﻿//------------------------------------------------------------------------------
-// PHP Sharp. Because PHP isn't good enough.
+﻿// PHP Sharp. Because PHP isn't good enough.
 // Copyright (C) 2019  Niklas Gransjøen
 //
 // This program is free software: you can redistribute it and/or modify
