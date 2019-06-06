@@ -136,21 +136,6 @@ namespace PHPSharp.Syntax
             return left;
         }
 
-        private ExpressionSyntax ParseAssignmentExpression()
-        {
-            if (Current.Kind == SyntaxKind.IdentifierToken &&
-                LookAhead.Kind == SyntaxKind.EqualsEqualsToken)
-            {
-                SyntaxToken identifierToken = NextToken();
-                SyntaxToken operatorToken = NextToken();
-                ExpressionSyntax right = ParseAssignmentExpression();
-
-                return new AssignmentExpressionSyntax(identifierToken, operatorToken, right);
-            }
-
-            return ParseAssignmentExpression();
-        }
-
         #endregion Parse
 
         #endregion Methods

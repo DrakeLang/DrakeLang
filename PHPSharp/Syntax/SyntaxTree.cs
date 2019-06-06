@@ -87,6 +87,19 @@ namespace PHPSharp.Syntax
             return new Parser(text).Parse();
         }
 
+        public static IEnumerable<SyntaxToken> ParseTokens(string text)
+        {
+            Lexer lexer = new Lexer(text);
+            while (true)
+            {
+                SyntaxToken token = lexer.Lex();
+                if (token.Kind == SyntaxKind.EndOfFileToken)
+                    break;
+
+                yield return token;
+            }
+        }
+
         #endregion Statics
     }
 }
