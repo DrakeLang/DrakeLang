@@ -13,7 +13,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program.  If not, see https://www.gnu.org/licenses/.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
 namespace PHPSharp
@@ -29,5 +29,11 @@ namespace PHPSharp
         public int Start { get; }
         public int Length { get; }
         public int End => Start + Length;
+
+        public static TextSpan FromBounds(int start, int end)
+        {
+            int length = end - start;
+            return new TextSpan(start, length);
+        }
     }
 }
