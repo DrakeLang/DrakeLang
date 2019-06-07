@@ -1,4 +1,5 @@
-﻿// PHP Sharp. Because PHP isn't good enough.
+﻿//------------------------------------------------------------------------------
+// PHP Sharp. Because PHP isn't good enough.
 // Copyright (C) 2019  Niklas Gransjøen
 //
 // This program is free software: you can redistribute it and/or modify
@@ -12,7 +13,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program.  If not, see https://www.gnu.org/licenses/.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
@@ -36,7 +37,6 @@ namespace PHPSharp.Syntax
 
                 if (token.Kind != SyntaxKind.BadToken && token.Kind != SyntaxKind.WhitespaceToken)
                     tokens.Add(token);
-
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
             _tokens = tokens.ToArray();
@@ -92,32 +92,7 @@ namespace PHPSharp.Syntax
                 }
                 else
                 {
-                    switch (Current.Kind)
-                    {
-                        case SyntaxKind.OpenParenthesisToken:
-                            SyntaxToken leftParenthesis = NextToken();
-                            ExpressionSyntax expression = ParseExpression();
-                            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
-
-                            left = new ParenthesizedExpressionSyntax(leftParenthesis, expression, rightParenthesis);
-                            break;
-
-                        case SyntaxKind.TrueKeyword:
-                        case SyntaxKind.FalseKeyword:
-                            SyntaxToken keywordToken = NextToken();
-                            left = new LiteralExpressionSyntax(keywordToken, keywordToken.Kind == SyntaxKind.TrueKeyword);
-                            break;
-
-                        case SyntaxKind.IdentifierToken:
-                            SyntaxToken identifierToken = NextToken();
-                            left = new NameExpressionSyntax(identifierToken);
-                            break;
-
-                        default:
-                            SyntaxToken numberToken = MatchToken(SyntaxKind.NumberToken);
-                            left = new LiteralExpressionSyntax(numberToken);
-                            break;
-                    }
+                    left = ParsePrimaryExpression();
                 }
             }
 
@@ -134,6 +109,55 @@ namespace PHPSharp.Syntax
             }
 
             return left;
+        }
+
+        private ExpressionSyntax ParsePrimaryExpression()
+        {
+            switch (Current.Kind)
+            {
+                case SyntaxKind.OpenParenthesisToken:
+                    return ParseParenthesizedExpression();
+
+                case SyntaxKind.TrueKeyword:
+                case SyntaxKind.FalseKeyword:
+                    return ParseBooleanLiteral();
+
+                case SyntaxKind.NumberToken:
+                    return ParseNumberLiteral();
+
+                case SyntaxKind.IdentifierToken:
+                default:
+                    return ParseNameExpression();
+            }
+        }
+
+        private ExpressionSyntax ParseParenthesizedExpression()
+        {
+            SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            ExpressionSyntax expression = ParseExpression();
+            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+
+            return new ParenthesizedExpressionSyntax(leftParenthesis, expression, rightParenthesis);
+        }
+
+        private ExpressionSyntax ParseBooleanLiteral()
+        {
+            bool isTrue = Current.Kind == SyntaxKind.TrueKeyword;
+            SyntaxToken keywordToken = MatchToken(isTrue ? SyntaxKind.TrueKeyword : SyntaxKind.FalseKeyword);
+
+            return new LiteralExpressionSyntax(keywordToken, isTrue);
+        }
+
+        private ExpressionSyntax ParseNameExpression()
+        {
+            SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
+            return new NameExpressionSyntax(identifierToken);
+        }
+
+        private ExpressionSyntax ParseNumberLiteral()
+        {
+            SyntaxToken numberToken = MatchToken(SyntaxKind.NumberToken);
+            return new LiteralExpressionSyntax(numberToken);
         }
 
         #endregion Parse
