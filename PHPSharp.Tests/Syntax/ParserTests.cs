@@ -71,6 +71,49 @@ namespace PHPSharp.Tests.Syntax
             }
         }
 
+        [Theory]
+        [MemberData(nameof(GetUnaryOperatorPairsData))]
+        public void Parser_UnaryExpression_HonorsPrecedences(SyntaxKind unaryKind, SyntaxKind binaryKind)
+        {
+            int unaryPrecedence = SyntaxFacts.GetUnaryOperatorPrecedence(unaryKind);
+            int binaryPrecedence = SyntaxFacts.GetBinaryOperatorPrecedence(binaryKind);
+
+            string unaryText = SyntaxFacts.GetText(unaryKind);
+            string binaryText = SyntaxFacts.GetText(binaryKind);
+            string text = $"{unaryText} a {binaryText} b";
+
+            ExpressionSyntax expression = SyntaxTree.Parse(text).Root;
+
+            if (unaryPrecedence >= binaryPrecedence)
+            {
+                using (AssertingEnumerator e = new AssertingEnumerator(expression))
+                {
+                    e.AssertNode(SyntaxKind.BinaryExpression);
+                    e.AssertNode(SyntaxKind.UnaryExpression);
+                    e.AssertToken(unaryKind, unaryText);
+                    e.AssertNode(SyntaxKind.NameExpression);
+                    e.AssertToken(SyntaxKind.IdentifierToken, "a");
+                    e.AssertToken(binaryKind, binaryText);
+                    e.AssertNode(SyntaxKind.NameExpression);
+                    e.AssertToken(SyntaxKind.IdentifierToken, "b");
+                }
+            }
+            else
+            {
+                using (AssertingEnumerator e = new AssertingEnumerator(expression))
+                {
+                    e.AssertNode(SyntaxKind.UnaryExpression);
+                    e.AssertToken(unaryKind, unaryText);
+                    e.AssertNode(SyntaxKind.BinaryExpression);
+                    e.AssertNode(SyntaxKind.NameExpression);
+                    e.AssertToken(SyntaxKind.IdentifierToken, "a");
+                    e.AssertToken(binaryKind, binaryText);
+                    e.AssertNode(SyntaxKind.NameExpression);
+                    e.AssertToken(SyntaxKind.IdentifierToken, "b");
+                }
+            }
+        }
+
         public static IEnumerable<object[]> GetBinaryOperatorPairsData()
         {
             foreach (SyntaxKind op1 in SyntaxFacts.GetBinaryOperatorKinds())
@@ -78,6 +121,17 @@ namespace PHPSharp.Tests.Syntax
                 foreach (SyntaxKind op2 in SyntaxFacts.GetBinaryOperatorKinds())
                 {
                     yield return new object[] { op1, op2 };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> GetUnaryOperatorPairsData()
+        {
+            foreach (SyntaxKind unaryKind in SyntaxFacts.GetUnaryOperatorKinds())
+            {
+                foreach (SyntaxKind binaryKind in SyntaxFacts.GetBinaryOperatorKinds())
+                {
+                    yield return new object[] { unaryKind, binaryKind };
                 }
             }
         }
