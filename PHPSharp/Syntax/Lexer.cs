@@ -22,14 +22,14 @@ namespace PHPSharp.Syntax
 {
     internal class Lexer
     {
-        private readonly string _text;
+        private readonly SourceText _text;
 
         private int _position;
         private int _start;
         private SyntaxKind _kind;
         private object _value;
 
-        public Lexer(string text)
+        public Lexer(SourceText text)
         {
             _text = text;
         }
@@ -172,7 +172,7 @@ namespace PHPSharp.Syntax
             if (text == null)
             {
                 int length = _position - _start;
-                text = _text.Substring(_start, length);
+                text = _text.ToString(_start, length);
             }
 
             return new SyntaxToken(_kind, _start, text, _value);
@@ -200,11 +200,8 @@ namespace PHPSharp.Syntax
         {
             while (char.IsWhiteSpace(Current))
                 Next();
-            int length = _position - _start;
-            string whitespace = _text.Substring(_start, length);
 
             _kind = SyntaxKind.WhitespaceToken;
-            _value = whitespace;
         }
 
         private void ReadIdentifierOrKeyword()
@@ -213,7 +210,7 @@ namespace PHPSharp.Syntax
                 Next();
 
             int length = _position - _start;
-            string word = _text.Substring(_start, length);
+            string word = _text.ToString(_start, length);
 
             _kind = SyntaxFacts.GetKeywordKind(word);
         }
@@ -223,13 +220,7 @@ namespace PHPSharp.Syntax
             while (char.IsDigit(Current))
                 Next();
 
-            int length = _position - _start;
-            string text = _text.Substring(_start, length);
-            if (!int.TryParse(text, out int value))
-                Diagnostics.ReportInvalidNumber(new TextSpan(_start, length), _text, typeof(int));
-
             _kind = SyntaxKind.NumberToken;
-            _value = value;
         }
 
         #endregion Private methods

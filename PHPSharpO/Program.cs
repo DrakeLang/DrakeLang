@@ -18,6 +18,7 @@
 
 using PHPSharp;
 using PHPSharp.Syntax;
+using PHPSharp.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -85,10 +86,17 @@ namespace PHPSharpO
                 Console.WriteLine(result.Value);
             else
             {
+                SourceText text = syntaxTree.Text;
+
                 foreach (Diagnostic diagnostic in result.Diagnostics)
                 {
+                    int lineIndex = text.GetLineIndex(diagnostic.Span.Start);
+                    int lineNumer = lineIndex + 1;
+                    int character = diagnostic.Span.Start - text.Lines[lineIndex].Start + 1;
+
                     Console.ForegroundColor = ConsoleColor.DarkRed;
                     Console.WriteLine();
+                    Console.Write($"({lineNumer}, {character}): ");
                     Console.WriteLine(diagnostic);
                     Console.ResetColor();
 
@@ -98,8 +106,10 @@ namespace PHPSharpO
 
                     Console.Write("    ");
                     Console.Write(prefix);
+
                     Console.ForegroundColor = ConsoleColor.DarkRed;
                     Console.Write(error);
+
                     Console.ResetColor();
                     Console.Write(suffix);
 

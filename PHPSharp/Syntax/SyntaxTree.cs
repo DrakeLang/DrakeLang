@@ -13,20 +13,21 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program.  If not, see https://www.gnu.org/licenses/.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using PHPSharp.Text;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 
 namespace PHPSharp.Syntax
 {
     public class SyntaxTree
     {
-        internal SyntaxTree(ImmutableArray<Diagnostic> diagnostics, ExpressionSyntax root, SyntaxToken endOfFileToken)
+        public SyntaxTree(SourceText text, ImmutableArray<Diagnostic> diagnostics, ExpressionSyntax root, SyntaxToken endOfFileToken)
         {
+            Text = text;
             Diagnostics = diagnostics;
             Root = root;
             EndOfFileToken = endOfFileToken;
@@ -34,6 +35,7 @@ namespace PHPSharp.Syntax
 
         #region Properties
 
+        public SourceText Text { get; }
         public IReadOnlyList<Diagnostic> Diagnostics { get; }
         public ExpressionSyntax Root { get; }
         public SyntaxToken EndOfFileToken { get; }
@@ -57,10 +59,22 @@ namespace PHPSharp.Syntax
 
         public static SyntaxTree Parse(string text)
         {
+            SourceText sourceText = SourceText.From(text);
+            return Parse(sourceText);
+        }
+
+        public static SyntaxTree Parse(SourceText text)
+        {
             return new Parser(text).Parse();
         }
 
         public static IEnumerable<SyntaxToken> ParseTokens(string text)
+        {
+            SourceText sourceText = SourceText.From(text);
+            return ParseTokens(sourceText);
+        }
+
+        public static IEnumerable<SyntaxToken> ParseTokens(SourceText text)
         {
             Lexer lexer = new Lexer(text);
             while (true)

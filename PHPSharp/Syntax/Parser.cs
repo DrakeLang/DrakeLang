@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using PHPSharp.Text;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
@@ -24,9 +25,10 @@ namespace PHPSharp.Syntax
     internal class Parser
     {
         private readonly ImmutableArray<SyntaxToken> _tokens;
+        private readonly SourceText text;
         private int _position;
 
-        public Parser(string text)
+        public Parser(SourceText text)
         {
             List<SyntaxToken> tokens = new List<SyntaxToken>();
 
@@ -42,6 +44,7 @@ namespace PHPSharp.Syntax
 
             _tokens = tokens.ToImmutableArray();
             Diagnostics.AddRange(lexer.Diagnostics);
+            this.text = text;
         }
 
         #region Properties
@@ -64,8 +67,10 @@ namespace PHPSharp.Syntax
             ExpressionSyntax expression = ParseExpression();
             SyntaxToken endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
 
-            return new SyntaxTree(Diagnostics.ToImmutableArray(), expression, endOfFileToken);
+            return new SyntaxTree(text, Diagnostics.ToImmutableArray(), expression, endOfFileToken);
         }
+
+        #endregion Methods
 
         #region Parse
 
@@ -158,12 +163,13 @@ namespace PHPSharp.Syntax
         private ExpressionSyntax ParseNumberLiteral()
         {
             SyntaxToken numberToken = MatchToken(SyntaxKind.NumberToken);
-            return new LiteralExpressionSyntax(numberToken);
+            if (!int.TryParse(numberToken.Text, out int value))
+                Diagnostics.ReportInvalidNumber(numberToken.Span, numberToken.Text, typeof(int));
+
+            return new LiteralExpressionSyntax(numberToken, value);
         }
 
         #endregion Parse
-
-        #endregion Methods
 
         #region Private methods
 
