@@ -18,13 +18,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace PHPSharp.Syntax
 {
     public class SyntaxTree
     {
-        internal SyntaxTree(IEnumerable<Diagnostic> diagnostics, ExpressionSyntax root, SyntaxToken endOfFileToken)
+        internal SyntaxTree(ImmutableArray<Diagnostic> diagnostics, ExpressionSyntax root, SyntaxToken endOfFileToken)
         {
             Diagnostics = diagnostics;
             Root = root;
@@ -33,7 +34,7 @@ namespace PHPSharp.Syntax
 
         #region Properties
 
-        public IEnumerable<Diagnostic> Diagnostics { get; }
+        public IReadOnlyList<Diagnostic> Diagnostics { get; }
         public ExpressionSyntax Root { get; }
         public SyntaxToken EndOfFileToken { get; }
 

@@ -19,6 +19,7 @@
 using PHPSharp.Binding;
 using PHPSharp.Syntax;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace PHPSharp
@@ -41,12 +42,12 @@ namespace PHPSharp
 
             IEnumerable<Diagnostic> diagnostics = Syntax.Diagnostics.Concat(binder.Diagnostics);
             if (diagnostics.Any())
-                return new EvaluationResult(diagnostics, null);
+                return new EvaluationResult(diagnostics.ToImmutableArray(), null);
 
             Evaluator evaluator = new Evaluator(boundExpression, variables);
             string value = evaluator.Evaluate();
 
-            return new EvaluationResult(Enumerable.Empty<Diagnostic>(), value);
+            return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
         }
 
         #endregion Methods

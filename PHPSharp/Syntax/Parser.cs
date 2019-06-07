@@ -17,12 +17,13 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace PHPSharp.Syntax
 {
     internal class Parser
     {
-        private readonly SyntaxToken[] _tokens;
+        private readonly ImmutableArray<SyntaxToken> _tokens;
         private int _position;
 
         public Parser(string text)
@@ -39,7 +40,7 @@ namespace PHPSharp.Syntax
                     tokens.Add(token);
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
-            _tokens = tokens.ToArray();
+            _tokens = tokens.ToImmutableArray();
             Diagnostics.AddRange(lexer.Diagnostics);
         }
 
@@ -63,7 +64,7 @@ namespace PHPSharp.Syntax
             ExpressionSyntax expression = ParseExpression();
             SyntaxToken endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
 
-            return new SyntaxTree(Diagnostics, expression, endOfFileToken);
+            return new SyntaxTree(Diagnostics.ToImmutableArray(), expression, endOfFileToken);
         }
 
         #region Parse

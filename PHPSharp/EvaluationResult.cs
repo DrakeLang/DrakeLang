@@ -13,19 +13,19 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program.  If not, see https://www.gnu.org/licenses/.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Immutable;
 
 namespace PHPSharp
 {
     public class EvaluationResult
     {
-        public EvaluationResult(IEnumerable<Diagnostic> diagnostics, object value)
+        public EvaluationResult(ImmutableArray<Diagnostic> diagnostics, object value)
         {
-            Diagnostics = diagnostics.ToArray();
+            Diagnostics = diagnostics;
             Value = value;
         }
 
