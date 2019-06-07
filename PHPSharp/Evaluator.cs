@@ -13,6 +13,24 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+// PHP Sharp. Because PHP isn't good enough.
+// Copyright (C) 2019  Niklas Gransjøen
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
 // along with this program.  If not, see https://www.gnu.org/licenses/.
 //------------------------------------------------------------------------------
 
@@ -46,7 +64,7 @@ namespace PHPSharp
             switch (node.Kind)
             {
                 case BoundNodeKind.LiteralExpression:
-                    return EvaluateLiteral((BoundLiteralExpression)node);
+                    return EvaluateLiteralExpression((BoundLiteralExpression)node);
 
                 case BoundNodeKind.VariableExpression:
                     return EvaluateVariableExpression((BoundVariableExpression)node);
@@ -55,10 +73,10 @@ namespace PHPSharp
                     return EvaluateAssignmentExpression((BoundAssignmentExpression)node);
 
                 case BoundNodeKind.UnaryExpression:
-                    return EvaluateUnary((BoundUnaryExpression)node);
+                    return EvaluateUnaryExpression((BoundUnaryExpression)node);
 
                 case BoundNodeKind.BinaryExpression:
-                    return EvaluateBinary((BoundBinaryExpression)node);
+                    return EvaluateBinaryExpression((BoundBinaryExpression)node);
 
                 default:
                     throw new Exception($"Unexpected node '{node.Kind}'.");
@@ -69,7 +87,7 @@ namespace PHPSharp
 
         #region Private methods
 
-        private string EvaluateLiteral(BoundLiteralExpression node)
+        private string EvaluateLiteralExpression(BoundLiteralExpression node)
         {
             if (node.Type != typeof(bool))
                 return node.Value.ToString();
@@ -87,10 +105,10 @@ namespace PHPSharp
 
         private string EvaluateAssignmentExpression(BoundAssignmentExpression node)
         {
-            return "$" + node.Variable.Name + "=" + EvaluateExpression(node.Expression); 
+            return "$" + node.Variable.Name + "=" + EvaluateExpression(node.Expression);
         }
 
-        private string EvaluateUnary(BoundUnaryExpression node)
+        private string EvaluateUnaryExpression(BoundUnaryExpression node)
         {
             switch (node.Op.Kind)
             {
@@ -108,7 +126,7 @@ namespace PHPSharp
             }
         }
 
-        private string EvaluateBinary(BoundBinaryExpression node)
+        private string EvaluateBinaryExpression(BoundBinaryExpression node)
         {
             string left = "(" + EvaluateExpression(node.Left);
             string right = EvaluateExpression(node.Right) + ")";
