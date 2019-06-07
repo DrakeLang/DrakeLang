@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace PHPSharp.Syntax
@@ -36,6 +37,52 @@ namespace PHPSharp.Syntax
             }
         }
 
+        #region Methods
+
         public abstract IEnumerable<SyntaxNode> GetChildren();
+
+        public void WriteTo(TextWriter writer)
+        {
+            PrintTree(writer, this);
+        }
+
+        public override string ToString()
+        {
+            using (StringWriter writer = new StringWriter())
+            {
+                WriteTo(writer);
+                return writer.ToString();
+            }
+        }
+
+        #endregion Methods
+
+        #region Private static methods
+
+        private static void PrintTree(TextWriter write, SyntaxNode node, string indent = "", bool isLast = true)
+        {
+            var marker = isLast ? "└──" : "├──";
+
+            write.Write(indent);
+            write.Write(marker);
+            write.Write(node.Kind);
+
+            if (node is SyntaxToken t && t.Value != null)
+            {
+                write.Write(" ");
+                write.Write(t.Value);
+            }
+
+            write.WriteLine();
+
+            indent += isLast ? "   " : "│  ";
+
+            var lastChild = node.GetChildren().LastOrDefault();
+
+            foreach (var child in node.GetChildren())
+                PrintTree(write, child, indent, child == lastChild);
+        }
+
+        #endregion Private static methods
     }
 }
