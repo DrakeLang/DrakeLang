@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Syntax;
+using PHPSharp.Text;
 using System;
 using System.Collections;
 using System.Collections.Generic;
