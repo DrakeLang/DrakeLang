@@ -18,6 +18,9 @@
 
 namespace PHPSharp.Text
 {
+    /// <summary>
+    /// Describes the position and length of a section of text.
+    /// </summary>
     public struct TextSpan
     {
         public TextSpan(int start, int length)
@@ -30,6 +33,14 @@ namespace PHPSharp.Text
         public int Length { get; }
         public int End => Start + Length;
 
+        public override string ToString()
+        {
+            return $"{Start}..{End}";
+        }
+
+        /// <summary>
+        /// Creates a text span from the given start and end values.
+        /// </summary>
         public static TextSpan FromBounds(int start, int end)
         {
             int length = end - start;

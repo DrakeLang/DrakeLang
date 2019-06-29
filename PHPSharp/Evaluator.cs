@@ -174,6 +174,9 @@ namespace PHPSharp
                     return (int)left * (int)right;
 
                 case BoundBinaryOperatorKind.Division:
+                    if ((int)right == 0)
+                        return "ERR: Can't divide by zero";
+
                     return (int)left / (int)right;
 
                 case BoundBinaryOperatorKind.LogicalAnd:

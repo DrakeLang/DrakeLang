@@ -64,13 +64,13 @@ namespace PHPSharp
 
         public void ReportUndefinedUnaryOperator(TextSpan span, string operatorText, Type type)
         {
-            string message = $"Unary operator '{operatorText}' is not defined for type {type}.";
+            string message = $"Unary operator '{operatorText}' is not defined for type '{type}'.";
             Report(span, message);
         }
 
         public void ReportUndefinedBinaryOperator(TextSpan span, string operatorText, Type leftType, Type rightType)
         {
-            string message = $"Binary operator '{operatorText}' is not defined for types {leftType} and {rightType}.";
+            string message = $"Binary operator '{operatorText}' is not defined for types '{leftType}' and '{rightType}'.";
             Report(span, message);
         }
 

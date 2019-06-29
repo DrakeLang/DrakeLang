@@ -61,12 +61,15 @@ namespace PHPSharp.Binding
         private BoundBlockStatement BindBlockStatement(BlockStatementSyntax syntax)
         {
             ImmutableArray<BoundStatement>.Builder statements = ImmutableArray.CreateBuilder<BoundStatement>();
+            _scope = new BoundScope(_scope);
+
             foreach (StatementSyntax statementSyntax in syntax.Statements)
             {
                 var statement = BindStatement(statementSyntax);
                 statements.Add(statement);
             }
 
+            _scope = _scope.Parent;
             return new BoundBlockStatement(statements.ToImmutable());
         }
 

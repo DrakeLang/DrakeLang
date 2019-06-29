@@ -16,7 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace PHPSharp
@@ -29,7 +28,7 @@ namespace PHPSharp
             Value = value;
         }
 
-        public IReadOnlyList<Diagnostic> Diagnostics { get; }
+        public ImmutableArray<Diagnostic> Diagnostics { get; }
         public object Value { get; }
     }
 }

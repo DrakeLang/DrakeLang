@@ -92,7 +92,7 @@ namespace PHPSharpO
             Compilation compilation = _currentState?.ContinueWith(syntaxTree) ?? new Compilation(syntaxTree);
             EvaluationResult result = compilation.Evaluate(_variables);
 
-            if (result.Diagnostics.Count == 0)
+            if (result.Diagnostics.Length == 0)
             {
                 PrintResult(result.Value);
                 _currentState = compilation;

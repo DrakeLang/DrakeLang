@@ -17,7 +17,6 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Text;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
@@ -98,7 +97,8 @@ namespace PHPSharp.Syntax
             SyntaxToken openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
 
             while (Current.Kind != SyntaxKind.CloseBraceToken &&
-                   Current.Kind != SyntaxKind.EndOfFileToken)
+                   Current.Kind != SyntaxKind.EndOfFileToken &&
+                   Current.Kind != SyntaxKind.CloseParenthesisToken)
             {
                 StatementSyntax statement = ParseStatement();
                 statements.Add(statement);
