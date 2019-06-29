@@ -115,8 +115,9 @@ namespace PHPSharp.Syntax
             SyntaxToken identifier = MatchToken(SyntaxKind.IdentifierToken);
             SyntaxToken equals = MatchToken(SyntaxKind.EqualsToken);
             ExpressionSyntax initializer = ParseExpression();
+            SyntaxToken semicolonToken = MatchToken(SyntaxKind.SemicolonToken);
 
-            return new VariableDeclarationStatementSyntax(keyword, identifier, equals, initializer);
+            return new VariableDeclarationStatementSyntax(keyword, identifier, equals, initializer, semicolonToken);
         }
 
         private ExpressionStatementSyntax ParseExpressionStatement()

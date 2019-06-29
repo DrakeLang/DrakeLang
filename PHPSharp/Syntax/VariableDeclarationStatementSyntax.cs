@@ -22,12 +22,13 @@ namespace PHPSharp.Syntax
 {
     public sealed class VariableDeclarationStatementSyntax : StatementSyntax
     {
-        public VariableDeclarationStatementSyntax(SyntaxToken keyword, SyntaxToken identifier, SyntaxToken equalsToken, ExpressionSyntax initializer)
+        public VariableDeclarationStatementSyntax(SyntaxToken keyword, SyntaxToken identifier, SyntaxToken equalsToken, ExpressionSyntax initializer, SyntaxToken semicolonToken)
         {
             Keyword = keyword;
             Identifier = identifier;
             EqualsToken = equalsToken;
             Initializer = initializer;
+            SemicolonToken = semicolonToken;
         }
 
         #region Properties
@@ -38,6 +39,7 @@ namespace PHPSharp.Syntax
         public SyntaxToken Identifier { get; }
         public SyntaxToken EqualsToken { get; }
         public ExpressionSyntax Initializer { get; }
+        public SyntaxToken SemicolonToken { get; }
 
         #endregion Properties
 
@@ -49,6 +51,7 @@ namespace PHPSharp.Syntax
             yield return Identifier;
             yield return EqualsToken;
             yield return Initializer;
+            yield return SemicolonToken;
         }
 
         #endregion Methods

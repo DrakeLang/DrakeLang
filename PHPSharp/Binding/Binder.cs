@@ -78,7 +78,7 @@ namespace PHPSharp.Binding
             BoundExpression initializer = BindExpression(syntax.Initializer);
             VariableSymbol variable = new VariableSymbol(name, isReadOnly, initializer.Type);
 
-            if (_scope.TryDeclare(variable))
+            if (!_scope.TryDeclare(variable))
                 Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
 
             return new BoundVariableDeclarationStatement(variable, initializer);

@@ -38,12 +38,7 @@ namespace PHPSharpO
 
             while (true)
             {
-                if (input.Length == 0)
-                    Console.Write("> ");
-                else
-                    Console.Write("| ");
-
-                string line = Console.ReadLine();
+                string line = ReadInput(input.Length == 0);
                 if (line != null && line.StartsWith('#'))
                 {
                     switch (line.Substring(1))
@@ -99,7 +94,7 @@ namespace PHPSharpO
 
             if (result.Diagnostics.Count == 0)
             {
-                Console.WriteLine(result.Value);
+                PrintResult(result.Value);
                 _currentState = compilation;
             }
             else
@@ -138,6 +133,32 @@ namespace PHPSharpO
             }
         }
 
+        #region Console helpers
+
+        private static string ReadInput(bool firstLine)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+
+            if (firstLine)
+                Console.Write("> ");
+            else
+                Console.Write("| ");
+
+            string input = Console.ReadLine();
+            Console.ResetColor();
+
+            return input;
+        }
+
+        private static void PrintResult(object result)
+        {
+            Console.ForegroundColor = ConsoleColor.Magenta;
+
+            Console.WriteLine(result);
+
+            Console.ResetColor();
+        }
+
         private static void PrintTreeToConsole(SyntaxTree tree)
         {
             Console.ForegroundColor = ConsoleColor.DarkGray;
@@ -146,5 +167,7 @@ namespace PHPSharpO
 
             Console.ResetColor();
         }
+
+        #endregion Console helpers
     }
 }
