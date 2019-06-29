@@ -19,17 +19,17 @@
 using PHPSharp.Syntax;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Immutable;
 
 namespace PHPSharp.Binding
 {
     internal class Binder
     {
-        private readonly Dictionary<VariableSymbol, object> _variables;
+        private BoundScope _scope;
 
-        public Binder(Dictionary<VariableSymbol, object> variables)
+        public Binder(BoundScope parent)
         {
-            _variables = variables;
+            _scope = new BoundScope(parent);
         }
 
         #region Properties
@@ -85,9 +85,7 @@ namespace PHPSharp.Binding
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
         {
             string name = syntax.IdentifierToken.Text;
-            VariableSymbol variable = _variables.Keys.FirstOrDefault(v => v.Name == name);
-
-            if (variable == null)
+            if (!_scope.TryLookup(name, out VariableSymbol variable))
             {
                 Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
                 return new BoundLiteralExpression(0);
@@ -101,15 +99,17 @@ namespace PHPSharp.Binding
             string name = syntax.IdentifierToken.Text;
             BoundExpression boundExpression = BindExpression(syntax.Expression);
 
-            VariableSymbol existingVariable = _variables.Keys.FirstOrDefault(v => v.Name == name);
-            if (existingVariable != null)
-                _variables.Remove(existingVariable);
+            if (!_scope.TryLookup(name, out VariableSymbol variable))
+            {
+                variable = new VariableSymbol(name, boundExpression.Type);
+                _scope.TryDeclare(variable);
+            }
 
-            VariableSymbol variable = new VariableSymbol(name, boundExpression.Type);
-            _variables[variable] = 
-                boundExpression.Type == typeof(int) ? default(int) :
-                boundExpression.Type == typeof(bool) ? (object)default(bool) :
-                throw new Exception($"Unsuported variable type: {boundExpression.Type}");
+            if (boundExpression.Type != variable.Type)
+            {
+                Diagnostics.ReportCannotConvert(syntax.Expression.Span, boundExpression.Type, variable.Type);
+                return boundExpression;
+            }
 
             return new BoundAssignmentExpression(variable, boundExpression);
         }
@@ -144,5 +144,47 @@ namespace PHPSharp.Binding
         }
 
         #endregion Private methods
+
+        #region Statics
+
+        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope previous, CompilationUnitSyntax syntax)
+        {
+            BoundScope parentScope = CreateParentScopes(previous);
+
+            Binder binder = new Binder(parentScope);
+            BoundExpression expression = binder.BindExpression(syntax.Expression);
+            ImmutableArray<VariableSymbol> variables = binder._scope.GetDeclaredVariables();
+
+            ImmutableArray<Diagnostic> diagnostics = previous == null ? 
+                binder.Diagnostics.ToImmutableArray() :
+                previous.Diagnostics.AddRange(binder.Diagnostics);
+
+            return new BoundGlobalScope(previous, diagnostics, variables, expression);
+        }
+
+        private static BoundScope CreateParentScopes(BoundGlobalScope previous)
+        {
+            Stack<BoundGlobalScope> stack = new Stack<BoundGlobalScope>();
+            while (previous != null)
+            {
+                stack.Push(previous);
+                previous = previous.Previous;
+            }
+
+            BoundScope parent = null;
+            while (stack.Count > 0)
+            {
+                previous = stack.Pop();
+                BoundScope scope = new BoundScope(parent);
+                foreach (var v in previous.Variables)
+                    scope.TryDeclare(v);
+
+                parent = scope;
+            }
+
+            return parent;
+        }
+
+        #endregion Statics
     }
 }

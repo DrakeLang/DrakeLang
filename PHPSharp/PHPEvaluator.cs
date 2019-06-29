@@ -22,12 +22,12 @@ using System.Collections.Generic;
 
 namespace PHPSharp
 {
-    public class Evaluator
+    public class PHPEvaluator
     {
         private readonly BoundExpression _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
 
-        public Evaluator(BoundExpression root, Dictionary<VariableSymbol, object> variables)
+        public PHPEvaluator(BoundExpression root, Dictionary<VariableSymbol, object> variables)
         {
             _root = root;
             _variables = variables;
@@ -35,9 +35,13 @@ namespace PHPSharp
 
         #region Methods
 
-        public object Evaluate() => EvaluateExpression(_root);
+        public string Evaluate()
+        {
+            string result = EvaluateExpression(_root);
+            return string.Format("<?php {0} ?>", result);
+        }
 
-        private object EvaluateExpression(BoundExpression node)
+        private string EvaluateExpression(BoundExpression node)
         {
             switch (node.Kind)
             {
@@ -65,78 +69,75 @@ namespace PHPSharp
 
         #region Private methods
 
-        private object EvaluateLiteralExpression(BoundLiteralExpression node)
+        private string EvaluateLiteralExpression(BoundLiteralExpression node)
         {
             if (node.Type != typeof(bool))
-                return node.Value;
+                return node.Value.ToString();
             else
             {
-                return (bool)node.Value;
+                bool boolVal = (bool)node.Value;
+                return boolVal ? "true" : "false";
             }
         }
 
-        private object EvaluateVariableExpression(BoundVariableExpression node)
+        private string EvaluateVariableExpression(BoundVariableExpression node)
         {
-            return _variables[node.Variable];
+            return "$" + node.Variable.Name;
         }
 
-        private object EvaluateAssignmentExpression(BoundAssignmentExpression node)
+        private string EvaluateAssignmentExpression(BoundAssignmentExpression node)
         {
-            object value = EvaluateExpression(node.Expression);
-            _variables[node.Variable] = value;
-
-            return value;
+            return "$" + node.Variable.Name + "=" + EvaluateExpression(node.Expression);
         }
 
-        private object EvaluateUnaryExpression(BoundUnaryExpression node)
+        private string EvaluateUnaryExpression(BoundUnaryExpression node)
         {
-            object operant = EvaluateExpression(node.Operand);
             switch (node.Op.Kind)
             {
                 case BoundUnaryOperatorKind.Identity:
-                    return (int)operant;
+                    return EvaluateExpression(node.Operand);
 
                 case BoundUnaryOperatorKind.Negation:
-                    return -(int)operant;
+                    return "-" + EvaluateExpression(node.Operand);
 
                 case BoundUnaryOperatorKind.LogicalNegation:
-                    return !(bool)operant;
+                    return "!" + EvaluateExpression(node.Operand);
 
                 default:
                     throw new Exception($"Unexpected unary operator '{node.Op.Kind}'.");
             }
         }
 
-        private object EvaluateBinaryExpression(BoundBinaryExpression node)
+        private string EvaluateBinaryExpression(BoundBinaryExpression node)
         {
-            object left = EvaluateExpression(node.Left);
-            object right = EvaluateExpression(node.Right);
+            string left = "(" + EvaluateExpression(node.Left);
+            string right = EvaluateExpression(node.Right) + ")";
 
             switch (node.Op.Kind)
             {
                 case BoundBinaryOperatorKind.Addition:
-                    return (int)left + (int)right;
+                    return left + "+" + right;
 
                 case BoundBinaryOperatorKind.Subtraction:
-                    return (int)left - (int)right;
+                    return left + "-" + right;
 
                 case BoundBinaryOperatorKind.Multiplication:
-                    return (int)left * (int)right;
+                    return left + "*" + right;
 
                 case BoundBinaryOperatorKind.Division:
-                    return (int)left / (int)right;
+                    return left + "/" + right;
 
                 case BoundBinaryOperatorKind.LogicalAnd:
-                    return (bool)left && (bool)right;
+                    return left + "&&" + right;
 
                 case BoundBinaryOperatorKind.LogicalOr:
-                    return (bool)left || (bool)right;
+                    return left + "||" + right;
 
                 case BoundBinaryOperatorKind.Equals:
-                    return Equals(left, right);
+                    return left + "==" + right;
 
                 case BoundBinaryOperatorKind.NotEquals:
-                    return !Equals(left, right);
+                    return left + "!=" + right;
 
                 default:
                     throw new Exception($"Unexpected binary operator '{node.Op.Kind}'.");

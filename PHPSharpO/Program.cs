@@ -21,78 +21,74 @@ using PHPSharp.Syntax;
 using PHPSharp.Text;
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace PHPSharpO
 {
     internal class Program
     {
+        private static bool _showTree = false;
+
+        private static Compilation _currentState;
+        private readonly static Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
+
         private static void Main()
         {
-            bool showTree = true;
             while (true)
             {
                 Console.Write("> ");
-                string line = Console.ReadLine();
+                string input = Console.ReadLine();
 
-                switch (line)
+                if (input != null && input.StartsWith('#'))
                 {
-                    case "":
-                        string filepath = @"C:\users\Niklas\documents\example.phps";
-                        Console.WriteLine("No file given. Defaults to {0}", filepath);
-                        ParseFile(filepath, showTree);
-                        break;
+                    switch (input.Substring(1))
+                    {
+                        case "tree":
+                            _showTree ^= true;
+                            Console.WriteLine(_showTree ? "Parse tree visible" : "Parse tree hidden");
+                            break;
 
-                    case "tree":
-                        showTree ^= true;
-                        Console.WriteLine(showTree ? "Parse tree visible" : "Parse tree hidden");
-                        break;
+                        case "cls":
+                        case "clear":
+                            Console.Clear();
+                            break;
 
-                    case "cls":
-                    case "clear":
-                        Console.Clear();
-                        break;
+                        case "reset":
+                            _currentState = null;
+                            _variables.Clear();
+                            break;
 
-                    case "exit":
-                        return;
+                        case "exit":
+                            return;
 
-                    default:
-                        if (File.Exists(line))
-                            ParseFile(line, showTree);
-                        else if (line.StartsWith("c", StringComparison.InvariantCultureIgnoreCase))
-                            Parse(line.Substring(1), showTree);
-                        else
-                            Console.WriteLine("Invalid command");
-                        break;
+                        default:
+                            Console.WriteLine("Invalid command.");
+                            break;
+                    }
                 }
+                else if (!string.IsNullOrWhiteSpace(input))
+                    Parse(input);
             }
-        }
-
-        /// <summary>
-        /// Parses a file.
-        /// </summary>
-        /// <param name="path">The path of the file to parse.</param>
-        private static void ParseFile(string path, bool showTree)
-        {
-            string content = File.ReadAllText(path);
-            Parse(content, showTree);
         }
 
         /// <summary>
         /// Parses a string.
         /// </summary>
         /// <param name="content">The string to parse.</param>
-        private static void Parse(string content, bool showTree)
+        private static void Parse(string content)
         {
             SyntaxTree syntaxTree = SyntaxTree.Parse(content);
 
-            if (showTree)
+            if (_showTree)
                 PrintTreeToConsole(syntaxTree);
 
-            Compilation compilation = new Compilation(syntaxTree);
-            EvaluationResult result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
+            Compilation compilation = _currentState?.ContinueWith(syntaxTree) ?? new Compilation(syntaxTree);
+            EvaluationResult result = compilation.Evaluate(_variables);
+
             if (result.Diagnostics.Count == 0)
+            {
                 Console.WriteLine(result.Value);
+                _currentState = compilation;
+            }
             else
             {
                 SourceText text = syntaxTree.Text;
