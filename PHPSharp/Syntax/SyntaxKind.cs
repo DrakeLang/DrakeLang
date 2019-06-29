@@ -43,6 +43,9 @@ namespace PHPSharp.Syntax
         TrueKeyword,
         FalseKeyword,
 
+        // Nodes
+        CompilationUnit,
+
         // Expressions
         LiteralExpression,
         NameExpression,
@@ -50,5 +53,6 @@ namespace PHPSharp.Syntax
         BinaryExpression,
         ParenthesizedExpression,
         AssignmentExpression,
+
     }
 }

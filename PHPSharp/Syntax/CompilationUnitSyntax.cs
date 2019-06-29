@@ -16,40 +16,30 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using PHPSharp.Binding;
-using PHPSharp.Syntax;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
 
-namespace PHPSharp
+namespace PHPSharp.Syntax
 {
-    public class Compilation
+    /// <summary>
+    /// Root object of a compilation.
+    /// </summary>
+    public sealed class CompilationUnitSyntax : SyntaxNode
     {
-        public Compilation(SyntaxTree syntaxTree)
+        public CompilationUnitSyntax(ExpressionSyntax expression, SyntaxToken endOfFileToken)
         {
-            Syntax = syntaxTree;
+            Expression = expression;
+            EndOfFileToken = endOfFileToken;
         }
 
-        public SyntaxTree Syntax { get; }
+        public ExpressionSyntax Expression { get; }
+        public SyntaxToken EndOfFileToken { get; }
 
-        #region Methods
+        public override SyntaxKind Kind => SyntaxKind.CompilationUnit;
 
-        public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
+        public override IEnumerable<SyntaxNode> GetChildren()
         {
-            Binder binder = new Binder(variables);
-            BoundExpression boundExpression = binder.BindExpression(Syntax.Root.Expression);
-
-            IEnumerable<Diagnostic> diagnostics = Syntax.Diagnostics.Concat(binder.Diagnostics);
-            if (diagnostics.Any())
-                return new EvaluationResult(diagnostics.ToImmutableArray(), null);
-
-            Evaluator evaluator = new Evaluator(boundExpression, variables);
-            string value = evaluator.Evaluate();
-
-            return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, value);
+            yield return Expression;
+            yield return EndOfFileToken;
         }
-
-        #endregion Methods
     }
 }

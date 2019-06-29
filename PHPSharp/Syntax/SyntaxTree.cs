@@ -17,40 +17,38 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Text;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 
 namespace PHPSharp.Syntax
 {
     public class SyntaxTree
     {
-        public SyntaxTree(SourceText text, ImmutableArray<Diagnostic> diagnostics, ExpressionSyntax root, SyntaxToken endOfFileToken)
+        private SyntaxTree(SourceText text)
         {
+            Parser parser = new Parser(text);
+            CompilationUnitSyntax root = parser.ParseCompilationUnit();
+            ImmutableArray<Diagnostic> diagnostics = parser.Diagnostics.ToImmutableArray();
+
             Text = text;
             Diagnostics = diagnostics;
             Root = root;
-            EndOfFileToken = endOfFileToken;
         }
 
         #region Properties
 
         public SourceText Text { get; }
         public IReadOnlyList<Diagnostic> Diagnostics { get; }
-        public ExpressionSyntax Root { get; }
-        public SyntaxToken EndOfFileToken { get; }
+        public CompilationUnitSyntax Root { get; }
 
         #endregion Properties
 
         #region Methods
 
-        public void PrintTree(ConsoleColor textcolor)
+        public void PrintTree(TextWriter writer)
         {
-            Console.ForegroundColor = textcolor;
-
-            Root.WriteTo(Console.Out);
-
-            Console.ResetColor();
+            Root.WriteTo(writer);
         }
 
         #endregion Methods
@@ -65,7 +63,7 @@ namespace PHPSharp.Syntax
 
         public static SyntaxTree Parse(SourceText text)
         {
-            return new Parser(text).Parse();
+            return new SyntaxTree(text);
         }
 
         public static IEnumerable<SyntaxToken> ParseTokens(string text)

@@ -87,7 +87,7 @@ namespace PHPSharpO
             SyntaxTree syntaxTree = SyntaxTree.Parse(content);
 
             if (showTree)
-                syntaxTree.PrintTree(ConsoleColor.DarkGray);
+                PrintTreeToConsole(syntaxTree);
 
             Compilation compilation = new Compilation(syntaxTree);
             EvaluationResult result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
@@ -127,6 +127,15 @@ namespace PHPSharpO
 
                 Console.WriteLine();
             }
+        }
+
+        private static void PrintTreeToConsole(SyntaxTree tree)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+
+            tree.PrintTree(Console.Out);
+
+            Console.ResetColor();
         }
     }
 }
