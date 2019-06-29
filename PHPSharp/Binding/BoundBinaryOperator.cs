@@ -42,12 +42,6 @@ namespace PHPSharp.Binding
             ResultType = resultType;
         }
 
-        public BoundBinaryOperator(SyntaxKind equalsEqualsToken, Func<object, bool> equals)
-        {
-            this.equalsEqualsToken = equalsEqualsToken;
-            this.equals = equals;
-        }
-
         #region Properties
 
         public SyntaxKind SyntaxKind { get; }
@@ -75,8 +69,9 @@ namespace PHPSharp.Binding
 
         #region Private statics
 
-        private static BoundBinaryOperator[] _operators =
+        private static readonly BoundBinaryOperator[] _operators =
         {
+            // Integer
             new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, typeof(int)),
             new BoundBinaryOperator(SyntaxKind.MinusToken, BoundBinaryOperatorKind.Subtraction, typeof(int)),
             new BoundBinaryOperator(SyntaxKind.StarToken, BoundBinaryOperatorKind.Multiplication, typeof(int)),
@@ -84,15 +79,21 @@ namespace PHPSharp.Binding
 
             new BoundBinaryOperator(SyntaxKind.EqualsEqualsToken, BoundBinaryOperatorKind.Equals, typeof(int), typeof(bool)),
             new BoundBinaryOperator(SyntaxKind.BangEqualsToken, BoundBinaryOperatorKind.NotEquals , typeof(int), typeof(bool)),
+            new BoundBinaryOperator(SyntaxKind.LessToken, BoundBinaryOperatorKind.LessThan, typeof(int), typeof(bool)),
+            new BoundBinaryOperator(SyntaxKind.LessOrEqualsToken, BoundBinaryOperatorKind.LessThanOrEquals, typeof(int), typeof(bool)),
+            new BoundBinaryOperator(SyntaxKind.GreaterToken, BoundBinaryOperatorKind.GreaterThan, typeof(int), typeof(bool)),
+            new BoundBinaryOperator(SyntaxKind.GreaterOrEqualsToken, BoundBinaryOperatorKind.GreaterThanOrEquals, typeof(int), typeof(bool)),
 
+            // Boolean
             new BoundBinaryOperator(SyntaxKind.AmpersandAmpersandToken, BoundBinaryOperatorKind.LogicalAnd, typeof(bool)),
             new BoundBinaryOperator(SyntaxKind.PipePipeToken, BoundBinaryOperatorKind.LogicalOr, typeof(bool)),
             new BoundBinaryOperator(SyntaxKind.EqualsEqualsToken, BoundBinaryOperatorKind.Equals, typeof(bool)),
             new BoundBinaryOperator(SyntaxKind.BangEqualsToken, BoundBinaryOperatorKind.NotEquals, typeof(bool)),
+            new BoundBinaryOperator(SyntaxKind.LessToken, BoundBinaryOperatorKind.LessThan, typeof(bool)),
+            new BoundBinaryOperator(SyntaxKind.LessOrEqualsToken, BoundBinaryOperatorKind.LessThanOrEquals, typeof(bool)),
+            new BoundBinaryOperator(SyntaxKind.GreaterToken, BoundBinaryOperatorKind.GreaterThan, typeof(bool)),
+            new BoundBinaryOperator(SyntaxKind.GreaterOrEqualsToken, BoundBinaryOperatorKind.GreaterThanOrEquals, typeof(bool)),
         };
-
-        private SyntaxKind equalsEqualsToken;
-        private Func<object, bool> equals;
 
         #endregion Private statics
     }

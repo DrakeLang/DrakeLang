@@ -146,6 +146,29 @@ namespace PHPSharp.Syntax
                         _kind = SyntaxKind.BangToken;
                     break;
 
+                case '<':
+                    _position++;
+                    if (Current == '=')
+                    {
+                        _kind = SyntaxKind.LessOrEqualsToken;
+                        _position++;
+                    }
+                    else
+                        _kind = SyntaxKind.LessToken;
+
+                    break;
+
+                case '>':
+                    _position++;
+                    if (Current == '=')
+                    {
+                        _kind = SyntaxKind.GreaterOrEqualsToken;
+                        _position++;
+                    }
+                    else
+                        _kind = SyntaxKind.GreaterToken;
+                    break;
+
                 case '0':
                 case '1':
                 case '2':
