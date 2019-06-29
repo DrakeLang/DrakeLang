@@ -139,11 +139,20 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.CloseParenthesisToken:
                     return ")";
 
+                case SyntaxKind.OpenBraceToken:
+                    return "{";
+
+                case SyntaxKind.CloseBraceToken:
+                    return "}";
+
                 case SyntaxKind.TrueKeyword:
                     return "true";
 
                 case SyntaxKind.FalseKeyword:
                     return "false";
+
+                case SyntaxKind.SemicolonToken:
+                    return ";";
 
                 default:
                     return null;

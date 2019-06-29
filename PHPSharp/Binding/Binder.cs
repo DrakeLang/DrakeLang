@@ -38,9 +38,46 @@ namespace PHPSharp.Binding
 
         #endregion Properties
 
-        #region Methods
+        #region BindStatement
 
-        public BoundExpression BindExpression(ExpressionSyntax syntax)
+        private BoundStatement BindStatement(StatementSyntax syntax)
+        {
+            switch (syntax.Kind)
+            {
+                case SyntaxKind.BlockStatement:
+                    return BindBlockStatement((BlockStatementSyntax)syntax);
+
+                case SyntaxKind.ExpressionStatement:
+                    return BindExpressionStatement((ExpressionStatementSyntax)syntax);
+
+                default:
+                    throw new Exception($"Unexpected syntax {syntax.Kind}");
+            }
+        }
+
+        private BoundBlockStatement BindBlockStatement(BlockStatementSyntax syntax)
+        {
+            ImmutableArray<BoundStatement>.Builder statements = ImmutableArray.CreateBuilder<BoundStatement>();
+            foreach (StatementSyntax statementSyntax in syntax.Statements)
+            {
+                var statement = BindStatement(statementSyntax);
+                statements.Add(statement);
+            }
+
+            return new BoundBlockStatement(statements.ToImmutable());
+        }
+
+        private BoundExpressionStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
+        {
+            BoundExpression expression = BindExpression(syntax.Expression);
+            return new BoundExpressionStatement(expression);
+        }
+
+        #endregion BindStatement
+
+        #region BindExpression
+
+        private BoundExpression BindExpression(ExpressionSyntax syntax)
         {
             switch (syntax.Kind)
             {
@@ -66,10 +103,6 @@ namespace PHPSharp.Binding
                     throw new Exception($"Unexpected syntax {syntax.Kind}");
             }
         }
-
-        #endregion Methods
-
-        #region Private methods
 
         private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax)
         {
@@ -143,7 +176,7 @@ namespace PHPSharp.Binding
             return new BoundBinaryExpression(boundLeft, op, boundRight);
         }
 
-        #endregion Private methods
+        #endregion BindExpression
 
         #region Statics
 
@@ -152,14 +185,14 @@ namespace PHPSharp.Binding
             BoundScope parentScope = CreateParentScopes(previous);
 
             Binder binder = new Binder(parentScope);
-            BoundExpression expression = binder.BindExpression(syntax.Expression);
+            BoundStatement statement = binder.BindStatement(syntax.Statement);
             ImmutableArray<VariableSymbol> variables = binder._scope.GetDeclaredVariables();
 
-            ImmutableArray<Diagnostic> diagnostics = previous == null ? 
+            ImmutableArray<Diagnostic> diagnostics = previous == null ?
                 binder.Diagnostics.ToImmutableArray() :
                 previous.Diagnostics.AddRange(binder.Diagnostics);
 
-            return new BoundGlobalScope(previous, diagnostics, variables, expression);
+            return new BoundGlobalScope(previous, diagnostics, variables, statement);
         }
 
         private static BoundScope CreateParentScopes(BoundGlobalScope previous)

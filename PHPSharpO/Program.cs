@@ -21,6 +21,7 @@ using PHPSharp.Syntax;
 using PHPSharp.Text;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace PHPSharpO
 {
@@ -33,14 +34,20 @@ namespace PHPSharpO
 
         private static void Main()
         {
+            bool firstLine = true;
+            StringBuilder input = new StringBuilder();
+
             while (true)
             {
-                Console.Write("> ");
-                string input = Console.ReadLine();
+                if (firstLine)
+                    Console.Write("> ");
+                else
+                    Console.Write("| ");
 
-                if (input != null && input.StartsWith('#'))
+                string line = Console.ReadLine();
+                if (line != null && line.StartsWith('#'))
                 {
-                    switch (input.Substring(1))
+                    switch (line.Substring(1))
                     {
                         case "tree":
                             _showTree ^= true;
@@ -65,8 +72,21 @@ namespace PHPSharpO
                             break;
                     }
                 }
-                else if (!string.IsNullOrWhiteSpace(input))
-                    Parse(input);
+                else if (!string.IsNullOrWhiteSpace(line))
+                {
+                    input.Append(line);
+                    firstLine = false;
+                }
+                else
+                {
+                    if (input.Length > 0)
+                    {
+                        Parse(input.ToString());
+                        input.Clear();
+                    }
+
+                    firstLine = true;
+                }
             }
         }
 

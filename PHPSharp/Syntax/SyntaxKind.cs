@@ -23,6 +23,7 @@ namespace PHPSharp.Syntax
         // Tokens
         BadToken,
         EndOfFileToken,
+        SemicolonToken,
         NumberToken,
         PlusToken,
         MinusToken,
@@ -36,6 +37,8 @@ namespace PHPSharp.Syntax
         BangEqualsToken,
         OpenParenthesisToken,
         CloseParenthesisToken,
+        OpenBraceToken,
+        CloseBraceToken,
         IdentifierToken,
         WhitespaceToken,
 
@@ -48,6 +51,7 @@ namespace PHPSharp.Syntax
 
         // Statements
         BlockStatement,
+        ExpressionStatement,
 
         // Expressions
         LiteralExpression,

@@ -20,7 +20,7 @@ using System;
 
 namespace PHPSharp.Binding
 {
-    public abstract class BoundExpression : BoundNode
+    internal abstract class BoundExpression : BoundNode
     {
         protected BoundExpression()
         {

@@ -16,23 +16,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Immutable;
-
 namespace PHPSharp.Binding
 {
-    internal sealed class BoundGlobalScope
+    internal sealed class BoundExpressionStatement : BoundStatement
     {
-        public BoundGlobalScope(BoundGlobalScope previous, ImmutableArray<Diagnostic> diagnostics, ImmutableArray<VariableSymbol> variables, BoundStatement statement)
+        public BoundExpressionStatement(BoundExpression expression)
         {
-            Previous = previous;
-            Diagnostics = diagnostics;
-            Variables = variables;
-            Statement = statement;
+            Expression = expression;
         }
 
-        public BoundGlobalScope Previous { get; }
-        public ImmutableArray<Diagnostic> Diagnostics { get; }
-        public ImmutableArray<VariableSymbol> Variables { get; }
-        public BoundStatement Statement { get; }
+        #region Properties
+
+        public override BoundNodeKind Kind => BoundNodeKind.ExpressionStatement;
+
+        public BoundExpression Expression { get; }
+
+        #endregion Properties
     }
 }

@@ -16,23 +16,35 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Immutable;
+using System.Collections.Generic;
 
-namespace PHPSharp.Binding
+namespace PHPSharp.Syntax
 {
-    internal sealed class BoundGlobalScope
+    public sealed class ExpressionStatementSyntax : StatementSyntax
     {
-        public BoundGlobalScope(BoundGlobalScope previous, ImmutableArray<Diagnostic> diagnostics, ImmutableArray<VariableSymbol> variables, BoundStatement statement)
+        public ExpressionStatementSyntax(ExpressionSyntax expression, SyntaxToken semicolonToken)
         {
-            Previous = previous;
-            Diagnostics = diagnostics;
-            Variables = variables;
-            Statement = statement;
+            Expression = expression;
+            SemicolonToken = semicolonToken;
         }
 
-        public BoundGlobalScope Previous { get; }
-        public ImmutableArray<Diagnostic> Diagnostics { get; }
-        public ImmutableArray<VariableSymbol> Variables { get; }
-        public BoundStatement Statement { get; }
+        #region Properties
+
+        public override SyntaxKind Kind => SyntaxKind.ExpressionStatement;
+
+        public ExpressionSyntax Expression { get; }
+        public SyntaxToken SemicolonToken { get; }
+
+        #endregion Properties
+
+        #region Methods
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return Expression;
+            yield return SemicolonToken;
+        }
+
+        #endregion Methods
     }
 }

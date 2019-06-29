@@ -20,6 +20,11 @@ namespace PHPSharp.Binding
 {
     public enum BoundNodeKind
     {
+        // Statements
+        BlockStatement,
+        ExpressionStatement,
+
+        // Expressions
         LiteralExpression,
         VariableExpression,
         AssignmentExpression,

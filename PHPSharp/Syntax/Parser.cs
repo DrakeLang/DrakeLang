@@ -64,15 +64,49 @@ namespace PHPSharp.Syntax
 
         public CompilationUnitSyntax ParseCompilationUnit()
         {
-            ExpressionSyntax expression = ParseExpression();
+            StatementSyntax statement = ParseStatement();
             SyntaxToken endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
 
-            return new CompilationUnitSyntax(expression, endOfFileToken);
+            return new CompilationUnitSyntax(statement, endOfFileToken);
         }
 
         #endregion Methods
 
         #region Parse
+
+        private StatementSyntax ParseStatement()
+        {
+            if (Current.Kind == SyntaxKind.OpenBraceToken)
+                return ParseBlockStatement();
+
+            return ParseExpressionStatement();
+        }
+
+        private BlockStatementSyntax ParseBlockStatement()
+        {
+            ImmutableArray<StatementSyntax>.Builder statements = ImmutableArray.CreateBuilder<StatementSyntax>();
+
+            SyntaxToken openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
+
+            while (Current.Kind != SyntaxKind.CloseBraceToken &&
+                   Current.Kind != SyntaxKind.EndOfFileToken)
+            {
+                StatementSyntax statement = ParseStatement();
+                statements.Add(statement);
+            }
+
+            SyntaxToken closeBraceToken = MatchToken(SyntaxKind.CloseBraceToken);
+
+            return new BlockStatementSyntax(openBraceToken, statements.ToImmutable(), closeBraceToken);
+        }
+
+        private ExpressionStatementSyntax ParseExpressionStatement()
+        {
+            ExpressionSyntax expression = ParseExpression();
+            SyntaxToken semicolonToken = MatchToken(SyntaxKind.SemicolonToken);
+
+            return new ExpressionStatementSyntax(expression, semicolonToken);
+        }
 
         private ExpressionSyntax ParseExpression(int parentPrecedence = 0)
         {
@@ -154,12 +188,6 @@ namespace PHPSharp.Syntax
             return new LiteralExpressionSyntax(keywordToken, isTrue);
         }
 
-        private ExpressionSyntax ParseNameExpression()
-        {
-            SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
-            return new NameExpressionSyntax(identifierToken);
-        }
-
         private ExpressionSyntax ParseNumberLiteral()
         {
             SyntaxToken numberToken = MatchToken(SyntaxKind.NumberToken);
@@ -167,6 +195,12 @@ namespace PHPSharp.Syntax
                 Diagnostics.ReportInvalidNumber(numberToken.Span, numberToken.Text, typeof(int));
 
             return new LiteralExpressionSyntax(numberToken, value);
+        }
+
+        private ExpressionSyntax ParseNameExpression()
+        {
+            SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
+            return new NameExpressionSyntax(identifierToken);
         }
 
         #endregion Parse

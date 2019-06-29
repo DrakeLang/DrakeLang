@@ -20,19 +20,19 @@ using System.Collections.Immutable;
 
 namespace PHPSharp.Binding
 {
-    internal sealed class BoundGlobalScope
+    internal sealed class BoundBlockStatement : BoundStatement
     {
-        public BoundGlobalScope(BoundGlobalScope previous, ImmutableArray<Diagnostic> diagnostics, ImmutableArray<VariableSymbol> variables, BoundStatement statement)
+        public BoundBlockStatement(ImmutableArray<BoundStatement> statements)
         {
-            Previous = previous;
-            Diagnostics = diagnostics;
-            Variables = variables;
-            Statement = statement;
+            Statements = statements;
         }
 
-        public BoundGlobalScope Previous { get; }
-        public ImmutableArray<Diagnostic> Diagnostics { get; }
-        public ImmutableArray<VariableSymbol> Variables { get; }
-        public BoundStatement Statement { get; }
+        #region Properties
+
+        public override BoundNodeKind Kind => BoundNodeKind.BlockStatement;
+
+        public ImmutableArray<BoundStatement> Statements { get; }
+
+        #endregion Properties
     }
 }

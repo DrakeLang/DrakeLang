@@ -16,23 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Immutable;
-
-namespace PHPSharp.Binding
+namespace PHPSharp.Syntax
 {
-    internal sealed class BoundGlobalScope
+    public abstract class StatementSyntax : SyntaxNode
     {
-        public BoundGlobalScope(BoundGlobalScope previous, ImmutableArray<Diagnostic> diagnostics, ImmutableArray<VariableSymbol> variables, BoundStatement statement)
-        {
-            Previous = previous;
-            Diagnostics = diagnostics;
-            Variables = variables;
-            Statement = statement;
-        }
-
-        public BoundGlobalScope Previous { get; }
-        public ImmutableArray<Diagnostic> Diagnostics { get; }
-        public ImmutableArray<VariableSymbol> Variables { get; }
-        public BoundStatement Statement { get; }
     }
 }

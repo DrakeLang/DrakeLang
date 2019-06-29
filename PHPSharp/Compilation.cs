@@ -70,7 +70,7 @@ namespace PHPSharp
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics.ToImmutableArray(), null);
 
-            Evaluator evaluator = new Evaluator(GlobalScope.Expression, variables);
+            Evaluator evaluator = new Evaluator(GlobalScope.Statement, variables);
             object result = evaluator.Evaluate();
 
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, result);

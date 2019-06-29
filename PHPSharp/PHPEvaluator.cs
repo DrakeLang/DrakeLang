@@ -22,7 +22,7 @@ using System.Collections.Generic;
 
 namespace PHPSharp
 {
-    public class PHPEvaluator
+    internal class PHPEvaluator
     {
         private readonly BoundExpression _root;
         private readonly Dictionary<VariableSymbol, object> _variables;

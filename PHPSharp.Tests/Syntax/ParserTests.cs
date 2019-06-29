@@ -35,7 +35,7 @@ namespace PHPSharp.Tests.Syntax
             string op2Text = SyntaxFacts.GetText(op2);
             string text = $"a {op1Text} b {op2Text} c";
 
-            ExpressionSyntax expression = SyntaxTree.Parse(text).Root.Expression;
+            ExpressionSyntax expression = ParseExpression(text);
 
             if (op1Precedence >= op2Precedence)
             {
@@ -82,7 +82,7 @@ namespace PHPSharp.Tests.Syntax
             string binaryText = SyntaxFacts.GetText(binaryKind);
             string text = $"{unaryText} a {binaryText} b";
 
-            ExpressionSyntax expression = SyntaxTree.Parse(text).Root.Expression;
+            ExpressionSyntax expression = ParseExpression(text);
 
             if (unaryPrecedence >= binaryPrecedence)
             {
@@ -112,6 +112,15 @@ namespace PHPSharp.Tests.Syntax
                     e.AssertToken(SyntaxKind.IdentifierToken, "b");
                 }
             }
+        }
+
+        private static ExpressionSyntax ParseExpression(string text)
+        {
+            SyntaxTree syntaxTree = SyntaxTree.Parse(text);
+            CompilationUnitSyntax root = syntaxTree.Root;
+            StatementSyntax statement = root.Statement;
+
+            return Assert.IsType<ExpressionStatementSyntax>(statement).Expression;
         }
 
         public static IEnumerable<object[]> GetBinaryOperatorPairsData()

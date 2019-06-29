@@ -44,8 +44,6 @@ namespace PHPSharp.Syntax
 
         private char Current => Peek(0);
 
-        private char LookAhead => Peek(1);
-
         #endregion Private properties
 
         #region Methods
@@ -60,6 +58,11 @@ namespace PHPSharp.Syntax
             {
                 case '\0':
                     _kind = SyntaxKind.EndOfFileToken;
+                    break;
+
+                case ';':
+                    _kind = SyntaxKind.SemicolonToken;
+                    _position++;
                     break;
 
                 case '+':
@@ -89,6 +92,16 @@ namespace PHPSharp.Syntax
 
                 case ')':
                     _kind = SyntaxKind.CloseParenthesisToken;
+                    _position++;
+                    break;
+
+                case '{':
+                    _kind = SyntaxKind.OpenBraceToken;
+                    _position++;
+                    break;
+
+                case '}':
+                    _kind = SyntaxKind.CloseBraceToken;
                     _position++;
                     break;
 
