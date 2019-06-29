@@ -93,46 +93,44 @@ namespace PHPSharp.Syntax
                     break;
 
                 case '&':
-                    if (LookAhead == '&')
+                    _position++;
+                    if (Current == '&')
                     {
                         _kind = SyntaxKind.AmpersandAmpersandToken;
-                        _position += 2;
+                        _position++;
                     }
 
                     break;
 
                 case '|':
-                    if (LookAhead == '|')
+                    _position++;
+                    if (Current == '|')
                     {
                         _kind = SyntaxKind.PipePipeToken;
-                        _position += 2;
+                        _position++;
                     }
                     break;
 
                 case '=':
-                    if (LookAhead == '=')
+                    _position++;
+                    if (Current == '=')
                     {
                         _kind = SyntaxKind.EqualsEqualsToken;
-                        _position += 2;
-                    }
-                    else
-                    {
-                        _kind = SyntaxKind.EqualsToken;
                         _position++;
                     }
+                    else
+                        _kind = SyntaxKind.EqualsToken;
                     break;
 
                 case '!':
-                    if (LookAhead == '=')
+                    _position++;
+                    if (Current == '=')
                     {
                         _kind = SyntaxKind.BangEqualsToken;
-                        _position += 2;
+                        _position++;
                     }
                     else
-                    {
-                        _position++;
                         _kind = SyntaxKind.BangToken;
-                    }
                     break;
 
                 case '0':
