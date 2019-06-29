@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Text;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
@@ -72,14 +73,22 @@ namespace PHPSharp.Syntax
 
         #endregion Methods
 
-        #region Parse
+        #region ParseStatement
 
         private StatementSyntax ParseStatement()
         {
-            if (Current.Kind == SyntaxKind.OpenBraceToken)
-                return ParseBlockStatement();
+            switch (Current.Kind)
+            {
+                case SyntaxKind.OpenBraceToken:
+                    return ParseBlockStatement();
 
-            return ParseExpressionStatement();
+                case SyntaxKind.LetKeyword:
+                case SyntaxKind.VarKeyword:
+                    return ParseVariableDeclarationStatement();
+
+                default:
+                    return ParseExpressionStatement();
+            }
         }
 
         private BlockStatementSyntax ParseBlockStatement()
@@ -100,6 +109,16 @@ namespace PHPSharp.Syntax
             return new BlockStatementSyntax(openBraceToken, statements.ToImmutable(), closeBraceToken);
         }
 
+        private VariableDeclarationStatementSyntax ParseVariableDeclarationStatement()
+        {
+            SyntaxToken keyword = MatchToken(Current.Kind);
+            SyntaxToken identifier = MatchToken(SyntaxKind.IdentifierToken);
+            SyntaxToken equals = MatchToken(SyntaxKind.EqualsToken);
+            ExpressionSyntax initializer = ParseExpression();
+
+            return new VariableDeclarationStatementSyntax(keyword, identifier, equals, initializer);
+        }
+
         private ExpressionStatementSyntax ParseExpressionStatement()
         {
             ExpressionSyntax expression = ParseExpression();
@@ -107,6 +126,10 @@ namespace PHPSharp.Syntax
 
             return new ExpressionStatementSyntax(expression, semicolonToken);
         }
+
+        #endregion ParseStatement
+
+        #region ParseExpression
 
         private ExpressionSyntax ParseExpression(int parentPrecedence = 0)
         {
@@ -203,9 +226,9 @@ namespace PHPSharp.Syntax
             return new NameExpressionSyntax(identifierToken);
         }
 
-        #endregion Parse
+        #endregion ParseExpression
 
-        #region Private methods
+        #region Helper methods
 
         private SyntaxToken Peek(int offset)
         {
@@ -233,6 +256,6 @@ namespace PHPSharp.Syntax
             return new SyntaxToken(kind, Current.Position, null, null);
         }
 
-        #endregion Private methods
+        #endregion Helper methods
     }
 }

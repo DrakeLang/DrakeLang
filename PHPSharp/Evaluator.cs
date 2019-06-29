@@ -55,6 +55,10 @@ namespace PHPSharp
                     EvaluateBlockStatement((BoundBlockStatement)node);
                     break;
 
+                case BoundNodeKind.VariableDeclarationStatement:
+                    EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)node);
+                    break;
+
                 case BoundNodeKind.ExpressionStatement:
                     EvaluateExpressionStatement((BoundExpressionStatement)node);
                     break;
@@ -68,6 +72,14 @@ namespace PHPSharp
         {
             foreach (BoundStatement statement in node.Statements)
                 EvaluateStatement(statement);
+        }
+
+        private void EvaluateVariableDeclarationStatement(BoundVariableDeclarationStatement node)
+        {
+            object value = EvaluateExpression(node.Initializer);
+            _variables[node.Variable] = value;
+
+            _lastValue = value;
         }
 
         private void EvaluateExpressionStatement(BoundExpressionStatement node)

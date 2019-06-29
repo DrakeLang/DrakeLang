@@ -80,9 +80,21 @@ namespace PHPSharp
             Report(span, message);
         }
 
+        public void ReportVariableAlreadyDeclared(TextSpan span, string name)
+        {
+            string message = $"Variable '{name}' is already declared.";
+            Report(span, message);
+        }
+
         public void ReportCannotConvert(TextSpan span, Type actualType, Type expectedType)
         {
             string message = $"Cannot convert type '{actualType}' to '{expectedType}'.";
+            Report(span, message);
+        }
+
+        public void ReportCannotAssign(TextSpan span, string name)
+        {
+            string message = $"Variable '{name}' is read-only and cannot be assigned.";
             Report(span, message);
         }
     }

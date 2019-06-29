@@ -22,6 +22,7 @@ namespace PHPSharp.Binding
     {
         // Statements
         BlockStatement,
+        VariableDeclarationStatement,
         ExpressionStatement,
 
         // Expressions

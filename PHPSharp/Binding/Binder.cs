@@ -47,6 +47,9 @@ namespace PHPSharp.Binding
                 case SyntaxKind.BlockStatement:
                     return BindBlockStatement((BlockStatementSyntax)syntax);
 
+                case SyntaxKind.VariableDeclarationStatement:
+                    return BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax);
+
                 case SyntaxKind.ExpressionStatement:
                     return BindExpressionStatement((ExpressionStatementSyntax)syntax);
 
@@ -65,6 +68,20 @@ namespace PHPSharp.Binding
             }
 
             return new BoundBlockStatement(statements.ToImmutable());
+        }
+
+        private BoundVariableDeclarationStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
+        {
+            string name = syntax.Identifier.Text;
+            bool isReadOnly = syntax.Keyword.Kind == SyntaxKind.LetKeyword;
+
+            BoundExpression initializer = BindExpression(syntax.Initializer);
+            VariableSymbol variable = new VariableSymbol(name, isReadOnly, initializer.Type);
+
+            if (_scope.TryDeclare(variable))
+                Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
+
+            return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
         private BoundExpressionStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
@@ -134,9 +151,12 @@ namespace PHPSharp.Binding
 
             if (!_scope.TryLookup(name, out VariableSymbol variable))
             {
-                variable = new VariableSymbol(name, boundExpression.Type);
-                _scope.TryDeclare(variable);
+                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
+                return boundExpression;
             }
+
+            if (variable.IsReadOnly)
+                Diagnostics.ReportCannotAssign(syntax.EqualsToken.Span, name);
 
             if (boundExpression.Type != variable.Type)
             {

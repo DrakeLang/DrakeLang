@@ -16,21 +16,23 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System;
-
-namespace PHPSharp
+namespace PHPSharp.Binding
 {
-    public class VariableSymbol
+    internal sealed class BoundVariableDeclarationStatement : BoundStatement
     {
-        internal VariableSymbol(string name, bool isReadOnly, Type type)
+        public BoundVariableDeclarationStatement(VariableSymbol variable, BoundExpression initializer)
         {
-            Name = name;
-            IsReadOnly = isReadOnly;
-            Type = type;
+            Variable = variable;
+            Initializer = initializer;
         }
 
-        public string Name { get; }
-        public bool IsReadOnly { get; }
-        public Type Type { get; }
+        #region Properties
+
+        public override BoundNodeKind Kind => BoundNodeKind.VariableDeclarationStatement;
+
+        public VariableSymbol Variable { get; }
+        public BoundExpression Initializer { get; }
+
+        #endregion Properties
     }
 }

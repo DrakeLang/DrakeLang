@@ -34,12 +34,11 @@ namespace PHPSharpO
 
         private static void Main()
         {
-            bool firstLine = true;
             StringBuilder input = new StringBuilder();
 
             while (true)
             {
-                if (firstLine)
+                if (input.Length == 0)
                     Console.Write("> ");
                 else
                     Console.Write("| ");
@@ -75,17 +74,11 @@ namespace PHPSharpO
                 else if (!string.IsNullOrWhiteSpace(line))
                 {
                     input.Append(line);
-                    firstLine = false;
                 }
-                else
+                else if (input.Length > 0)
                 {
-                    if (input.Length > 0)
-                    {
-                        Parse(input.ToString());
-                        input.Clear();
-                    }
-
-                    firstLine = true;
+                    Parse(input.ToString());
+                    input.Clear();
                 }
             }
         }

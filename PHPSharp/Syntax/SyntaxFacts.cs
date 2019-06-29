@@ -68,11 +68,17 @@ namespace PHPSharp.Syntax
         {
             switch (word)
             {
+                case "false":
+                    return SyntaxKind.FalseKeyword;
+
+                case "let":
+                    return SyntaxKind.LetKeyword;
+
                 case "true":
                     return SyntaxKind.TrueKeyword;
 
-                case "false":
-                    return SyntaxKind.FalseKeyword;
+                case "var":
+                    return SyntaxKind.VarKeyword;
 
                 default:
                     return SyntaxKind.IdentifierToken;
@@ -153,6 +159,12 @@ namespace PHPSharp.Syntax
 
                 case SyntaxKind.SemicolonToken:
                     return ";";
+
+                case SyntaxKind.LetKeyword:
+                    return "let";
+
+                case SyntaxKind.VarKeyword:
+                    return "var";
 
                 default:
                     return null;
