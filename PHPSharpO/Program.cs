@@ -35,35 +35,35 @@ namespace PHPSharpO
                 Console.Write("> ");
                 string line = Console.ReadLine();
 
-                if (File.Exists(line))
-                    ParseFile(line, showTree);
-                else
+                switch (line)
                 {
-                    switch (line)
-                    {
-                        case "":
-                            string filepath = @"C:\users\Niklas\documents\example.phps";
-                            Console.WriteLine("No file given. Defaults to {0}", filepath);
-                            ParseFile(filepath, showTree);
-                            break;
+                    case "":
+                        string filepath = @"C:\users\Niklas\documents\example.phps";
+                        Console.WriteLine("No file given. Defaults to {0}", filepath);
+                        ParseFile(filepath, showTree);
+                        break;
 
-                        case "tree":
-                            showTree ^= true;
-                            Console.WriteLine(showTree ? "Parse tree visible" : "Parse tree hidden");
-                            break;
+                    case "tree":
+                        showTree ^= true;
+                        Console.WriteLine(showTree ? "Parse tree visible" : "Parse tree hidden");
+                        break;
 
-                        case "cls":
-                        case "clear":
-                            Console.Clear();
-                            break;
+                    case "cls":
+                    case "clear":
+                        Console.Clear();
+                        break;
 
-                        case "exit":
-                            return;
+                    case "exit":
+                        return;
 
-                        default:
+                    default:
+                        if (File.Exists(line))
+                            ParseFile(line, showTree);
+                        else if (line.StartsWith("c", StringComparison.InvariantCultureIgnoreCase))
+                            Parse(line.Substring(1), showTree);
+                        else
                             Console.WriteLine("Invalid command");
-                            break;
-                    }
+                        break;
                 }
             }
         }
@@ -75,6 +75,15 @@ namespace PHPSharpO
         private static void ParseFile(string path, bool showTree)
         {
             string content = File.ReadAllText(path);
+            Parse(content, showTree);
+        }
+
+        /// <summary>
+        /// Parses a string.
+        /// </summary>
+        /// <param name="content">The string to parse.</param>
+        private static void Parse(string content, bool showTree)
+        {
             SyntaxTree syntaxTree = SyntaxTree.Parse(content);
 
             if (showTree)

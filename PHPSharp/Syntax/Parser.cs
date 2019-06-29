@@ -25,7 +25,7 @@ namespace PHPSharp.Syntax
     internal class Parser
     {
         private readonly ImmutableArray<SyntaxToken> _tokens;
-        private readonly SourceText text;
+        private readonly SourceText _text;
         private int _position;
 
         public Parser(SourceText text)
@@ -44,7 +44,7 @@ namespace PHPSharp.Syntax
 
             _tokens = tokens.ToImmutableArray();
             Diagnostics.AddRange(lexer.Diagnostics);
-            this.text = text;
+            _text = text;
         }
 
         #region Properties
@@ -67,7 +67,7 @@ namespace PHPSharp.Syntax
             ExpressionSyntax expression = ParseExpression();
             SyntaxToken endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
 
-            return new SyntaxTree(text, Diagnostics.ToImmutableArray(), expression, endOfFileToken);
+            return new SyntaxTree(_text, Diagnostics.ToImmutableArray(), expression, endOfFileToken);
         }
 
         #endregion Methods

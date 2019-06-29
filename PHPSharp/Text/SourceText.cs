@@ -26,7 +26,7 @@ namespace PHPSharp.Text
 
         private SourceText(string text)
         {
-            this._text = text;
+            _text = text;
             Lines = ParseLines(this, text);
         }
 
