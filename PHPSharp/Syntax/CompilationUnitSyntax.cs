@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace PHPSharp.Syntax
 {
@@ -41,5 +42,68 @@ namespace PHPSharp.Syntax
             yield return Expression;
             yield return EndOfFileToken;
         }
+    }
+
+    public abstract class StatementSyntax : SyntaxNode
+    {
+    }
+
+    public sealed class BlockStatementSyntax : StatementSyntax
+    {
+        public BlockStatementSyntax(SyntaxToken openBraceToken, ImmutableArray<StatementSyntax> statements, SyntaxToken closeBraceToken)
+        {
+            OpenBraceToken = openBraceToken;
+            Statements = statements;
+            CloseBraceToken = closeBraceToken;
+        }
+
+        #region Properties
+
+        public override SyntaxKind Kind => SyntaxKind.BlockStatement;
+
+        public SyntaxToken OpenBraceToken { get; }
+        public ImmutableArray<StatementSyntax> Statements { get; }
+        public SyntaxToken CloseBraceToken { get; }
+
+        #endregion Properties
+
+        #region Methods
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return OpenBraceToken;
+
+            foreach (StatementSyntax statement in Statements)
+                yield return statement;
+
+            yield return CloseBraceToken;
+        }
+
+        #endregion Methods
+    }
+
+    public sealed class ExpressionStatementSyntax : StatementSyntax
+    {
+        public ExpressionStatementSyntax(ExpressionSyntax expression)
+        {
+            Expression = expression;
+        }
+
+        #region Properties
+
+        public override SyntaxKind Kind => throw new System.NotImplementedException();
+
+        public ExpressionSyntax Expression { get; }
+
+        #endregion Properties
+
+        #region Methods
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return Expression;
+        }
+
+        #endregion Methods
     }
 }

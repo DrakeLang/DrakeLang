@@ -13,7 +13,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program.  If not, see https://www.gnu.org/licenses/.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
 using PHPSharp.Text;
@@ -32,6 +32,8 @@ namespace PHPSharp.Syntax
             Value = value;
         }
 
+        #region Properties
+
         public override SyntaxKind Kind { get; }
 
         public int Position { get; }
@@ -39,9 +41,15 @@ namespace PHPSharp.Syntax
         public object Value { get; }
         public override TextSpan Span => new TextSpan(Position, Text?.Length ?? 0);
 
+        #endregion Properties
+
+        #region Methods
+
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             return Enumerable.Empty<SyntaxNode>();
         }
+
+        #endregion Methods
     }
 }
