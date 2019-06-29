@@ -97,5 +97,11 @@ namespace PHPSharp
             string message = $"Variable '{name}' is read-only and cannot be assigned.";
             Report(span, message);
         }
+
+        internal void ReportCannotDeclareConditional(TextSpan span)
+        {
+            string message = $"Variable declarations cannot be placed right after a condition.";
+            Report(span, message);
+        }
     }
 }

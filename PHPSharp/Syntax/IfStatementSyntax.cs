@@ -20,22 +20,24 @@ using System.Collections.Generic;
 
 namespace PHPSharp.Syntax
 {
-    public sealed class ParenthesizedExpressionSyntax : ExpressionSyntax
+    public sealed class IfStatementSyntax : StatementSyntax
     {
-        public ParenthesizedExpressionSyntax(SyntaxToken openParenthesisToken, ExpressionSyntax expression, SyntaxToken closeParenthesisToken)
+        public IfStatementSyntax(SyntaxToken ifKeyword, ParenthesizedExpressionSyntax condition, StatementSyntax thenStatement, ElseClauseSyntax elseClause)
         {
-            OpenParenthesisToken = openParenthesisToken;
-            Expression = expression;
-            CloseParenthesisToken = closeParenthesisToken;
+            IfKeyword = ifKeyword;
+            Condition = condition;
+            ThenStatement = thenStatement;
+            ElseClause = elseClause;
         }
 
         #region Properties
 
-        public override SyntaxKind Kind => SyntaxKind.ParenthesizedExpression;
+        public override SyntaxKind Kind => SyntaxKind.IfStatementSyntax;
 
-        public SyntaxToken OpenParenthesisToken { get; }
-        public ExpressionSyntax Expression { get; }
-        public SyntaxToken CloseParenthesisToken { get; }
+        public SyntaxToken IfKeyword { get; }
+        public ParenthesizedExpressionSyntax Condition { get; }
+        public StatementSyntax ThenStatement { get; }
+        public ElseClauseSyntax ElseClause { get; }
 
         #endregion Properties
 
@@ -43,9 +45,12 @@ namespace PHPSharp.Syntax
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return OpenParenthesisToken;
-            yield return Expression;
-            yield return CloseParenthesisToken;
+            yield return IfKeyword;
+            yield return Condition;
+            yield return ThenStatement;
+
+            if (ElseClause != null)
+            yield return ElseClause;
         }
 
         #endregion Methods

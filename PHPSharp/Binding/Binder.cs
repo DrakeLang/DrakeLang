@@ -50,6 +50,9 @@ namespace PHPSharp.Binding
                 case SyntaxKind.VariableDeclarationStatement:
                     return BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax);
 
+                case SyntaxKind.IfStatementSyntax:
+                    return BindIfStatement((IfStatementSyntax)syntax);
+
                 case SyntaxKind.ExpressionStatement:
                     return BindExpressionStatement((ExpressionStatementSyntax)syntax);
 
@@ -87,6 +90,15 @@ namespace PHPSharp.Binding
             return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
+        private BoundIfStatement BindIfStatement(IfStatementSyntax syntax)
+        {
+            BoundExpression condition = BindExpression(syntax.Condition.Expression, typeof(bool));
+            BoundStatement thenStatement = BindStatement(syntax.ThenStatement);
+            BoundStatement elseStatement = syntax.ElseClause == null ? null : BindStatement(syntax.ElseClause.ElseStatement);
+
+            return new BoundIfStatement(condition, thenStatement, elseStatement);
+        }
+
         private BoundExpressionStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
         {
             BoundExpression expression = BindExpression(syntax.Expression);
@@ -122,6 +134,15 @@ namespace PHPSharp.Binding
                 default:
                     throw new Exception($"Unexpected syntax {syntax.Kind}");
             }
+        }
+
+        private BoundExpression BindExpression(ExpressionSyntax syntax, Type targetType)
+        {
+            BoundExpression expression = BindExpression(syntax);
+            if (expression.Type != targetType)
+                Diagnostics.ReportCannotConvert(syntax.Span, expression.Type, targetType);
+
+            return expression;
         }
 
         private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax)

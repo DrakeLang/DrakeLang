@@ -47,17 +47,21 @@ namespace PHPSharp.Syntax
         WhitespaceToken,
 
         // Keywords
+        ElseKeyword,
         FalseKeyword,
+        IfKeyword,
         LetKeyword,
         TrueKeyword,
         VarKeyword,
 
         // Nodes
         CompilationUnit,
+        ElseClause,
 
         // Statements
         BlockStatement,
         VariableDeclarationStatement,
+        IfStatementSyntax,
         ExpressionStatement,
 
         // Expressions

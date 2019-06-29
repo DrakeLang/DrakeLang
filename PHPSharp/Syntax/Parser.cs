@@ -85,6 +85,9 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.VarKeyword:
                     return ParseVariableDeclarationStatement();
 
+                case SyntaxKind.IfKeyword:
+                    return ParseIfStatement();
+
                 default:
                     return ParseExpressionStatement();
             }
@@ -118,6 +121,34 @@ namespace PHPSharp.Syntax
             SyntaxToken semicolonToken = MatchToken(SyntaxKind.SemicolonToken);
 
             return new VariableDeclarationStatementSyntax(keyword, identifier, equals, initializer, semicolonToken);
+        }
+
+        private IfStatementSyntax ParseIfStatement()
+        {
+            SyntaxToken keyword = MatchToken(SyntaxKind.IfKeyword);
+            ParenthesizedExpressionSyntax condition = ParseParenthesizedExpression();
+            StatementSyntax statement = ParseStatement();
+
+            if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
+                Diagnostics.ReportCannotDeclareConditional(statement.Span);
+
+            ElseClauseSyntax elseClause = ParseElseClause();
+
+            return new IfStatementSyntax(keyword, condition, statement, elseClause);
+        }
+
+        private ElseClauseSyntax ParseElseClause()
+        {
+            if (Current.Kind != SyntaxKind.ElseKeyword)
+                return null;
+
+            SyntaxToken keyword = NextToken();
+            StatementSyntax statement = ParseStatement();
+
+            if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
+                Diagnostics.ReportCannotDeclareConditional(statement.Span);
+
+            return new ElseClauseSyntax(keyword, statement);
         }
 
         private ExpressionStatementSyntax ParseExpressionStatement()
@@ -195,7 +226,7 @@ namespace PHPSharp.Syntax
             }
         }
 
-        private ExpressionSyntax ParseParenthesizedExpression()
+        private ParenthesizedExpressionSyntax ParseParenthesizedExpression()
         {
             SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
             ExpressionSyntax expression = ParseExpression();
@@ -204,7 +235,7 @@ namespace PHPSharp.Syntax
             return new ParenthesizedExpressionSyntax(leftParenthesis, expression, rightParenthesis);
         }
 
-        private ExpressionSyntax ParseBooleanLiteral()
+        private LiteralExpressionSyntax ParseBooleanLiteral()
         {
             bool isTrue = Current.Kind == SyntaxKind.TrueKeyword;
             SyntaxToken keywordToken = MatchToken(isTrue ? SyntaxKind.TrueKeyword : SyntaxKind.FalseKeyword);
@@ -212,7 +243,7 @@ namespace PHPSharp.Syntax
             return new LiteralExpressionSyntax(keywordToken, isTrue);
         }
 
-        private ExpressionSyntax ParseNumberLiteral()
+        private LiteralExpressionSyntax ParseNumberLiteral()
         {
             SyntaxToken numberToken = MatchToken(SyntaxKind.NumberToken);
             if (!int.TryParse(numberToken.Text, out int value))
@@ -221,7 +252,7 @@ namespace PHPSharp.Syntax
             return new LiteralExpressionSyntax(numberToken, value);
         }
 
-        private ExpressionSyntax ParseNameExpression()
+        private NameExpressionSyntax ParseNameExpression()
         {
             SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
             return new NameExpressionSyntax(identifierToken);

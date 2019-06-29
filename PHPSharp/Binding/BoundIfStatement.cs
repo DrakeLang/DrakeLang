@@ -16,38 +16,25 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-
-namespace PHPSharp.Syntax
+namespace PHPSharp.Binding
 {
-    public sealed class ParenthesizedExpressionSyntax : ExpressionSyntax
+    internal sealed class BoundIfStatement : BoundStatement
     {
-        public ParenthesizedExpressionSyntax(SyntaxToken openParenthesisToken, ExpressionSyntax expression, SyntaxToken closeParenthesisToken)
+        public BoundIfStatement(BoundExpression condition, BoundStatement thenStatement, BoundStatement elseStatement)
         {
-            OpenParenthesisToken = openParenthesisToken;
-            Expression = expression;
-            CloseParenthesisToken = closeParenthesisToken;
+            Condition = condition;
+            ThenStatement = thenStatement;
+            ElseStatement = elseStatement;
         }
 
         #region Properties
 
-        public override SyntaxKind Kind => SyntaxKind.ParenthesizedExpression;
+        public override BoundNodeKind Kind => BoundNodeKind.IfStatement;
 
-        public SyntaxToken OpenParenthesisToken { get; }
-        public ExpressionSyntax Expression { get; }
-        public SyntaxToken CloseParenthesisToken { get; }
+        public BoundExpression Condition { get; }
+        public BoundStatement ThenStatement { get; }
+        public BoundStatement ElseStatement { get; }
 
         #endregion Properties
-
-        #region Methods
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return OpenParenthesisToken;
-            yield return Expression;
-            yield return CloseParenthesisToken;
-        }
-
-        #endregion Methods
     }
 }

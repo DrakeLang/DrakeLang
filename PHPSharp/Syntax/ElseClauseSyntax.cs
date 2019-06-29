@@ -20,22 +20,20 @@ using System.Collections.Generic;
 
 namespace PHPSharp.Syntax
 {
-    public sealed class ParenthesizedExpressionSyntax : ExpressionSyntax
+    public sealed class ElseClauseSyntax : SyntaxNode
     {
-        public ParenthesizedExpressionSyntax(SyntaxToken openParenthesisToken, ExpressionSyntax expression, SyntaxToken closeParenthesisToken)
+        public ElseClauseSyntax(SyntaxToken elseKeyword, StatementSyntax elseStatement)
         {
-            OpenParenthesisToken = openParenthesisToken;
-            Expression = expression;
-            CloseParenthesisToken = closeParenthesisToken;
+            ElseKeyword = elseKeyword;
+            ElseStatement = elseStatement;
         }
 
         #region Properties
 
-        public override SyntaxKind Kind => SyntaxKind.ParenthesizedExpression;
+        public override SyntaxKind Kind => SyntaxKind.ElseClause;
 
-        public SyntaxToken OpenParenthesisToken { get; }
-        public ExpressionSyntax Expression { get; }
-        public SyntaxToken CloseParenthesisToken { get; }
+        public SyntaxToken ElseKeyword { get; }
+        public StatementSyntax ElseStatement { get; }
 
         #endregion Properties
 
@@ -43,9 +41,8 @@ namespace PHPSharp.Syntax
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return OpenParenthesisToken;
-            yield return Expression;
-            yield return CloseParenthesisToken;
+            yield return ElseKeyword;
+            yield return ElseStatement;
         }
 
         #endregion Methods

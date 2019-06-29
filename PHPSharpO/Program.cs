@@ -68,7 +68,7 @@ namespace PHPSharpO
                 }
                 else if (!string.IsNullOrWhiteSpace(line))
                 {
-                    input.Append(line);
+                    input.AppendLine(line);
                 }
                 else if (input.Length > 0)
                 {

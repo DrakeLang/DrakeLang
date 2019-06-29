@@ -59,6 +59,10 @@ namespace PHPSharp
                     EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)node);
                     break;
 
+                case BoundNodeKind.IfStatement:
+                    EvaluateIfStatement((BoundIfStatement)node);
+                    break;
+
                 case BoundNodeKind.ExpressionStatement:
                     EvaluateExpressionStatement((BoundExpressionStatement)node);
                     break;
@@ -80,6 +84,15 @@ namespace PHPSharp
             _variables[node.Variable] = value;
 
             _lastValue = value;
+        }
+
+        private void EvaluateIfStatement(BoundIfStatement node)
+        {
+            bool condition = (bool)EvaluateExpression(node.Condition);
+            if (condition)
+                EvaluateStatement(node.ThenStatement);
+            else if (node.ElseStatement != null)
+                EvaluateStatement(node.ElseStatement);
         }
 
         private void EvaluateExpressionStatement(BoundExpressionStatement node)
