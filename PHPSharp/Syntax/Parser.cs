@@ -233,8 +233,7 @@ namespace PHPSharp.Syntax
         private ExpressionSyntax ParseExpression(int parentPrecedence = 0)
         {
             ExpressionSyntax left;
-            if (Current.Kind == SyntaxKind.IdentifierToken &&
-                LookAhead.Kind == SyntaxKind.EqualsToken)
+            if (Current.Kind == SyntaxKind.IdentifierToken && SyntaxFacts.GetKindIsAssignmentOperator(LookAhead.Kind))
             {
                 left = ParseAssignmentExpression();
             }
@@ -268,7 +267,7 @@ namespace PHPSharp.Syntax
 
         private AssignmentExpressionSyntax ParseAssignmentExpression()
         {
-            SyntaxToken identifierToken = NextToken();
+            SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
             SyntaxToken operatorToken = NextToken();
             ExpressionSyntax right = ParseExpression();
 

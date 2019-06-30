@@ -71,23 +71,6 @@ namespace PHPSharp.Tests
         }
 
         [Fact]
-        public void Evaluator_Assigned_Reports_CannotAssign()
-        {
-            string text = @"
-                {
-                    let x = 0;
-                    x [=] 3;
-                }
-            ";
-
-            string diagnostics = @"
-                Variable 'x' is read-only and cannot be assigned.
-            ";
-
-            AssertDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
         public void Evaluator_Assigned_Reports_CannotConvert()
         {
             string text = @"

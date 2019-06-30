@@ -108,6 +108,27 @@ namespace PHPSharp.Syntax
             }
         }
 
+        /// <summary>
+        /// Returns a value indicating if the given syntax kind is an assignment operator (=, +=, |=).
+        /// </summary>
+        public static bool GetKindIsAssignmentOperator(SyntaxKind kind)
+        {
+            switch (kind)
+            {
+                case SyntaxKind.PlusEqualsToken:
+                case SyntaxKind.MinusEqualsToken:
+                case SyntaxKind.StarEqualsToken:
+                case SyntaxKind.SlashEqualsToken:
+                case SyntaxKind.EqualsToken:
+                case SyntaxKind.AmpersandEqualsToken:
+                case SyntaxKind.PipeEqualsToken:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
         public static IEnumerable<SyntaxKind> GetUnaryOperatorKinds()
         {
             SyntaxKind[] kinds = (SyntaxKind[])Enum.GetValues(typeof(SyntaxKind));
@@ -138,35 +159,59 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.PlusPlusToken:
                     return "++";
 
+                case SyntaxKind.PlusEqualsToken:
+                    return "+=";
+
                 case SyntaxKind.MinusToken:
                     return "-";
 
                 case SyntaxKind.MinusMinusToken:
                     return "--";
 
+                case SyntaxKind.MinusEqualsToken:
+                    return "-=";
+
                 case SyntaxKind.StarToken:
                     return "*";
+
+                case SyntaxKind.StarEqualsToken:
+                    return "*=";
 
                 case SyntaxKind.SlashToken:
                     return "/";
 
+                case SyntaxKind.SlashEqualsToken:
+                    return "/=";
+
                 case SyntaxKind.BangToken:
                     return "!";
+
+                case SyntaxKind.BangEqualsToken:
+                    return "!=";
 
                 case SyntaxKind.EqualsToken:
                     return "=";
 
+                case SyntaxKind.AmpersandToken:
+                    return "&";
+
                 case SyntaxKind.AmpersandAmpersandToken:
                     return "&&";
+
+                case SyntaxKind.AmpersandEqualsToken:
+                    return "&=";
+
+                case SyntaxKind.PipeToken:
+                    return "|";
 
                 case SyntaxKind.PipePipeToken:
                     return "||";
 
+                case SyntaxKind.PipeEqualsToken:
+                    return "|=";
+
                 case SyntaxKind.EqualsEqualsToken:
                     return "==";
-
-                case SyntaxKind.BangEqualsToken:
-                    return "!=";
 
                 case SyntaxKind.LessToken:
                     return "<";

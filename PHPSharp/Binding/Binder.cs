@@ -233,6 +233,42 @@ namespace PHPSharp.Binding
                 return boundExpression;
             }
 
+            if (syntax.EqualsToken.Kind != SyntaxKind.EqualsToken)
+            {
+                BoundBinaryOperatorKind operatorKind;
+                switch (syntax.EqualsToken.Kind)
+                {
+                    case SyntaxKind.PlusEqualsToken:
+                        operatorKind = BoundBinaryOperatorKind.Addition;
+                        break;
+
+                    case SyntaxKind.MinusEqualsToken:
+                        operatorKind = BoundBinaryOperatorKind.Subtraction;
+                        break;
+
+                    case SyntaxKind.StarEqualsToken:
+                        operatorKind = BoundBinaryOperatorKind.Multiplication;
+                        break;
+
+                    case SyntaxKind.SlashEqualsToken:
+                        operatorKind = BoundBinaryOperatorKind.Division;
+                        break;
+
+                    case SyntaxKind.AmpersandEqualsToken:
+                    case SyntaxKind.PipeEqualsToken:
+                        Diagnostics.ReportUndefinedBinaryOperator(syntax.EqualsToken.Span, syntax.EqualsToken.Text, variable.Type, boundExpression.Type);
+                        return boundExpression;
+
+                    default:
+                        throw new Exception($"Unexpected assignment kind {syntax.EqualsToken.Kind}");
+                }
+
+                BoundVariableExpression boundVariable = new BoundVariableExpression(variable);
+                BoundBinaryOperator boundOp = BoundBinaryOperator.Bind(operatorKind, variable.Type, boundExpression.Type);
+
+                boundExpression = new BoundBinaryExpression(boundVariable, boundOp, boundExpression);
+            }
+
             return new BoundAssignmentExpression(variable, boundExpression);
         }
 

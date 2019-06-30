@@ -65,6 +65,17 @@ namespace PHPSharp.Binding
             return null;
         }
 
+        public static BoundBinaryOperator Bind(BoundBinaryOperatorKind operatorKind, Type leftType, Type rightType)
+        {
+            foreach (BoundBinaryOperator op in _operators)
+            {
+                if (op.Kind == operatorKind && op.LeftType == leftType && op.RightType == rightType)
+                    return op;
+            }
+
+            return null;
+        }
+
         #endregion Public statics
 
         #region Private statics
