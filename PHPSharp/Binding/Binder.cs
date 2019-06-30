@@ -186,6 +186,9 @@ namespace PHPSharp.Binding
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
         {
             string name = syntax.IdentifierToken.Text;
+            if (string.IsNullOrEmpty(name))
+                return new BoundLiteralExpression(0);
+
             if (!_scope.TryLookup(name, out VariableSymbol variable))
             {
                 Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
@@ -267,7 +270,7 @@ namespace PHPSharp.Binding
             _scope = _scope.Parent;
         }
 
-        #endregion
+        #endregion Helpers
 
         #region Statics
 

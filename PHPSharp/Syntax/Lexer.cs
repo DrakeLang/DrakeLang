@@ -66,13 +66,25 @@ namespace PHPSharp.Syntax
                     break;
 
                 case '+':
-                    _kind = SyntaxKind.PlusToken;
                     _position++;
+                    if (Current == '+')
+                    {
+                        _kind = SyntaxKind.PlusPlusToken;
+                        _position++;
+                    }
+                    else
+                        _kind = SyntaxKind.PlusToken;
                     break;
 
                 case '-':
-                    _kind = SyntaxKind.MinusToken;
                     _position++;
+                    if (Current == '-')
+                    {
+                        _kind = SyntaxKind.MinusMinusToken;
+                        _position++;
+                    }
+                    else
+                        _kind = SyntaxKind.MinusToken;
                     break;
 
                 case '*':

@@ -180,6 +180,13 @@ namespace PHPSharp
 
         private object EvaluateUnaryExpression(BoundUnaryExpression node)
         {
+            if (node.Op.Kind == BoundUnaryOperatorKind.PreDecrement || node.Op.Kind == BoundUnaryOperatorKind.PreIncrement)
+            {
+                BoundVariableExpression variableExpression = (BoundVariableExpression)node.Operand;
+                _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
+                return _variables[variableExpression.Variable];
+            }
+
             object operant = EvaluateExpression(node.Operand);
             switch (node.Op.Kind)
             {
@@ -188,6 +195,8 @@ namespace PHPSharp
 
                 case BoundUnaryOperatorKind.Negation:
                     return -(int)operant;
+
+                case BoundUnaryOperatorKind.PreDecrement:
 
                 case BoundUnaryOperatorKind.LogicalNegation:
                     return !(bool)operant;

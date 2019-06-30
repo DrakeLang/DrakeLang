@@ -187,6 +187,18 @@ namespace PHPSharp.Tests.Syntax
             if (t1Kind == SyntaxKind.GreaterToken && t2Kind == SyntaxKind.EqualsEqualsToken)
                 return true;
 
+            if (t1Kind == SyntaxKind.PlusToken && t2Kind == SyntaxKind.PlusToken)
+                return true;
+
+            if (t1Kind == SyntaxKind.PlusToken && t2Kind == SyntaxKind.PlusPlusToken)
+                return true;
+
+            if (t1Kind == SyntaxKind.MinusToken && t2Kind == SyntaxKind.MinusToken)
+                return true;
+
+            if (t1Kind == SyntaxKind.MinusToken && t2Kind == SyntaxKind.MinusMinusToken)
+                return true;
+
             return false;
         }
 

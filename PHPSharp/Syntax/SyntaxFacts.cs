@@ -27,6 +27,10 @@ namespace PHPSharp.Syntax
         {
             switch (kind)
             {
+                case SyntaxKind.PlusPlusToken:
+                case SyntaxKind.MinusMinusToken:
+                    return 7;
+
                 case SyntaxKind.PlusToken:
                 case SyntaxKind.MinusToken:
                 case SyntaxKind.BangToken:
@@ -128,8 +132,14 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.PlusToken:
                     return "+";
 
+                case SyntaxKind.PlusPlusToken:
+                    return "++";
+
                 case SyntaxKind.MinusToken:
                     return "-";
+
+                case SyntaxKind.MinusMinusToken:
+                    return "--";
 
                 case SyntaxKind.StarToken:
                     return "*";

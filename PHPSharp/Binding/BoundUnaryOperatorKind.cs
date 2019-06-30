@@ -22,6 +22,9 @@ namespace PHPSharp.Binding
     {
         Identity,
         Negation,
-        LogicalNegation
+        PreIncrement,
+        PreDecrement,
+
+        LogicalNegation,
     }
 }

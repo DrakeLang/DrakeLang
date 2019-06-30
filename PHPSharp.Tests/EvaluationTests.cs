@@ -178,6 +178,8 @@ namespace PHPSharp.Tests
 
             // Variable
             yield return ("{ var a = 0; (a = 10) * a; }", 100);
+            yield return ("{ var a = 11; ++a; }", 12);
+            yield return ("{ var a = 11; --a; }", 10);
 
             // If-else-statement
             yield return ("{ var a = 0; if (a == 0) a = 10; a; }", 10);

@@ -106,11 +106,18 @@ namespace PHPSharp.Syntax
             SyntaxToken openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
 
             while (Current.Kind != SyntaxKind.CloseBraceToken &&
-                   Current.Kind != SyntaxKind.EndOfFileToken &&
-                   Current.Kind != SyntaxKind.CloseParenthesisToken)
+                   Current.Kind != SyntaxKind.EndOfFileToken)
             {
+                SyntaxToken currentToken = Current;
+
                 StatementSyntax statement = ParseStatement();
                 statements.Add(statement);
+
+                // If no tokens were consumed by the parse call,
+                // we should escape the loop. Parse errors will
+                // have already been reported.
+                if (currentToken == Current)
+                    break;
             }
 
             SyntaxToken closeBraceToken = MatchToken(SyntaxKind.CloseBraceToken);
@@ -201,8 +208,8 @@ namespace PHPSharp.Syntax
                 keyword,
                 leftParenthesis,
                 initStatement, initSemicolon,
-                condition, conditionSemicolon, 
-                updateStatement, 
+                condition, conditionSemicolon,
+                updateStatement,
                 rightParenthesis,
                 statement);
         }
@@ -228,21 +235,14 @@ namespace PHPSharp.Syntax
             if (Current.Kind == SyntaxKind.IdentifierToken &&
                 LookAhead.Kind == SyntaxKind.EqualsToken)
             {
-                SyntaxToken identifierToken = NextToken();
-                SyntaxToken operatorToken = NextToken();
-                ExpressionSyntax right = ParseExpression();
-
-                left = new AssignmentExpressionSyntax(identifierToken, operatorToken, right);
+                left = ParseAssignmentExpression();
             }
             else
             {
                 int unaryOperatorPrecedence = Current.Kind.GetUnaryOperatorPrecedence();
                 if (unaryOperatorPrecedence != 0 && unaryOperatorPrecedence > parentPrecedence)
                 {
-                    SyntaxToken operatorToken = NextToken();
-                    ExpressionSyntax operand = ParseExpression(unaryOperatorPrecedence);
-
-                    left = new UnaryExpressionSyntax(operatorToken, operand);
+                    left = ParseUnaryExpression(unaryOperatorPrecedence);
                 }
                 else
                 {
@@ -263,6 +263,28 @@ namespace PHPSharp.Syntax
             }
 
             return left;
+        }
+
+        private AssignmentExpressionSyntax ParseAssignmentExpression()
+        {
+            SyntaxToken identifierToken = NextToken();
+            SyntaxToken operatorToken = NextToken();
+            ExpressionSyntax right = ParseExpression();
+
+            return new AssignmentExpressionSyntax(identifierToken, operatorToken, right);
+        }
+
+        private UnaryExpressionSyntax ParseUnaryExpression(int unaryOperatorPrecedence)
+        {
+            SyntaxToken operatorToken = NextToken();
+
+            ExpressionSyntax operand;
+            if (operatorToken.Kind == SyntaxKind.MinusMinusToken || operatorToken.Kind == SyntaxKind.PlusPlusToken)
+                operand = ParseNameExpression();
+            else
+                operand = ParseExpression(unaryOperatorPrecedence);
+
+            return new UnaryExpressionSyntax(operatorToken, operand);
         }
 
         private ExpressionSyntax ParsePrimaryExpression()
