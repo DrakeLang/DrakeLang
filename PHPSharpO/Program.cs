@@ -104,8 +104,9 @@ namespace PHPSharpO
                 foreach (Diagnostic diagnostic in result.Diagnostics)
                 {
                     int lineIndex = text.GetLineIndex(diagnostic.Span.Start);
+                    TextLine line = text.Lines[lineIndex];
                     int lineNumer = lineIndex + 1;
-                    int character = diagnostic.Span.Start - text.Lines[lineIndex].Start + 1;
+                    int character = diagnostic.Span.Start - line.Start + 1;
 
                     Console.ForegroundColor = ConsoleColor.DarkRed;
                     Console.WriteLine();
@@ -113,17 +114,20 @@ namespace PHPSharpO
                     Console.WriteLine(diagnostic);
                     Console.ResetColor();
 
-                    string prefix = content.Substring(0, diagnostic.Span.Start);
-                    string error = content.Substring(diagnostic.Span.Start, diagnostic.Span.Length);
-                    string suffix = content.Substring(diagnostic.Span.End);
+                    TextSpan prefixSpan = TextSpan.FromBounds(line.Start, diagnostic.Span.Start);
+                    TextSpan suffixSpan = TextSpan.FromBounds(diagnostic.Span.End, line.End);
+
+                    string prefix = text.ToString(prefixSpan);
+                    string error = text.ToString(diagnostic.Span);
+                    string suffix = text.ToString(suffixSpan);
 
                     Console.Write("    ");
                     Console.Write(prefix);
 
                     Console.ForegroundColor = ConsoleColor.DarkRed;
                     Console.Write(error);
-
                     Console.ResetColor();
+
                     Console.Write(suffix);
 
                     Console.WriteLine();

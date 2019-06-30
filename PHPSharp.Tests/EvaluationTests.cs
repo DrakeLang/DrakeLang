@@ -58,6 +58,10 @@ namespace PHPSharp.Tests
         [InlineData("!true;", false)]
         [InlineData("!false;", true)]
         [InlineData("{ var a = 0; (a = 10) * a; }", 100)]
+        [InlineData("{ var a = 0; if (a == 0) a = 10; a; }", 10)]
+        [InlineData("{ var a = 4; if (a == 0) a = 10; a; }", 4)]
+        [InlineData("{ var a = 0; if (a == 0) a = 10; else a = 34; a; }", 10)]
+        [InlineData("{ var a = 4; if (a == 0) a = 10; else a = 32; a; }", 32)]
         public void Evaluator_Computes_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
