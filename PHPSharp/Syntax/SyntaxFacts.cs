@@ -90,6 +90,9 @@ namespace PHPSharp.Syntax
                 case "var":
                     return SyntaxKind.VarKeyword;
 
+                case "while":
+                    return SyntaxKind.WhileKeyword;
+
                 default:
                     return SyntaxKind.IdentifierToken;
             }
@@ -185,11 +188,14 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.LetKeyword:
                     return "let";
 
+                case SyntaxKind.TrueKeyword:
+                    return "true";
+
                 case SyntaxKind.VarKeyword:
                     return "var";
 
-                case SyntaxKind.TrueKeyword:
-                    return "true";
+                case SyntaxKind.WhileKeyword:
+                    return "while";
 
                 case SyntaxKind.SemicolonToken:
                     return ";";

@@ -53,6 +53,7 @@ namespace PHPSharp.Syntax
         LetKeyword,
         TrueKeyword,
         VarKeyword,
+        WhileKeyword,
 
         // Nodes
         CompilationUnit,
@@ -61,7 +62,8 @@ namespace PHPSharp.Syntax
         // Statements
         BlockStatement,
         VariableDeclarationStatement,
-        IfStatementSyntax,
+        IfStatement,
+        WhileStatement,
         ExpressionStatement,
 
         // Expressions

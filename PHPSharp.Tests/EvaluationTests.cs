@@ -27,45 +27,13 @@ namespace PHPSharp.Tests
     public class EvaluationTests
     {
         [Theory]
-        [InlineData("1;", 1)]
-        [InlineData("+1;", 1)]
-        [InlineData("-1;", -1)]
-        [InlineData("14 + 12;", 26)]
-        [InlineData("12 - 3;", 9)]
-        [InlineData("4 * 2;", 8)]
-        [InlineData("9 / 3;", 3)]
-        [InlineData("(10);", 10)]
-        [InlineData("12 == 3;", false)]
-        [InlineData("3 == 3;", true)]
-        [InlineData("12 != 3;", true)]
-        [InlineData("3 != 3;", false)]
-        [InlineData("3 < 4;", true)]
-        [InlineData("5 < 4;", false)]
-        [InlineData("4 <= 4;", true)]
-        [InlineData("4 <= 5;", true)]
-        [InlineData("5 <= 4;", false)]
-        [InlineData("4 > 3;", true)]
-        [InlineData("4 > 5;", false)]
-        [InlineData("4 >= 4;", true)]
-        [InlineData("5 >= 4;", true)]
-        [InlineData("4 >= 5;", false)]
-        [InlineData("false == false;", true)]
-        [InlineData("true == false;", false)]
-        [InlineData("false != false;", false)]
-        [InlineData("true != false;", true)]
-        [InlineData("true;", true)]
-        [InlineData("false;", false)]
-        [InlineData("!true;", false)]
-        [InlineData("!false;", true)]
-        [InlineData("{ var a = 0; (a = 10) * a; }", 100)]
-        [InlineData("{ var a = 0; if (a == 0) a = 10; a; }", 10)]
-        [InlineData("{ var a = 4; if (a == 0) a = 10; a; }", 4)]
-        [InlineData("{ var a = 0; if (a == 0) a = 10; else a = 34; a; }", 10)]
-        [InlineData("{ var a = 4; if (a == 0) a = 10; else a = 32; a; }", 32)]
+        [MemberData(nameof(GetStatementsData))]
         public void Evaluator_Computes_CorrectValues(string text, object expectedValue)
         {
             AssertValue(text, expectedValue);
         }
+
+        #region Reports
 
         [Fact]
         public void Evaluator_VariableDeclaration_Reports_Redeclaration()
@@ -158,6 +126,67 @@ namespace PHPSharp.Tests
             ";
 
             AssertDiagnostics(text, diagnostics);
+        }
+
+        #endregion Reports
+
+        public static IEnumerable<object[]> GetStatementsData()
+        {
+            foreach ((string statement, object result) in GetStatements())
+                yield return new object[] { statement, result };
+        }
+
+        private static IEnumerable<(string statement, object result)> GetStatements()
+        {
+            // Int statements
+            yield return ("1;", 1);
+            yield return ("+1;", 1);
+            yield return ("-1;", -1);
+            yield return ("14 + 12;", 26);
+            yield return ("12 - 3;", 9);
+            yield return ("4 * 2;", 8);
+            yield return ("9 / 3;", 3);
+            yield return ("(10);", 10);
+
+            // Int comparisons
+            yield return ("12 == 3;", false);
+            yield return ("3 == 3;", true);
+            yield return ("12 != 3;", true);
+            yield return ("3 != 3;", false);
+            yield return ("3 < 4;", true);
+            yield return ("5 < 4;", false);
+            yield return ("4 <= 4;", true);
+            yield return ("4 <= 5;", true);
+            yield return ("5 <= 4;", false);
+            yield return ("4 > 3;", true);
+            yield return ("4 > 5;", false);
+            yield return ("4 >= 4;", true);
+            yield return ("5 >= 4;", true);
+            yield return ("4 >= 5;", false);
+
+            // Bool statements
+            yield return ("true;", true);
+            yield return ("false;", false);
+            yield return ("!true;", false);
+            yield return ("!false;", true);
+
+            // Bool comparisons
+            yield return ("false == false;", true);
+            yield return ("true == false;", false);
+            yield return ("false != false;", false);
+            yield return ("true != false;", true);
+
+            // Variable
+            yield return ("{ var a = 0; (a = 10) * a; }", 100);
+
+            // If-else-statement
+            yield return ("{ var a = 0; if (a == 0) a = 10; a; }", 10);
+            yield return ("{ var a = 4; if (a == 0) a = 10; a; }", 4);
+            yield return ("{ var a = 0; if (a == 0) a = 10; else a = 34; a; }", 10);
+            yield return ("{ var a = 4; if (a == 0) a = 10; else a = 32; a; }", 32);
+
+            // While statement
+            yield return ("{ var a = 0; while (a < 10) a = a + 1; a; }", 10);
         }
 
         private static void AssertValue(string text, object expectedValue)

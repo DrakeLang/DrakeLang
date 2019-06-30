@@ -32,7 +32,7 @@ namespace PHPSharp.Syntax
 
         #region Properties
 
-        public override SyntaxKind Kind => SyntaxKind.IfStatementSyntax;
+        public override SyntaxKind Kind => SyntaxKind.IfStatement;
 
         public SyntaxToken IfKeyword { get; }
         public ParenthesizedExpressionSyntax Condition { get; }

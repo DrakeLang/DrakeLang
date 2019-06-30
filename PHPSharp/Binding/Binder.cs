@@ -50,8 +50,11 @@ namespace PHPSharp.Binding
                 case SyntaxKind.VariableDeclarationStatement:
                     return BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax);
 
-                case SyntaxKind.IfStatementSyntax:
+                case SyntaxKind.IfStatement:
                     return BindIfStatement((IfStatementSyntax)syntax);
+
+                case SyntaxKind.WhileStatement:
+                    return BindWhileStatement((WhileStatementSyntax)syntax);
 
                 case SyntaxKind.ExpressionStatement:
                     return BindExpressionStatement((ExpressionStatementSyntax)syntax);
@@ -60,6 +63,8 @@ namespace PHPSharp.Binding
                     throw new Exception($"Unexpected syntax {syntax.Kind}");
             }
         }
+
+      
 
         private BoundBlockStatement BindBlockStatement(BlockStatementSyntax syntax)
         {
@@ -97,6 +102,14 @@ namespace PHPSharp.Binding
             BoundStatement elseStatement = syntax.ElseClause == null ? null : BindStatement(syntax.ElseClause.ElseStatement);
 
             return new BoundIfStatement(condition, thenStatement, elseStatement);
+        }
+
+        private BoundWhileStatement BindWhileStatement(WhileStatementSyntax syntax)
+        {
+            BoundExpression condition = BindExpression(syntax.Condition.Expression, typeof(bool));
+            BoundStatement body = BindStatement(syntax.Body);
+
+            return new BoundWhileStatement(condition, body);
         }
 
         private BoundExpressionStatement BindExpressionStatement(ExpressionStatementSyntax syntax)

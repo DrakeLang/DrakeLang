@@ -18,20 +18,21 @@
 
 namespace PHPSharp.Binding
 {
-    public enum BoundNodeKind
+    internal sealed class BoundWhileStatement : BoundStatement
     {
-        // Statements
-        BlockStatement,
-        VariableDeclarationStatement,
-        IfStatement,
-        ExpressionStatement,
+        public BoundWhileStatement(BoundExpression condition, BoundStatement body)
+        {
+            Condition = condition;
+            Body = body;
+        }
 
-        // Expressions
-        LiteralExpression,
-        VariableExpression,
-        AssignmentExpression,
-        UnaryExpression,
-        BinaryExpression,
-        WhileStatement,
+        #region Properties
+
+        public override BoundNodeKind Kind => BoundNodeKind.WhileStatement;
+
+        public BoundExpression Condition { get; }
+        public BoundStatement Body { get; }
+
+        #endregion Properties
     }
 }

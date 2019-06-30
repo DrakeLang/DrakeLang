@@ -88,6 +88,9 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.IfKeyword:
                     return ParseIfStatement();
 
+                case SyntaxKind.WhileKeyword:
+                    return ParseWhileStatement();
+
                 default:
                     return ParseExpressionStatement();
             }
@@ -149,6 +152,18 @@ namespace PHPSharp.Syntax
                 Diagnostics.ReportCannotDeclareConditional(statement.Span);
 
             return new ElseClauseSyntax(keyword, statement);
+        }
+
+        private WhileStatementSyntax ParseWhileStatement()
+        {
+            SyntaxToken keyword = MatchToken(SyntaxKind.WhileKeyword);
+            ParenthesizedExpressionSyntax condition = ParseParenthesizedExpression();
+            StatementSyntax statement = ParseStatement();
+
+            if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
+                Diagnostics.ReportCannotDeclareConditional(statement.Span);
+
+            return new WhileStatementSyntax(keyword, condition, statement);
         }
 
         private ExpressionStatementSyntax ParseExpressionStatement()

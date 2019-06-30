@@ -16,22 +16,38 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-namespace PHPSharp.Binding
-{
-    public enum BoundNodeKind
-    {
-        // Statements
-        BlockStatement,
-        VariableDeclarationStatement,
-        IfStatement,
-        ExpressionStatement,
+using System.Collections.Generic;
 
-        // Expressions
-        LiteralExpression,
-        VariableExpression,
-        AssignmentExpression,
-        UnaryExpression,
-        BinaryExpression,
-        WhileStatement,
+namespace PHPSharp.Syntax
+{
+    internal sealed class WhileStatementSyntax : StatementSyntax
+    {
+        public WhileStatementSyntax(SyntaxToken whileKeyword, ParenthesizedExpressionSyntax condition, StatementSyntax body)
+        {
+            WhileKeyword = whileKeyword;
+            Condition = condition;
+            Body = body;
+        }
+
+        #region Properties
+
+        public override SyntaxKind Kind => SyntaxKind.WhileStatement;
+
+        public SyntaxToken WhileKeyword { get; }
+        public ParenthesizedExpressionSyntax Condition { get; }
+        public StatementSyntax Body { get; }
+
+        #endregion Properties
+
+        #region Methods
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return WhileKeyword;
+            yield return Condition;
+            yield return Body;
+        }
+
+        #endregion Methods
     }
 }
