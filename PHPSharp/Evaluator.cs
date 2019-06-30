@@ -67,6 +67,10 @@ namespace PHPSharp
                     EvaluateWhileStatement((BoundWhileStatement)node);
                     break;
 
+                case BoundNodeKind.ForStatement:
+                    EvaluateForStatement((BoundForStatement)node);
+                    break;
+
                 case BoundNodeKind.ExpressionStatement:
                     EvaluateExpressionStatement((BoundExpressionStatement)node);
                     break;
@@ -104,6 +108,18 @@ namespace PHPSharp
             bool condition() => (bool)EvaluateExpression(node.Condition);
             while (condition())
                 EvaluateStatement(node.Body);
+        }
+
+        private void EvaluateForStatement(BoundForStatement node)
+        {
+            EvaluateStatement(node.InitializationStatement);
+
+            bool condition() => (bool)EvaluateExpression(node.Condition);
+            while (condition())
+            {
+                EvaluateStatement(node.Body);
+                EvaluateExpressionStatement(node.UpdateStatement);
+            }
         }
 
         private void EvaluateExpressionStatement(BoundExpressionStatement node)

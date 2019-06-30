@@ -42,7 +42,9 @@ namespace PHPSharp.Syntax
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             yield return Expression;
-            yield return SemicolonToken;
+
+            if (SemicolonToken != null)
+                yield return SemicolonToken;
         }
 
         #endregion Methods

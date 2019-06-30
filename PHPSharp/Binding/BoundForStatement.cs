@@ -18,26 +18,24 @@
 
 namespace PHPSharp.Binding
 {
-    internal sealed class BoundIfStatement : BoundStatement
+    internal sealed class BoundForStatement : BoundStatement
     {
-        public BoundIfStatement()
+        public BoundForStatement(BoundStatement initializationStatement, BoundExpression condition, BoundExpressionStatement updateStatement, BoundStatement body)
         {
-        }
-
-        public BoundIfStatement(BoundExpression condition, BoundStatement thenStatement, BoundStatement elseStatement)
-        {
+            InitializationStatement = initializationStatement;
             Condition = condition;
-            ThenStatement = thenStatement;
-            ElseStatement = elseStatement;
+            UpdateStatement = updateStatement;
+            Body = body;
         }
 
         #region Properties
 
-        public override BoundNodeKind Kind => BoundNodeKind.IfStatement;
+        public override BoundNodeKind Kind => BoundNodeKind.ForStatement;
 
+        public BoundStatement InitializationStatement { get; }
         public BoundExpression Condition { get; }
-        public BoundStatement ThenStatement { get; }
-        public BoundStatement ElseStatement { get; }
+        public BoundStatement Body { get; }
+        public BoundExpressionStatement UpdateStatement { get; }
 
         #endregion Properties
     }

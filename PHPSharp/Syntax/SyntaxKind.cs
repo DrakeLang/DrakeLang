@@ -49,6 +49,7 @@ namespace PHPSharp.Syntax
         // Keywords
         ElseKeyword,
         FalseKeyword,
+        ForKeyword,
         IfKeyword,
         LetKeyword,
         TrueKeyword,
@@ -64,6 +65,7 @@ namespace PHPSharp.Syntax
         VariableDeclarationStatement,
         IfStatement,
         WhileStatement,
+        ForStatement,
         ExpressionStatement,
 
         // Expressions

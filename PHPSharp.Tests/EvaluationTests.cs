@@ -185,8 +185,9 @@ namespace PHPSharp.Tests
             yield return ("{ var a = 0; if (a == 0) a = 10; else a = 34; a; }", 10);
             yield return ("{ var a = 4; if (a == 0) a = 10; else a = 32; a; }", 32);
 
-            // While statement
+            // While, for statement
             yield return ("{ var a = 0; while (a < 10) a = a + 1; a; }", 10);
+            yield return ("{ var result = 0; for (var i = 0; i <= 10; i = i + 1) result = result + i; result; }", 55);
         }
 
         private static void AssertValue(string text, object expectedValue)

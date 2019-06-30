@@ -24,6 +24,8 @@ namespace PHPSharp.Binding
         BlockStatement,
         VariableDeclarationStatement,
         IfStatement,
+        WhileStatement,
+        ForStatement,
         ExpressionStatement,
 
         // Expressions
@@ -32,6 +34,5 @@ namespace PHPSharp.Binding
         AssignmentExpression,
         UnaryExpression,
         BinaryExpression,
-        WhileStatement,
     }
 }

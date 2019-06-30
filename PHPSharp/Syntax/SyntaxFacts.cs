@@ -78,6 +78,9 @@ namespace PHPSharp.Syntax
                 case "false":
                     return SyntaxKind.FalseKeyword;
 
+                case "for":
+                    return SyntaxKind.ForKeyword;
+
                 case "if":
                     return SyntaxKind.IfKeyword;
 
@@ -181,6 +184,9 @@ namespace PHPSharp.Syntax
 
                 case SyntaxKind.FalseKeyword:
                     return "false";
+
+                case SyntaxKind.ForKeyword:
+                    return "for";
 
                 case SyntaxKind.IfKeyword:
                     return "if";

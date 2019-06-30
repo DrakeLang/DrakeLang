@@ -91,6 +91,9 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.WhileKeyword:
                     return ParseWhileStatement();
 
+                case SyntaxKind.ForKeyword:
+                    return ParseForStatement();
+
                 default:
                     return ParseExpressionStatement();
             }
@@ -166,10 +169,33 @@ namespace PHPSharp.Syntax
             return new WhileStatementSyntax(keyword, condition, statement);
         }
 
-        private ExpressionStatementSyntax ParseExpressionStatement()
+        private ForStatementSyntax ParseForStatement()
+        {
+            SyntaxToken keyword = MatchToken(SyntaxKind.ForKeyword);
+            SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            StatementSyntax initStatement = ParseStatement();
+            ExpressionSyntax condition = ParseExpression();
+            SyntaxToken conditionSemicolon = MatchToken(SyntaxKind.SemicolonToken);
+            ExpressionStatementSyntax updateStatement = ParseExpressionStatement(requireSemicolon: false);
+            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+            StatementSyntax statement = ParseStatement();
+
+            if (initStatement.Kind != SyntaxKind.VariableDeclarationStatement &&
+                (initStatement.Kind != SyntaxKind.ExpressionStatement || ((ExpressionStatementSyntax)initStatement).Expression.Kind != SyntaxKind.AssignmentExpression))
+                Diagnostics.ReportDeclarationOrAssignmentOnly(initStatement.Span, initStatement.Kind);
+
+            return new ForStatementSyntax(keyword,
+                leftParenthesis, initStatement, condition, conditionSemicolon, updateStatement, rightParenthesis,
+                statement);
+        }
+
+        private ExpressionStatementSyntax ParseExpressionStatement(bool requireSemicolon = true)
         {
             ExpressionSyntax expression = ParseExpression();
-            SyntaxToken semicolonToken = MatchToken(SyntaxKind.SemicolonToken);
+
+            SyntaxToken semicolonToken = null;
+            if (requireSemicolon)
+                semicolonToken = MatchToken(SyntaxKind.SemicolonToken);
 
             return new ExpressionStatementSyntax(expression, semicolonToken);
         }

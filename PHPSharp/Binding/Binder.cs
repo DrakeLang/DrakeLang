@@ -56,6 +56,9 @@ namespace PHPSharp.Binding
                 case SyntaxKind.WhileStatement:
                     return BindWhileStatement((WhileStatementSyntax)syntax);
 
+                case SyntaxKind.ForStatement:
+                    return BindForStatement((ForStatementSyntax)syntax);
+
                 case SyntaxKind.ExpressionStatement:
                     return BindExpressionStatement((ExpressionStatementSyntax)syntax);
 
@@ -64,7 +67,7 @@ namespace PHPSharp.Binding
             }
         }
 
-      
+  
 
         private BoundBlockStatement BindBlockStatement(BlockStatementSyntax syntax)
         {
@@ -110,6 +113,16 @@ namespace PHPSharp.Binding
             BoundStatement body = BindStatement(syntax.Body);
 
             return new BoundWhileStatement(condition, body);
+        }
+
+        private BoundForStatement BindForStatement(ForStatementSyntax syntax)
+        {
+            BoundStatement initStatement = BindStatement(syntax.InitializationStatement);
+            BoundExpression condition = BindExpression(syntax.Condition, typeof(bool));
+            BoundExpressionStatement updateStatement = BindExpressionStatement(syntax.UpdateStatement);
+            BoundStatement body = BindStatement(syntax.Body);
+
+            return new BoundForStatement(initStatement, condition, updateStatement, body);
         }
 
         private BoundExpressionStatement BindExpressionStatement(ExpressionStatementSyntax syntax)

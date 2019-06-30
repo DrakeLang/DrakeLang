@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace PHPSharp.Syntax
 {
-    internal sealed class WhileStatementSyntax : StatementSyntax
+    public sealed class WhileStatementSyntax : StatementSyntax
     {
         public WhileStatementSyntax(SyntaxToken whileKeyword, ParenthesizedExpressionSyntax condition, StatementSyntax body)
         {
