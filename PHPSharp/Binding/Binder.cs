@@ -67,12 +67,10 @@ namespace PHPSharp.Binding
             }
         }
 
-  
-
         private BoundBlockStatement BindBlockStatement(BlockStatementSyntax syntax)
         {
             ImmutableArray<BoundStatement>.Builder statements = ImmutableArray.CreateBuilder<BoundStatement>();
-            _scope = new BoundScope(_scope);
+            PushScope();
 
             foreach (StatementSyntax statementSyntax in syntax.Statements)
             {
@@ -80,7 +78,7 @@ namespace PHPSharp.Binding
                 statements.Add(statement);
             }
 
-            _scope = _scope.Parent;
+            PopScope();
             return new BoundBlockStatement(statements.ToImmutable());
         }
 
@@ -117,11 +115,14 @@ namespace PHPSharp.Binding
 
         private BoundForStatement BindForStatement(ForStatementSyntax syntax)
         {
+            PushScope();
+
             BoundStatement initStatement = BindStatement(syntax.InitializationStatement);
             BoundExpression condition = BindExpression(syntax.Condition, typeof(bool));
             BoundExpressionStatement updateStatement = BindExpressionStatement(syntax.UpdateStatement);
             BoundStatement body = BindStatement(syntax.Body);
 
+            PopScope();
             return new BoundForStatement(initStatement, condition, updateStatement, body);
         }
 
@@ -247,6 +248,26 @@ namespace PHPSharp.Binding
         }
 
         #endregion BindExpression
+
+        #region Helpers
+
+        /// <summary>
+        /// Moves into a new scope.
+        /// </summary>
+        private void PushScope()
+        {
+            _scope = new BoundScope(_scope);
+        }
+
+        /// <summary>
+        /// Drops the current scope, and moves up to its parent.
+        /// </summary>
+        private void PopScope()
+        {
+            _scope = _scope.Parent;
+        }
+
+        #endregion
 
         #region Statics
 

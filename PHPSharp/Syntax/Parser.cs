@@ -194,6 +194,8 @@ namespace PHPSharp.Syntax
             SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 
             StatementSyntax statement = ParseStatement();
+            if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
+                Diagnostics.ReportCannotDeclareConditional(statement.Span);
 
             return new ForStatementSyntax(
                 keyword,
