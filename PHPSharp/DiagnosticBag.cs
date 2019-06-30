@@ -98,13 +98,13 @@ namespace PHPSharp
             Report(span, message);
         }
 
-        internal void ReportCannotDeclareConditional(TextSpan span)
+        public void ReportCannotDeclareConditional(TextSpan span)
         {
             string message = $"Variable declarations cannot be placed right after a condition.";
             Report(span, message);
         }
 
-        internal void ReportDeclarationOrAssignmentOnly(TextSpan span, SyntaxKind kind)
+        public void ReportDeclarationOrAssignmentOnly(TextSpan span, SyntaxKind kind)
         {
             string message = $"Expected variable declaration or assignment, got <{kind}> instead.";
             Report(span, message);

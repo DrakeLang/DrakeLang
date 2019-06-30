@@ -76,6 +76,9 @@ namespace PHPSharp.Syntax
         {
             switch (word)
             {
+                case "bool":
+                    return SyntaxKind.BoolKeyword;
+
                 case "else":
                     return SyntaxKind.ElseKeyword;
 
@@ -88,8 +91,8 @@ namespace PHPSharp.Syntax
                 case "if":
                     return SyntaxKind.IfKeyword;
 
-                case "let":
-                    return SyntaxKind.LetKeyword;
+                case "int":
+                    return SyntaxKind.IntKeyword;
 
                 case "true":
                     return SyntaxKind.TrueKeyword;
@@ -189,6 +192,9 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.CloseBraceToken:
                     return "}";
 
+                case SyntaxKind.BoolKeyword:
+                    return "bool";
+
                 case SyntaxKind.ElseKeyword:
                     return "else";
 
@@ -201,8 +207,8 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.IfKeyword:
                     return "if";
 
-                case SyntaxKind.LetKeyword:
-                    return "let";
+                case SyntaxKind.IntKeyword:
+                    return "int";
 
                 case SyntaxKind.TrueKeyword:
                     return "true";

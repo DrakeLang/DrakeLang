@@ -81,7 +81,8 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.OpenBraceToken:
                     return ParseBlockStatement();
 
-                case SyntaxKind.LetKeyword:
+                case SyntaxKind.BoolKeyword:
+                case SyntaxKind.IntKeyword:
                 case SyntaxKind.VarKeyword:
                     return ParseVariableDeclarationStatement(requireSemicolon);
 
@@ -127,7 +128,7 @@ namespace PHPSharp.Syntax
 
         private VariableDeclarationStatementSyntax ParseVariableDeclarationStatement(bool requireSemicolon)
         {
-            SyntaxToken keyword = MatchToken(Current.Kind);
+            SyntaxToken keyword = NextToken();
             SyntaxToken identifier = MatchToken(SyntaxKind.IdentifierToken);
             SyntaxToken equals = MatchToken(SyntaxKind.EqualsToken);
             ExpressionSyntax initializer = ParseExpression();

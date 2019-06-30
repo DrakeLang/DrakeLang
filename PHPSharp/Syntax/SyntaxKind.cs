@@ -49,11 +49,12 @@ namespace PHPSharp.Syntax
         WhitespaceToken,
 
         // Keywords
+        BoolKeyword,
         ElseKeyword,
         FalseKeyword,
         ForKeyword,
         IfKeyword,
-        LetKeyword,
+        IntKeyword,
         TrueKeyword,
         VarKeyword,
         WhileKeyword,

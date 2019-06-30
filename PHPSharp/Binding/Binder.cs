@@ -85,10 +85,25 @@ namespace PHPSharp.Binding
         private BoundVariableDeclarationStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
         {
             string name = syntax.Identifier.Text;
-            bool isReadOnly = syntax.Keyword.Kind == SyntaxKind.LetKeyword;
+            bool isReadOnly = false;
 
             BoundExpression initializer = BindExpression(syntax.Initializer);
-            VariableSymbol variable = new VariableSymbol(name, isReadOnly, initializer.Type);
+            Type variableType = initializer.Type;
+            switch (syntax.Keyword.Kind)
+            {
+                case SyntaxKind.BoolKeyword:
+                    variableType = typeof(bool);
+                    break;
+
+                case SyntaxKind.IntKeyword:
+                    variableType = typeof(int);
+                    break;
+            }
+
+            if (variableType != initializer.Type)
+                Diagnostics.ReportCannotConvert(syntax.Initializer.Span, initializer.Type, variableType);
+
+            VariableSymbol variable = new VariableSymbol(name, isReadOnly, variableType);
 
             if (!_scope.TryDeclare(variable))
                 Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);

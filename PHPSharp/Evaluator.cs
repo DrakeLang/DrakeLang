@@ -183,7 +183,7 @@ namespace PHPSharp
             if (node.Op.Kind == BoundUnaryOperatorKind.PreDecrement || node.Op.Kind == BoundUnaryOperatorKind.PreIncrement)
             {
                 BoundVariableExpression variableExpression = (BoundVariableExpression)node.Operand;
-                _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
+                _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1); 
                 return _variables[variableExpression.Variable];
             }
 
