@@ -51,7 +51,9 @@ namespace PHPSharp.Syntax
             yield return Identifier;
             yield return EqualsToken;
             yield return Initializer;
-            yield return SemicolonToken;
+
+            if (SemicolonToken != null)
+                yield return SemicolonToken;
         }
 
         #endregion Methods

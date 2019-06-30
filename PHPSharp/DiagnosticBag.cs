@@ -106,7 +106,7 @@ namespace PHPSharp
 
         internal void ReportDeclarationOrAssignmentOnly(TextSpan span, SyntaxKind kind)
         {
-            string message = $"Expected varialbe declaration or assignment, got <{kind}> instead.";
+            string message = $"Expected variable declaration or assignment, got <{kind}> instead.";
             Report(span, message);
         }
     }

@@ -22,15 +22,18 @@ namespace PHPSharp.Syntax
 {
     public sealed class ForStatementSyntax : StatementSyntax
     {
-        public ForStatementSyntax(SyntaxToken forKeyword,
+        public ForStatementSyntax(
+            SyntaxToken forKeyword,
             SyntaxToken openParenthesisToken,
-            StatementSyntax initializationStatement, ExpressionSyntax condition, SyntaxToken conditionSemicolon, ExpressionStatementSyntax updateStatement,
+            StatementSyntax initializationStatement, SyntaxToken initializationSemicolon,
+            ExpressionSyntax condition, SyntaxToken conditionSemicolon, ExpressionStatementSyntax updateStatement,
             SyntaxToken closeParenthesisToken,
             StatementSyntax body)
         {
             ForKeyword = forKeyword;
             OpenParenthesisToken = openParenthesisToken;
             InitializationStatement = initializationStatement;
+            InitializationSemicolon = initializationSemicolon;
             Condition = condition;
             ConditionSemicolon = conditionSemicolon;
             UpdateStatement = updateStatement;
@@ -45,6 +48,7 @@ namespace PHPSharp.Syntax
         public SyntaxToken ForKeyword { get; }
         public SyntaxToken OpenParenthesisToken { get; }
         public StatementSyntax InitializationStatement { get; }
+        public SyntaxToken InitializationSemicolon { get; }
         public ExpressionSyntax Condition { get; }
         public SyntaxToken ConditionSemicolon { get; }
         public ExpressionStatementSyntax UpdateStatement { get; }
@@ -60,10 +64,15 @@ namespace PHPSharp.Syntax
             yield return ForKeyword;
 
             yield return OpenParenthesisToken;
+
             yield return InitializationStatement;
+            yield return InitializationSemicolon;
+
             yield return Condition;
             yield return ConditionSemicolon;
+
             yield return UpdateStatement;
+
             yield return CloseParenthesisToken;
 
             yield return Body;
