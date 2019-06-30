@@ -152,6 +152,14 @@ namespace PHPSharp.Tests
             yield return ("false;", false);
             yield return ("!true;", false);
             yield return ("!false;", true);
+            yield return ("true && true;", true);
+            yield return ("true && false;", false);
+            yield return ("false && true;", false);
+            yield return ("false && false;", false);
+            yield return ("true || true;", true);
+            yield return ("true || false;", true);
+            yield return ("false || true;", true);
+            yield return ("false || false;", false);
 
             // Bool comparisons
             yield return ("false == false;", true);
@@ -159,10 +167,14 @@ namespace PHPSharp.Tests
             yield return ("false != false;", false);
             yield return ("true != false;", true);
 
-            // Variable
+            // Variable & assignment
             yield return ("{ var a = 0; (a = 10) * a; }", 100);
             yield return ("{ var a = 11; ++a; }", 12);
             yield return ("{ var a = 11; --a; }", 10);
+            yield return ("{ var a = 11; a += -1; }", 10);
+            yield return ("{ var a = 11; a -= 1; }", 10);
+            yield return ("{ var a = 10; a *= 2; }", 20);
+            yield return ("{ var a = 10; a /= 2; }", 5);
 
             // If-else-statement
             yield return ("{ var a = 0; if (a == 0) a = 10; a; }", 10);
