@@ -133,26 +133,16 @@ namespace PHPSharp
 
         private object EvaluateExpression(BoundExpression node)
         {
-            switch (node.Kind)
+            return node.Kind switch
             {
-                case BoundNodeKind.LiteralExpression:
-                    return EvaluateLiteralExpression((BoundLiteralExpression)node);
+                BoundNodeKind.LiteralExpression => EvaluateLiteralExpression((BoundLiteralExpression)node),
+                BoundNodeKind.VariableExpression => EvaluateVariableExpression((BoundVariableExpression)node),
+                BoundNodeKind.AssignmentExpression => EvaluateAssignmentExpression((BoundAssignmentExpression)node),
+                BoundNodeKind.UnaryExpression => EvaluateUnaryExpression((BoundUnaryExpression)node),
+                BoundNodeKind.BinaryExpression => EvaluateBinaryExpression((BoundBinaryExpression)node),
 
-                case BoundNodeKind.VariableExpression:
-                    return EvaluateVariableExpression((BoundVariableExpression)node);
-
-                case BoundNodeKind.AssignmentExpression:
-                    return EvaluateAssignmentExpression((BoundAssignmentExpression)node);
-
-                case BoundNodeKind.UnaryExpression:
-                    return EvaluateUnaryExpression((BoundUnaryExpression)node);
-
-                case BoundNodeKind.BinaryExpression:
-                    return EvaluateBinaryExpression((BoundBinaryExpression)node);
-
-                default:
-                    throw new Exception($"Unexpected node '{node.Kind}'.");
-            }
+                _ => throw new Exception($"Unexpected node '{node.Kind}'."),
+            };
         }
 
         private object EvaluateLiteralExpression(BoundLiteralExpression node)
@@ -201,6 +191,9 @@ namespace PHPSharp
                 case BoundUnaryOperatorKind.LogicalNegation:
                     return !(bool)operant;
 
+                case BoundUnaryOperatorKind.OnesComplement:
+                    return ~(int)operant;
+
                 default:
                     throw new Exception($"Unexpected unary operator '{node.Op.Kind}'.");
             }
@@ -227,6 +220,24 @@ namespace PHPSharp
                         return "ERR: Can't divide by zero";
 
                     return (int)left / (int)right;
+
+                case BoundBinaryOperatorKind.BitwiseAnd:
+                    if (node.Type == typeof(int))
+                        return (int)left & (int)right;
+                    else
+                        return (bool)left & (bool)right;
+
+                case BoundBinaryOperatorKind.BitwiseOr:
+                    if (node.Type == typeof(int))
+                        return (int)left | (int)right;
+                    else
+                        return (bool)left | (bool)right;
+
+                case BoundBinaryOperatorKind.BitwiseXor:
+                    if (node.Type == typeof(int))
+                        return (int)left ^ (int)right;
+                    else
+                        return (bool)left ^ (bool)right;
 
                 case BoundBinaryOperatorKind.LogicalAnd:
                     return (bool)left && (bool)right;

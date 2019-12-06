@@ -182,6 +182,14 @@ namespace PHPSharp.Syntax
                     _position++;
                     return SyntaxKind.CloseBraceToken;
 
+                case '~':
+                    _position++;
+                    return SyntaxKind.TildeToken;
+
+                case '^':
+                    _position++;
+                    return SyntaxKind.HatToken;
+
                 case '&':
                     _position++;
                     if (Current == '&')

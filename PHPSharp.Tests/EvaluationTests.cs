@@ -125,6 +125,7 @@ namespace PHPSharp.Tests
             yield return ("1;", 1);
             yield return ("+1;", 1);
             yield return ("-1;", -1);
+            yield return ("~1;", ~1);
             yield return ("14 + 12;", 26);
             yield return ("12 - 3;", 9);
             yield return ("4 * 2;", 8);
@@ -147,25 +148,49 @@ namespace PHPSharp.Tests
             yield return ("5 >= 4;", true);
             yield return ("4 >= 5;", false);
 
+            // Bitwise int operations
+            yield return ("1 | 2;", 3);
+            yield return ("1 | 0;", 1);
+            yield return ("1 & 2;", 0);
+            yield return ("1 & 1;", 1);
+            yield return ("1 & 0;", 0);
+            yield return ("1 ^ 0;", 1);
+            yield return ("0 ^ 1;", 1);
+            yield return ("1 ^ 3;", 2);
+
             // Bool statements
             yield return ("true;", true);
             yield return ("false;", false);
             yield return ("!true;", false);
             yield return ("!false;", true);
-            yield return ("true && true;", true);
-            yield return ("true && false;", false);
-            yield return ("false && true;", false);
-            yield return ("false && false;", false);
             yield return ("true || true;", true);
             yield return ("true || false;", true);
             yield return ("false || true;", true);
             yield return ("false || false;", false);
+            yield return ("true && true;", true);
+            yield return ("true && false;", false);
+            yield return ("false && true;", false);
+            yield return ("false && false;", false);
 
             // Bool comparisons
             yield return ("false == false;", true);
             yield return ("true == false;", false);
             yield return ("false != false;", false);
             yield return ("true != false;", true);
+
+            // Bitwize bool operations
+            yield return ("false | false;", false);
+            yield return ("false | true;", true);
+            yield return ("true | false;", true);
+            yield return ("true | true;", true);
+            yield return ("false & false;", false);
+            yield return ("false & true;", false);
+            yield return ("true & false;", false);
+            yield return ("true & true;", true);
+            yield return ("false ^ false;", false);
+            yield return ("false ^ true;", true);
+            yield return ("true ^ false;", true);
+            yield return ("true ^ true;", false);
 
             // Variable & assignment
             yield return ("{ var a = 0; (a = 10) * a; }", 100);

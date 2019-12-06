@@ -26,5 +26,6 @@ namespace PHPSharp.Binding
         PreDecrement,
 
         LogicalNegation,
+        OnesComplement,
     }
 }

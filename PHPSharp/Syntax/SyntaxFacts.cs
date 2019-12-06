@@ -34,6 +34,7 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.PlusToken:
                 case SyntaxKind.MinusToken:
                 case SyntaxKind.BangToken:
+                case SyntaxKind.TildeToken:
                     return 6;
 
                 default:
@@ -61,10 +62,13 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.GreaterOrEqualsToken:
                     return 3;
 
+                case SyntaxKind.AmpersandToken:
                 case SyntaxKind.AmpersandAmpersandToken:
                     return 2;
 
+                case SyntaxKind.PipeToken:
                 case SyntaxKind.PipePipeToken:
+                case SyntaxKind.HatToken:
                     return 1;
 
                 default:
@@ -146,6 +150,8 @@ namespace PHPSharp.Syntax
                 SyntaxKind.BangToken => "!",
                 SyntaxKind.BangEqualsToken => "!=",
                 SyntaxKind.EqualsToken => "=",
+                SyntaxKind.TildeToken => "~",
+                SyntaxKind.HatToken => "^",
                 SyntaxKind.AmpersandToken => "&",
                 SyntaxKind.AmpersandAmpersandToken => "&&",
                 SyntaxKind.AmpersandEqualsToken => "&=",

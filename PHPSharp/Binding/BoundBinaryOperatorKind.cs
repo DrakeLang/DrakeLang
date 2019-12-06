@@ -24,13 +24,16 @@ namespace PHPSharp.Binding
         Subtraction,
         Multiplication,
         Division,
+        BitwiseAnd,
         LogicalAnd,
+        BitwiseOr,
         LogicalOr,
+        BitwiseXor,
         Equals,
         NotEquals,
         LessThan,
         LessThanOrEquals,
         GreaterThan,
-        GreaterThanOrEquals
+        GreaterThanOrEquals,
     }
 }
