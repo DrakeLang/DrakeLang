@@ -1,4 +1,4 @@
 @echo off
 
-dotnet build
-dotnet vstest PHPSharp.Tests\bin\Debug\netcoreapp2.1\PHPSharp.Tests.dll
+dotnet build PHPSharp.sln
+dotnet test PHPSharp.Tests\PHPSharp.Tests.csproj

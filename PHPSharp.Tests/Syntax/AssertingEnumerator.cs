@@ -51,7 +51,7 @@ namespace PHPSharp.Tests.Syntax
             }
         }
 
-        public void AssertToken(SyntaxKind kind, string text)
+        public void AssertToken(SyntaxKind kind, string? text)
         {
             try
             {

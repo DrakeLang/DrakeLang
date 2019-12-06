@@ -184,15 +184,15 @@ namespace PHPSharp.Tests
 
             // While, for statement
             yield return ("{ var a = 0; while (a < 10) a = a + 1; a; }", 10);
-            yield return ("{ var result = 0; for (var i = 0; i <= 10; i = i + 1) result = result + i; result; }", 55);
+            yield return ("{ var result = 0; for (var i = 0; i <= 10; ++i) result = result + i; result; }", 55);
         }
 
         private static void AssertValue(string text, object expectedValue)
         {
-            var syntaxTree = SyntaxTree.Parse(text);
-            var compilation = new Compilation(syntaxTree);
-            var variables = new Dictionary<VariableSymbol, object>();
-            var result = compilation.Evaluate(variables);
+            SyntaxTree syntaxTree = SyntaxTree.Parse(text);
+            Compilation compilation = new Compilation(syntaxTree);
+            Dictionary<VariableSymbol, object> variables = new Dictionary<VariableSymbol, object>();
+            EvaluationResult result = compilation.Evaluate(variables);
 
             Assert.Empty(result.Diagnostics);
             Assert.Equal(expectedValue, result.Value);
@@ -215,7 +215,7 @@ namespace PHPSharp.Tests
             for (int i = 0; i < expectedDiagnostics.Length; i++)
             {
                 string expectedMessage = expectedDiagnostics[i];
-                string actualMessage = result.Diagnostics[i].Message;
+                string? actualMessage = result.Diagnostics[i].Message;
 
                 TextSpan expectedSpan = annotaedText.Spans[i];
                 TextSpan actualSpan = result.Diagnostics[i].Span;

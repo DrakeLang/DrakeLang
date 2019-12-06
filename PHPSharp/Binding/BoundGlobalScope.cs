@@ -22,7 +22,7 @@ namespace PHPSharp.Binding
 {
     internal sealed class BoundGlobalScope
     {
-        public BoundGlobalScope(BoundGlobalScope previous, ImmutableArray<Diagnostic> diagnostics, ImmutableArray<VariableSymbol> variables, BoundStatement statement)
+        public BoundGlobalScope(BoundGlobalScope? previous, ImmutableArray<Diagnostic> diagnostics, ImmutableArray<VariableSymbol> variables, BoundStatement statement)
         {
             Previous = previous;
             Diagnostics = diagnostics;
@@ -30,7 +30,7 @@ namespace PHPSharp.Binding
             Statement = statement;
         }
 
-        public BoundGlobalScope Previous { get; }
+        public BoundGlobalScope? Previous { get; }
         public ImmutableArray<Diagnostic> Diagnostics { get; }
         public ImmutableArray<VariableSymbol> Variables { get; }
         public BoundStatement Statement { get; }

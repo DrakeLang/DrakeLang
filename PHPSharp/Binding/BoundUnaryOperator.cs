@@ -47,7 +47,7 @@ namespace PHPSharp.Binding
 
         #region Public statics
 
-        public static BoundUnaryOperator Bind(SyntaxKind syntaxKind, Type operandType)
+        public static BoundUnaryOperator? Bind(SyntaxKind syntaxKind, Type operandType)
         {
             foreach (BoundUnaryOperator op in _operators)
             {

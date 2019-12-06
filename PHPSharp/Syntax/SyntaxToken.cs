@@ -24,7 +24,7 @@ namespace PHPSharp.Syntax
 {
     public class SyntaxToken : SyntaxNode
     {
-        public SyntaxToken(SyntaxKind kind, int position, string text, object value)
+        public SyntaxToken(SyntaxKind kind, int position, string? text, object? value)
         {
             Kind = kind;
             Position = position;
@@ -37,8 +37,8 @@ namespace PHPSharp.Syntax
         public override SyntaxKind Kind { get; }
 
         public int Position { get; }
-        public string Text { get; }
-        public object Value { get; }
+        public string? Text { get; }
+        public object? Value { get; }
         public override TextSpan Span => new TextSpan(Position, Text?.Length ?? 0);
 
         #endregion Properties

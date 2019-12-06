@@ -27,7 +27,7 @@ namespace PHPSharp.Binding
     {
         private BoundScope _scope;
 
-        public Binder(BoundScope parent)
+        public Binder(BoundScope? parent)
         {
             _scope = new BoundScope(parent);
         }
@@ -42,29 +42,17 @@ namespace PHPSharp.Binding
 
         private BoundStatement BindStatement(StatementSyntax syntax)
         {
-            switch (syntax.Kind)
+            return syntax.Kind switch
             {
-                case SyntaxKind.BlockStatement:
-                    return BindBlockStatement((BlockStatementSyntax)syntax);
+                SyntaxKind.BlockStatement => BindBlockStatement((BlockStatementSyntax)syntax),
+                SyntaxKind.VariableDeclarationStatement => BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax),
+                SyntaxKind.IfStatement => BindIfStatement((IfStatementSyntax)syntax),
+                SyntaxKind.WhileStatement => BindWhileStatement((WhileStatementSyntax)syntax),
+                SyntaxKind.ForStatement => BindForStatement((ForStatementSyntax)syntax),
+                SyntaxKind.ExpressionStatement => BindExpressionStatement((ExpressionStatementSyntax)syntax),
 
-                case SyntaxKind.VariableDeclarationStatement:
-                    return BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax);
-
-                case SyntaxKind.IfStatement:
-                    return BindIfStatement((IfStatementSyntax)syntax);
-
-                case SyntaxKind.WhileStatement:
-                    return BindWhileStatement((WhileStatementSyntax)syntax);
-
-                case SyntaxKind.ForStatement:
-                    return BindForStatement((ForStatementSyntax)syntax);
-
-                case SyntaxKind.ExpressionStatement:
-                    return BindExpressionStatement((ExpressionStatementSyntax)syntax);
-
-                default:
-                    throw new Exception($"Unexpected syntax {syntax.Kind}");
-            }
+                _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
+            };
         }
 
         private BoundBlockStatement BindBlockStatement(BlockStatementSyntax syntax)
@@ -84,7 +72,7 @@ namespace PHPSharp.Binding
 
         private BoundVariableDeclarationStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
         {
-            string name = syntax.Identifier.Text;
+            string name = syntax.Identifier.Text ?? throw new Exception("Variable name cannot be null");
             bool isReadOnly = false;
 
             BoundExpression initializer = BindExpression(syntax.Initializer);
@@ -115,7 +103,7 @@ namespace PHPSharp.Binding
         {
             BoundExpression condition = BindExpression(syntax.Condition.Expression, typeof(bool));
             BoundStatement thenStatement = BindStatement(syntax.ThenStatement);
-            BoundStatement elseStatement = syntax.ElseClause == null ? null : BindStatement(syntax.ElseClause.ElseStatement);
+            BoundStatement? elseStatement = syntax.ElseClause is null ? null : BindStatement(syntax.ElseClause.ElseStatement);
 
             return new BoundIfStatement(condition, thenStatement, elseStatement);
         }
@@ -153,29 +141,17 @@ namespace PHPSharp.Binding
 
         private BoundExpression BindExpression(ExpressionSyntax syntax)
         {
-            switch (syntax.Kind)
+            return syntax.Kind switch
             {
-                case SyntaxKind.ParenthesizedExpression:
-                    return BindParenthesizedExpression((ParenthesizedExpressionSyntax)syntax);
+                SyntaxKind.ParenthesizedExpression => BindParenthesizedExpression((ParenthesizedExpressionSyntax)syntax),
+                SyntaxKind.LiteralExpression => BindLiteralExpression((LiteralExpressionSyntax)syntax),
+                SyntaxKind.NameExpression => BindNameExpression((NameExpressionSyntax)syntax),
+                SyntaxKind.AssignmentExpression => BindAssignmentExpression((AssignmentExpressionSyntax)syntax),
+                SyntaxKind.UnaryExpression => BindUnaryExpression((UnaryExpressionSyntax)syntax),
+                SyntaxKind.BinaryExpression => BindBinaryExpression((BinaryExpressionSyntax)syntax),
 
-                case SyntaxKind.LiteralExpression:
-                    return BindLiteralExpression((LiteralExpressionSyntax)syntax);
-
-                case SyntaxKind.NameExpression:
-                    return BindNameExpression((NameExpressionSyntax)syntax);
-
-                case SyntaxKind.AssignmentExpression:
-                    return BindAssignmentExpression((AssignmentExpressionSyntax)syntax);
-
-                case SyntaxKind.UnaryExpression:
-                    return BindUnaryExpression((UnaryExpressionSyntax)syntax);
-
-                case SyntaxKind.BinaryExpression:
-                    return BindBinaryExpression((BinaryExpressionSyntax)syntax);
-
-                default:
-                    throw new Exception($"Unexpected syntax {syntax.Kind}");
-            }
+                _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
+            };
         }
 
         private BoundExpression BindExpression(ExpressionSyntax syntax, Type targetType)
@@ -200,11 +176,11 @@ namespace PHPSharp.Binding
 
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
         {
-            string name = syntax.IdentifierToken.Text;
+            string? name = syntax.IdentifierToken.Text;
             if (string.IsNullOrEmpty(name))
                 return new BoundLiteralExpression(0);
 
-            if (!_scope.TryLookup(name, out VariableSymbol variable))
+            if (!_scope.TryLookup(name, out VariableSymbol? variable))
             {
                 Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
                 return new BoundLiteralExpression(0);
@@ -215,10 +191,10 @@ namespace PHPSharp.Binding
 
         private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax)
         {
-            string name = syntax.IdentifierToken.Text;
+            string? name = syntax.IdentifierToken.Text;
             BoundExpression boundExpression = BindExpression(syntax.Expression);
 
-            if (!_scope.TryLookup(name, out VariableSymbol variable))
+            if (!_scope.TryLookup(name, out VariableSymbol? variable))
             {
                 Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
                 return boundExpression;
@@ -264,7 +240,11 @@ namespace PHPSharp.Binding
                 }
 
                 BoundVariableExpression boundVariable = new BoundVariableExpression(variable);
-                BoundBinaryOperator boundOp = BoundBinaryOperator.Bind(operatorKind, variable.Type, boundExpression.Type);
+                BoundBinaryOperator? boundOp = BoundBinaryOperator.Bind(operatorKind, variable.Type, boundExpression.Type);
+                if (boundOp is null)
+                {
+                    throw new InvalidOperationException();
+                }
 
                 boundExpression = new BoundBinaryExpression(boundVariable, boundOp, boundExpression);
             }
@@ -275,9 +255,9 @@ namespace PHPSharp.Binding
         private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax)
         {
             BoundExpression boundOperand = BindExpression(syntax.Operand);
-            BoundUnaryOperator op = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, boundOperand.Type);
+            BoundUnaryOperator? op = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, boundOperand.Type);
 
-            if (op == null)
+            if (op is null)
             {
                 Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundOperand.Type);
                 return boundOperand;
@@ -290,9 +270,9 @@ namespace PHPSharp.Binding
         {
             BoundExpression boundLeft = BindExpression(syntax.Left);
             BoundExpression boundRight = BindExpression(syntax.Right);
-            BoundBinaryOperator op = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
+            BoundBinaryOperator? op = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
 
-            if (op == null)
+            if (op is null)
             {
                 Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundLeft.Type, boundRight.Type);
                 return boundLeft;
@@ -318,16 +298,16 @@ namespace PHPSharp.Binding
         /// </summary>
         private void PopScope()
         {
-            _scope = _scope.Parent;
+            _scope = _scope.Parent ?? throw new InvalidOperationException("Scope's parent was null");
         }
 
         #endregion Helpers
 
         #region Statics
 
-        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope previous, CompilationUnitSyntax syntax)
+        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope? previous, CompilationUnitSyntax syntax)
         {
-            BoundScope parentScope = CreateParentScopes(previous);
+            BoundScope? parentScope = CreateParentScopes(previous);
 
             Binder binder = new Binder(parentScope);
             BoundStatement statement = binder.BindStatement(syntax.Statement);
@@ -340,7 +320,7 @@ namespace PHPSharp.Binding
             return new BoundGlobalScope(previous, diagnostics, variables, statement);
         }
 
-        private static BoundScope CreateParentScopes(BoundGlobalScope previous)
+        private static BoundScope? CreateParentScopes(BoundGlobalScope? previous)
         {
             Stack<BoundGlobalScope> stack = new Stack<BoundGlobalScope>();
             while (previous != null)
@@ -349,7 +329,7 @@ namespace PHPSharp.Binding
                 previous = previous.Previous;
             }
 
-            BoundScope parent = null;
+            BoundScope? parent = null;
             while (stack.Count > 0)
             {
                 previous = stack.Pop();

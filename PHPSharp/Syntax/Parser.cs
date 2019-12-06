@@ -133,7 +133,7 @@ namespace PHPSharp.Syntax
             SyntaxToken equals = MatchToken(SyntaxKind.EqualsToken);
             ExpressionSyntax initializer = ParseExpression();
 
-            SyntaxToken semicolonToken = null;
+            SyntaxToken? semicolonToken = null;
             if (requireSemicolon)
                 semicolonToken = MatchToken(SyntaxKind.SemicolonToken);
 
@@ -149,12 +149,12 @@ namespace PHPSharp.Syntax
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
                 Diagnostics.ReportCannotDeclareConditional(statement.Span);
 
-            ElseClauseSyntax elseClause = ParseElseClause();
+            ElseClauseSyntax? elseClause = ParseElseClause();
 
             return new IfStatementSyntax(keyword, condition, statement, elseClause);
         }
 
-        private ElseClauseSyntax ParseElseClause()
+        private ElseClauseSyntax? ParseElseClause()
         {
             if (Current.Kind != SyntaxKind.ElseKeyword)
                 return null;
@@ -219,7 +219,7 @@ namespace PHPSharp.Syntax
         {
             ExpressionSyntax expression = ParseExpression();
 
-            SyntaxToken semicolonToken = null;
+            SyntaxToken? semicolonToken = null;
             if (requireSemicolon)
                 semicolonToken = MatchToken(SyntaxKind.SemicolonToken);
 

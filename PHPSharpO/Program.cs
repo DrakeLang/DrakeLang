@@ -29,7 +29,7 @@ namespace PHPSharpO
     {
         private static bool _showTree = false;
 
-        private static Compilation _currentState;
+        private static Compilation? _currentState;
         private readonly static Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
 
         private static void Main()
@@ -38,7 +38,7 @@ namespace PHPSharpO
 
             while (true)
             {
-                string line = ReadInput(input.Length == 0);
+                string line = ReadInput(firstLine: input.Length == 0);
                 if (line != null && line.StartsWith('#'))
                 {
                     switch (line.Substring(1))
@@ -154,7 +154,7 @@ namespace PHPSharpO
             return input;
         }
 
-        private static void PrintResult(object result)
+        private static void PrintResult(object? result)
         {
             Console.ForegroundColor = ConsoleColor.Magenta;
 

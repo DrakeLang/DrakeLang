@@ -18,6 +18,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PHPSharp.Binding
 {
@@ -31,7 +32,7 @@ namespace PHPSharp.Binding
         {
         }
 
-        public BoundScope(BoundScope parent)
+        public BoundScope(BoundScope? parent)
         {
             Parent = parent;
         }
@@ -40,7 +41,7 @@ namespace PHPSharp.Binding
 
         #region Properties
 
-        public BoundScope Parent { get; }
+        public BoundScope? Parent { get; }
 
         #endregion Properties
 
@@ -55,9 +56,9 @@ namespace PHPSharp.Binding
             return true;
         }
 
-        public bool TryLookup(string name, out VariableSymbol variable)
+        public bool TryLookup(string? name, [NotNullWhen(true)] out VariableSymbol? variable)
         {
-            if (name == null)
+            if (name is null)
             {
                 variable = null;
                 return false;
@@ -66,7 +67,7 @@ namespace PHPSharp.Binding
             if (_variables.TryGetValue(name, out variable))
                 return true;
 
-            if (Parent == null)
+            if (Parent is null)
                 return false;
 
             return Parent.TryLookup(name, out variable);

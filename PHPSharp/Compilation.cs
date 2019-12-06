@@ -27,27 +27,27 @@ namespace PHPSharp
 {
     public class Compilation
     {
-        private BoundGlobalScope _globalScope;
+        private BoundGlobalScope? _globalScope;
 
         public Compilation(SyntaxTree syntaxTree)
             : this(null, syntaxTree)
         {
         }
 
-        private Compilation(Compilation previous, SyntaxTree syntaxTree)
+        private Compilation(Compilation? previous, SyntaxTree syntaxTree)
         {
             Previous = previous;
             SyntaxTree = syntaxTree;
         }
 
-        public Compilation Previous { get; }
+        public Compilation? Previous { get; }
         public SyntaxTree SyntaxTree { get; }
 
         internal BoundGlobalScope GlobalScope
         {
             get
             {
-                if (_globalScope == null)
+                if (_globalScope is null)
                 {
                     BoundGlobalScope globalScope = Binder.BindGlobalScope(Previous?.GlobalScope, SyntaxTree.Root);
                     Interlocked.CompareExchange(ref _globalScope, globalScope, null);
@@ -71,7 +71,7 @@ namespace PHPSharp
                 return new EvaluationResult(diagnostics.ToImmutableArray(), null);
 
             Evaluator evaluator = new Evaluator(GlobalScope.Statement, variables);
-            object result = evaluator.Evaluate();
+            object? result = evaluator.Evaluate();
 
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, result);
         }

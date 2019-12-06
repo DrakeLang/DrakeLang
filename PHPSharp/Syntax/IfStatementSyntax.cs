@@ -22,7 +22,7 @@ namespace PHPSharp.Syntax
 {
     public sealed class IfStatementSyntax : StatementSyntax
     {
-        public IfStatementSyntax(SyntaxToken ifKeyword, ParenthesizedExpressionSyntax condition, StatementSyntax thenStatement, ElseClauseSyntax elseClause)
+        public IfStatementSyntax(SyntaxToken ifKeyword, ParenthesizedExpressionSyntax condition, StatementSyntax thenStatement, ElseClauseSyntax? elseClause)
         {
             IfKeyword = ifKeyword;
             Condition = condition;
@@ -37,7 +37,7 @@ namespace PHPSharp.Syntax
         public SyntaxToken IfKeyword { get; }
         public ParenthesizedExpressionSyntax Condition { get; }
         public StatementSyntax ThenStatement { get; }
-        public ElseClauseSyntax ElseClause { get; }
+        public ElseClauseSyntax? ElseClause { get; }
 
         #endregion Properties
 

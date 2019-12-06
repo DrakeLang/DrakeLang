@@ -74,38 +74,20 @@ namespace PHPSharp.Syntax
 
         public static SyntaxKind GetKeywordKind(string word)
         {
-            switch (word)
+            return word switch
             {
-                case "bool":
-                    return SyntaxKind.BoolKeyword;
+                "bool" => SyntaxKind.BoolKeyword,
+                "else" => SyntaxKind.ElseKeyword,
+                "false" => SyntaxKind.FalseKeyword,
+                "for" => SyntaxKind.ForKeyword,
+                "if" => SyntaxKind.IfKeyword,
+                "int" => SyntaxKind.IntKeyword,
+                "true" => SyntaxKind.TrueKeyword,
+                "var" => SyntaxKind.VarKeyword,
+                "while" => SyntaxKind.WhileKeyword,
 
-                case "else":
-                    return SyntaxKind.ElseKeyword;
-
-                case "false":
-                    return SyntaxKind.FalseKeyword;
-
-                case "for":
-                    return SyntaxKind.ForKeyword;
-
-                case "if":
-                    return SyntaxKind.IfKeyword;
-
-                case "int":
-                    return SyntaxKind.IntKeyword;
-
-                case "true":
-                    return SyntaxKind.TrueKeyword;
-
-                case "var":
-                    return SyntaxKind.VarKeyword;
-
-                case "while":
-                    return SyntaxKind.WhileKeyword;
-
-                default:
-                    return SyntaxKind.IdentifierToken;
-            }
+                _ => SyntaxKind.IdentifierToken,
+            };
         }
 
         /// <summary>
@@ -113,20 +95,18 @@ namespace PHPSharp.Syntax
         /// </summary>
         public static bool GetKindIsAssignmentOperator(SyntaxKind kind)
         {
-            switch (kind)
+            return kind switch
             {
-                case SyntaxKind.PlusEqualsToken:
-                case SyntaxKind.MinusEqualsToken:
-                case SyntaxKind.StarEqualsToken:
-                case SyntaxKind.SlashEqualsToken:
-                case SyntaxKind.EqualsToken:
-                case SyntaxKind.AmpersandEqualsToken:
-                case SyntaxKind.PipeEqualsToken:
-                    return true;
+                SyntaxKind.PlusEqualsToken => true,
+                SyntaxKind.MinusEqualsToken => true,
+                SyntaxKind.StarEqualsToken => true,
+                SyntaxKind.SlashEqualsToken => true,
+                SyntaxKind.EqualsToken => true,
+                SyntaxKind.AmpersandEqualsToken => true,
+                SyntaxKind.PipeEqualsToken => true,
 
-                default:
-                    return false;
-            }
+                _ => false,
+            };
         }
 
         public static IEnumerable<SyntaxKind> GetUnaryOperatorKinds()
@@ -149,127 +129,51 @@ namespace PHPSharp.Syntax
             }
         }
 
-        public static string GetText(SyntaxKind kind)
+        public static string? GetText(SyntaxKind kind)
         {
-            switch (kind)
+            return kind switch
             {
-                case SyntaxKind.PlusToken:
-                    return "+";
+                SyntaxKind.PlusToken => "+",
+                SyntaxKind.PlusPlusToken => "++",
+                SyntaxKind.PlusEqualsToken => "+=",
+                SyntaxKind.MinusToken => "-",
+                SyntaxKind.MinusMinusToken => "--",
+                SyntaxKind.MinusEqualsToken => "-=",
+                SyntaxKind.StarToken => "*",
+                SyntaxKind.StarEqualsToken => "*=",
+                SyntaxKind.SlashToken => "/",
+                SyntaxKind.SlashEqualsToken => "/=",
+                SyntaxKind.BangToken => "!",
+                SyntaxKind.BangEqualsToken => "!=",
+                SyntaxKind.EqualsToken => "=",
+                SyntaxKind.AmpersandToken => "&",
+                SyntaxKind.AmpersandAmpersandToken => "&&",
+                SyntaxKind.AmpersandEqualsToken => "&=",
+                SyntaxKind.PipeToken => "|",
+                SyntaxKind.PipePipeToken => "||",
+                SyntaxKind.PipeEqualsToken => "|=",
+                SyntaxKind.EqualsEqualsToken => "==",
+                SyntaxKind.LessToken => "<",
+                SyntaxKind.LessOrEqualsToken => "<=",
+                SyntaxKind.GreaterToken => ">",
+                SyntaxKind.GreaterOrEqualsToken => ">=",
+                SyntaxKind.OpenParenthesisToken => "(",
+                SyntaxKind.CloseParenthesisToken => ")",
+                SyntaxKind.OpenBraceToken => "{",
+                SyntaxKind.CloseBraceToken => "}",
+                SyntaxKind.BoolKeyword => "bool",
+                SyntaxKind.ElseKeyword => "else",
+                SyntaxKind.FalseKeyword => "false",
+                SyntaxKind.ForKeyword => "for",
+                SyntaxKind.IfKeyword => "if",
+                SyntaxKind.IntKeyword => "int",
+                SyntaxKind.TrueKeyword => "true",
+                SyntaxKind.VarKeyword => "var",
+                SyntaxKind.WhileKeyword => "while",
+                SyntaxKind.SemicolonToken => ";",
 
-                case SyntaxKind.PlusPlusToken:
-                    return "++";
-
-                case SyntaxKind.PlusEqualsToken:
-                    return "+=";
-
-                case SyntaxKind.MinusToken:
-                    return "-";
-
-                case SyntaxKind.MinusMinusToken:
-                    return "--";
-
-                case SyntaxKind.MinusEqualsToken:
-                    return "-=";
-
-                case SyntaxKind.StarToken:
-                    return "*";
-
-                case SyntaxKind.StarEqualsToken:
-                    return "*=";
-
-                case SyntaxKind.SlashToken:
-                    return "/";
-
-                case SyntaxKind.SlashEqualsToken:
-                    return "/=";
-
-                case SyntaxKind.BangToken:
-                    return "!";
-
-                case SyntaxKind.BangEqualsToken:
-                    return "!=";
-
-                case SyntaxKind.EqualsToken:
-                    return "=";
-
-                case SyntaxKind.AmpersandToken:
-                    return "&";
-
-                case SyntaxKind.AmpersandAmpersandToken:
-                    return "&&";
-
-                case SyntaxKind.AmpersandEqualsToken:
-                    return "&=";
-
-                case SyntaxKind.PipeToken:
-                    return "|";
-
-                case SyntaxKind.PipePipeToken:
-                    return "||";
-
-                case SyntaxKind.PipeEqualsToken:
-                    return "|=";
-
-                case SyntaxKind.EqualsEqualsToken:
-                    return "==";
-
-                case SyntaxKind.LessToken:
-                    return "<";
-
-                case SyntaxKind.LessOrEqualsToken:
-                    return "<=";
-
-                case SyntaxKind.GreaterToken:
-                    return ">";
-
-                case SyntaxKind.GreaterOrEqualsToken:
-                    return ">=";
-
-                case SyntaxKind.OpenParenthesisToken:
-                    return "(";
-
-                case SyntaxKind.CloseParenthesisToken:
-                    return ")";
-
-                case SyntaxKind.OpenBraceToken:
-                    return "{";
-
-                case SyntaxKind.CloseBraceToken:
-                    return "}";
-
-                case SyntaxKind.BoolKeyword:
-                    return "bool";
-
-                case SyntaxKind.ElseKeyword:
-                    return "else";
-
-                case SyntaxKind.FalseKeyword:
-                    return "false";
-
-                case SyntaxKind.ForKeyword:
-                    return "for";
-
-                case SyntaxKind.IfKeyword:
-                    return "if";
-
-                case SyntaxKind.IntKeyword:
-                    return "int";
-
-                case SyntaxKind.TrueKeyword:
-                    return "true";
-
-                case SyntaxKind.VarKeyword:
-                    return "var";
-
-                case SyntaxKind.WhileKeyword:
-                    return "while";
-
-                case SyntaxKind.SemicolonToken:
-                    return ";";
-
-                default:
-                    return null;
-            }
+                _ => null,
+            };
         }
     }
 }

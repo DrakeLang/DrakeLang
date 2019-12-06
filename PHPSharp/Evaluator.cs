@@ -27,7 +27,7 @@ namespace PHPSharp
         private readonly BoundStatement _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
 
-        private object _lastValue;
+        private object? _lastValue;
 
         public Evaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
         {
@@ -37,7 +37,7 @@ namespace PHPSharp
 
         #region Methods
 
-        public object Evaluate()
+        public object? Evaluate()
         {
             EvaluateStatement(_root);
             return _lastValue;
@@ -183,7 +183,7 @@ namespace PHPSharp
             if (node.Op.Kind == BoundUnaryOperatorKind.PreDecrement || node.Op.Kind == BoundUnaryOperatorKind.PreIncrement)
             {
                 BoundVariableExpression variableExpression = (BoundVariableExpression)node.Operand;
-                _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1); 
+                _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
                 return _variables[variableExpression.Variable];
             }
 

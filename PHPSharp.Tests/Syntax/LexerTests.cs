@@ -128,7 +128,8 @@ namespace PHPSharp.Tests.Syntax
                 (SyntaxKind.IdentifierToken, "abc"),
             };
 
-            return fixedTokens.Concat(dynamicTokens);
+            // We know that fixedTokens contains no null-reference strings.
+            return fixedTokens!.Concat(dynamicTokens);
         }
 
         public static IEnumerable<(SyntaxKind kind, string text)> GetSeparators()

@@ -29,8 +29,8 @@ namespace PHPSharp.Tests.Syntax
         [MemberData(nameof(GetSyntaxKindData))]
         public void SyntaxFact_GetText_RoundTrips(SyntaxKind kind)
         {
-            string text = SyntaxFacts.GetText(kind);
-            if (text == null)
+            string? text = SyntaxFacts.GetText(kind);
+            if (text is null)
                 return;
 
             IEnumerable<SyntaxToken> tokens = SyntaxTree.ParseTokens(text);

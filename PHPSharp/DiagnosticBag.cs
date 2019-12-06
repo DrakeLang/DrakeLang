@@ -37,13 +37,13 @@ namespace PHPSharp
             _diagnostics.AddRange(diagnostics);
         }
 
-        private void Report(TextSpan span, string message)
+        private void Report(TextSpan span, string? message)
         {
             Diagnostic diagnostic = new Diagnostic(span, message);
             _diagnostics.Add(diagnostic);
         }
 
-        public void ReportInvalidNumber(TextSpan span, string text, Type type)
+        public void ReportInvalidNumber(TextSpan span, string? text, Type type)
         {
             string message = $"The number '{text}' isn't valid '{type}'.";
             Report(span, message);
@@ -62,25 +62,25 @@ namespace PHPSharp
             Report(span, message);
         }
 
-        public void ReportUndefinedUnaryOperator(TextSpan span, string operatorText, Type type)
+        public void ReportUndefinedUnaryOperator(TextSpan span, string? operatorText, Type type)
         {
             string message = $"Unary operator '{operatorText}' is not defined for type '{type}'.";
             Report(span, message);
         }
 
-        public void ReportUndefinedBinaryOperator(TextSpan span, string operatorText, Type leftType, Type rightType)
+        public void ReportUndefinedBinaryOperator(TextSpan span, string? operatorText, Type leftType, Type rightType)
         {
             string message = $"Binary operator '{operatorText}' is not defined for types '{leftType}' and '{rightType}'.";
             Report(span, message);
         }
 
-        public void ReportUndefinedName(TextSpan span, string name)
+        public void ReportUndefinedName(TextSpan span, string? name)
         {
             string message = $"Variable '{name}' does not exist.";
             Report(span, message);
         }
 
-        public void ReportVariableAlreadyDeclared(TextSpan span, string name)
+        public void ReportVariableAlreadyDeclared(TextSpan span, string? name)
         {
             string message = $"Variable '{name}' is already declared.";
             Report(span, message);
@@ -92,7 +92,7 @@ namespace PHPSharp
             Report(span, message);
         }
 
-        public void ReportCannotAssign(TextSpan span, string name)
+        public void ReportCannotAssign(TextSpan span, string? name)
         {
             string message = $"Variable '{name}' is read-only and cannot be assigned.";
             Report(span, message);

@@ -22,7 +22,7 @@ namespace PHPSharp.Syntax
 {
     public sealed class ExpressionStatementSyntax : StatementSyntax
     {
-        public ExpressionStatementSyntax(ExpressionSyntax expression, SyntaxToken semicolonToken)
+        public ExpressionStatementSyntax(ExpressionSyntax expression, SyntaxToken? semicolonToken)
         {
             Expression = expression;
             SemicolonToken = semicolonToken;
@@ -33,7 +33,7 @@ namespace PHPSharp.Syntax
         public override SyntaxKind Kind => SyntaxKind.ExpressionStatement;
 
         public ExpressionSyntax Expression { get; }
-        public SyntaxToken SemicolonToken { get; }
+        public SyntaxToken? SemicolonToken { get; }
 
         #endregion Properties
 

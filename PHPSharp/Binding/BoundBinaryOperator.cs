@@ -54,7 +54,7 @@ namespace PHPSharp.Binding
 
         #region Public statics
 
-        public static BoundBinaryOperator Bind(SyntaxKind syntaxKind, Type leftType, Type rightType)
+        public static BoundBinaryOperator? Bind(SyntaxKind syntaxKind, Type leftType, Type rightType)
         {
             foreach (BoundBinaryOperator op in _operators)
             {
@@ -65,7 +65,7 @@ namespace PHPSharp.Binding
             return null;
         }
 
-        public static BoundBinaryOperator Bind(BoundBinaryOperatorKind operatorKind, Type leftType, Type rightType)
+        public static BoundBinaryOperator? Bind(BoundBinaryOperatorKind operatorKind, Type leftType, Type rightType)
         {
             foreach (BoundBinaryOperator op in _operators)
             {

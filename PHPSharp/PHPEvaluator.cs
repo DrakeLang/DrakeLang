@@ -72,7 +72,7 @@ namespace PHPSharp
         private string EvaluateLiteralExpression(BoundLiteralExpression node)
         {
             if (node.Type != typeof(bool))
-                return node.Value.ToString();
+                return node.Value.ToString() ?? string.Empty;
             else
             {
                 bool boolVal = (bool)node.Value;

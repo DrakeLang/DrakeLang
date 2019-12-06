@@ -27,7 +27,7 @@ namespace PHPSharp.Syntax
         private int _position;
         private int _start;
         private SyntaxKind _kind;
-        private object _value;
+        private object? _value;
 
         public Lexer(SourceText text)
         {
@@ -95,8 +95,8 @@ namespace PHPSharp.Syntax
                 }
             }
 
-            string text = SyntaxFacts.GetText(_kind);
-            if (text == null)
+            string? text = SyntaxFacts.GetText(_kind);
+            if (text is null)
             {
                 int length = _position - _start;
                 text = _text.ToString(_start, length);
