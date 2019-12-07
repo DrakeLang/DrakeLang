@@ -22,7 +22,7 @@ using System.Collections.Generic;
 
 namespace PHPSharp
 {
-    internal class Evaluator
+    internal sealed class Evaluator : IEvaluator
     {
         private readonly BoundStatement _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
@@ -35,7 +35,7 @@ namespace PHPSharp
             _variables = variables;
         }
 
-        #region Methods
+        #region IEvaluator
 
         public object? Evaluate()
         {

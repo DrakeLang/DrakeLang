@@ -72,7 +72,8 @@ namespace PHPSharp
                 return new EvaluationResult(diagnostics.ToImmutableArray(), null);
 
             BoundStatement statement = GetStatement();
-            Evaluator evaluator = new Evaluator(statement, variables);
+            IEvaluator evaluator = new Evaluator(statement, variables);
+            //IEvaluator evaluator = new PHPEvaluator(statement);
             object? result = evaluator.Evaluate();
 
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, result);
