@@ -17,7 +17,9 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Binding;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace PHPSharp.Lowering
 {
@@ -27,24 +29,132 @@ namespace PHPSharp.Lowering
         {
         }
 
-        public static BoundStatement Lower(BoundStatement statement)
+        public static BoundBlockStatement Lower(BoundStatement statement)
         {
             Lowerer lowerer = new Lowerer();
-            return lowerer.RewriteStatement(statement);
+            BoundStatement result = lowerer.RewriteStatement(statement);
+
+            return Flatten(result);
+        }
+
+        #region RewriteStatement
+
+        protected override BoundStatement RewriteIfStatement(BoundIfStatement node)
+        {
+            BoundBlockStatement result;
+            if (node.ElseStatement is null)
+            {
+                /**
+                 * if (<condition>)
+                 *    <then>
+                 *
+                 * -------->
+                 *
+                 * {
+                 *    gotoFalse <condition> end
+                 *    <then>
+                 *    end:
+                 * }
+                 *
+                 */
+
+                LabelSymbol endLabel = GenerateLabel(LabelCategory.End);
+                BoundLabelStatement endLabelStatement = new BoundLabelStatement(endLabel);
+
+                BoundConditionalGotoStatement conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfFalse: true);
+
+                result = new BoundBlockStatement(ImmutableArray.Create(
+                    conditionalGotoEnd,
+                    node.ThenStatement,
+                    endLabelStatement));
+            }
+            else
+            {
+                /**
+                 *
+                 * if (<condition>)
+                 *    <then>
+                 * else
+                 *    <else>
+                 *
+                 * -------->
+                 *
+                 * {
+                 *    gotoFalse <condition> else
+                 *    <then>
+                 *    goto end
+                 *    else:
+                 *    <else>
+                 *    end:
+                 * }
+                 *
+                 */
+
+                LabelSymbol elseLabel = GenerateLabel(LabelCategory.Else);
+                LabelSymbol endLabel = GenerateLabel(LabelCategory.End);
+
+                BoundLabelStatement elseLabelStatement = new BoundLabelStatement(elseLabel);
+                BoundLabelStatement endLabelStatement = new BoundLabelStatement(endLabel);
+
+                BoundConditionalGotoStatement conditionalGotoElse = new BoundConditionalGotoStatement(elseLabel, node.Condition, jumpIfFalse: true);
+                BoundGotoStatement gotoEnd = new BoundGotoStatement(endLabel);
+
+                result = new BoundBlockStatement(ImmutableArray.Create(
+                    conditionalGotoElse,
+                    node.ThenStatement,
+                    gotoEnd,
+                    elseLabelStatement,
+                    node.ElseStatement,
+                    endLabelStatement));
+            }
+
+            return RewriteStatement(result);
+        }
+
+        protected override BoundStatement RewriteWhileStatement(BoundWhileStatement node)
+        {
+            /**
+             *
+             * while (<condition>)
+             *    <body>
+             *
+             * -------->
+             *
+             * check:
+             * gotoFalse <condition> end
+             * <body>
+             * goto check
+             * end:
+             *
+             */
+
+            LabelSymbol checkLabel = GenerateLabel(LabelCategory.Check);
+            LabelSymbol endLabel = GenerateLabel(LabelCategory.End);
+
+            BoundLabelStatement checkLabelStatement = new BoundLabelStatement(checkLabel);
+            BoundLabelStatement endLabelStatement = new BoundLabelStatement(endLabel);
+
+            BoundGotoStatement gotoCheck = new BoundGotoStatement(checkLabel);
+            BoundConditionalGotoStatement conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfFalse: true);
+
+            BoundBlockStatement result = new BoundBlockStatement(ImmutableArray.Create(
+                checkLabelStatement,
+                conditionalGotoEnd,
+                node.Body,
+                gotoCheck,
+                endLabelStatement));
+
+            return RewriteStatement(result);
         }
 
         protected override BoundStatement RewriteForStatement(BoundForStatement node)
         {
             /**
-             * Initial form:
              * for (<init>; <condition>; <update>)
-             * {
              *    <body>
-             * }
              *
-             * --------
+             * ------->
              *
-             * Lowered form:
              * {
              *    <init>
              *    while (<condition>)
@@ -65,5 +175,62 @@ namespace PHPSharp.Lowering
 
             return RewriteStatement(result);
         }
+
+        #endregion RewriteStatement
+
+        #region Utilities
+
+        private int _labelCount;
+        private readonly Dictionary<string, int> _labelCounters = new Dictionary<string, int>();
+
+        private enum LabelCategory
+        {
+            Check,
+            Else,
+            End,
+        }
+
+        private LabelSymbol GenerateLabel(LabelCategory category)
+        {
+            _labelCounters.TryGetValue(category.ToString(), out int count);
+
+            string name = $"{category}{count}_{_labelCount}";
+
+            count++;
+            _labelCount++;
+
+            _labelCounters[name] = count;
+            return new LabelSymbol(name);
+        }
+
+        #endregion Utilities
+
+        #region Helpers
+
+        private static BoundBlockStatement Flatten(BoundStatement statement)
+        {
+            ImmutableArray<BoundStatement>.Builder builder = ImmutableArray.CreateBuilder<BoundStatement>();
+
+            Stack<BoundStatement> stack = new Stack<BoundStatement>();
+
+            stack.Push(statement);
+            while (stack.Count > 0)
+            {
+                BoundStatement current = stack.Pop();
+                if (current is BoundBlockStatement block)
+                {
+                    foreach (var s in block.Statements.Reverse())
+                        stack.Push(s);
+                }
+                else
+                {
+                    builder.Add(current);
+                }
+            }
+
+            return new BoundBlockStatement(builder.ToImmutableArray());
+        }
+
+        #endregion
     }
 }

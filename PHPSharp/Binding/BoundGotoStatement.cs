@@ -18,24 +18,15 @@
 
 namespace PHPSharp.Binding
 {
-    public enum BoundNodeKind
+    internal sealed class BoundGotoStatement : BoundStatement
     {
-        // Statements
-        BlockStatement,
-        VariableDeclarationStatement,
-        IfStatement,
-        WhileStatement,
-        ForStatement,
-        LabelStatement,
-        GotoStatement,
-        ConditionalGotoStatement,
-        ExpressionStatement,
+        public BoundGotoStatement(LabelSymbol label)
+        {
+            Label = label;
+        }
 
-        // Expressions
-        LiteralExpression,
-        VariableExpression,
-        AssignmentExpression,
-        UnaryExpression,
-        BinaryExpression,
+        public override BoundNodeKind Kind => BoundNodeKind.GotoStatement;
+
+        public LabelSymbol Label { get; }
     }
 }

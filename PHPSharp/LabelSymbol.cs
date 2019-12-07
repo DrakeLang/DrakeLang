@@ -16,26 +16,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-namespace PHPSharp.Binding
+namespace PHPSharp
 {
-    public enum BoundNodeKind
+    public sealed class LabelSymbol
     {
-        // Statements
-        BlockStatement,
-        VariableDeclarationStatement,
-        IfStatement,
-        WhileStatement,
-        ForStatement,
-        LabelStatement,
-        GotoStatement,
-        ConditionalGotoStatement,
-        ExpressionStatement,
+        public LabelSymbol(string name)
+        {
+            Name = name;
+        }
 
-        // Expressions
-        LiteralExpression,
-        VariableExpression,
-        AssignmentExpression,
-        UnaryExpression,
-        BinaryExpression,
+        public string Name { get; }
+
+        public override string ToString() => Name;
     }
 }

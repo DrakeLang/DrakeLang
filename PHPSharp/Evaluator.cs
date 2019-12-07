@@ -24,12 +24,12 @@ namespace PHPSharp
 {
     internal sealed class Evaluator : IEvaluator
     {
-        private readonly BoundStatement _root;
+        private readonly BoundBlockStatement _root;
         private readonly Dictionary<VariableSymbol, object> _variables;
 
         private object? _lastValue;
 
-        public Evaluator(BoundStatement root, Dictionary<VariableSymbol, object> variables)
+        public Evaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables)
         {
             _root = root;
             _variables = variables;
@@ -39,48 +39,62 @@ namespace PHPSharp
 
         public object? Evaluate()
         {
-            EvaluateStatement(_root);
+            // Create label-index mapping for goto statements.
+            Dictionary<LabelSymbol, int> labelToIndex = new Dictionary<LabelSymbol, int>();
+            for (int i = 0; i < _root.Statements.Length; i++)
+            {
+                if (_root.Statements[i] is BoundLabelStatement l)
+                {
+                    labelToIndex.Add(l.Label, i + 1);
+                }
+            }
+
+            // Evaluate program.
+            int index = 0;
+            while (index < _root.Statements.Length)
+            {
+                BoundStatement s = _root.Statements[index];
+                switch (s.Kind)
+                {
+                    case BoundNodeKind.VariableDeclarationStatement:
+                        EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)s);
+                        index++;
+                        break;
+
+                    case BoundNodeKind.ExpressionStatement:
+                        EvaluateExpressionStatement((BoundExpressionStatement)s);
+                        index++;
+                        break;
+
+                    case BoundNodeKind.LabelStatement:
+                        // do nothing.
+                        index++;
+                        break;
+
+                    case BoundNodeKind.GotoStatement:
+                        BoundGotoStatement gotoStatement = (BoundGotoStatement)s;
+                        index = labelToIndex[gotoStatement.Label];
+                        break;
+
+                    case BoundNodeKind.ConditionalGotoStatement:
+                        BoundConditionalGotoStatement conGotoStatement = (BoundConditionalGotoStatement)s;
+                        if (EvaluateConditionalGotoStatement(conGotoStatement))
+                            index = labelToIndex[conGotoStatement.Label];
+                        else
+                            index++;
+                        break;
+
+                    default:
+                        throw new Exception($"Unexpected node '{s.Kind}'.");
+                }
+            }
+
             return _lastValue;
         }
 
-        #endregion Methods
+        #endregion IEvaluator
 
         #region EvaluateStatement
-
-        private void EvaluateStatement(BoundStatement node)
-        {
-            switch (node.Kind)
-            {
-                case BoundNodeKind.BlockStatement:
-                    EvaluateBlockStatement((BoundBlockStatement)node);
-                    break;
-
-                case BoundNodeKind.VariableDeclarationStatement:
-                    EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)node);
-                    break;
-
-                case BoundNodeKind.IfStatement:
-                    EvaluateIfStatement((BoundIfStatement)node);
-                    break;
-
-                case BoundNodeKind.WhileStatement:
-                    EvaluateWhileStatement((BoundWhileStatement)node);
-                    break;
-
-                case BoundNodeKind.ExpressionStatement:
-                    EvaluateExpressionStatement((BoundExpressionStatement)node);
-                    break;
-
-                default:
-                    throw new Exception($"Unexpected node '{node.Kind}'.");
-            }
-        }
-
-        private void EvaluateBlockStatement(BoundBlockStatement node)
-        {
-            foreach (BoundStatement statement in node.Statements)
-                EvaluateStatement(statement);
-        }
 
         private void EvaluateVariableDeclarationStatement(BoundVariableDeclarationStatement node)
         {
@@ -90,25 +104,16 @@ namespace PHPSharp
             _lastValue = value;
         }
 
-        private void EvaluateIfStatement(BoundIfStatement node)
-        {
-            bool condition = (bool)EvaluateExpression(node.Condition);
-            if (condition)
-                EvaluateStatement(node.ThenStatement);
-            else if (node.ElseStatement != null)
-                EvaluateStatement(node.ElseStatement);
-        }
-
-        private void EvaluateWhileStatement(BoundWhileStatement node)
-        {
-            bool condition() => (bool)EvaluateExpression(node.Condition);
-            while (condition())
-                EvaluateStatement(node.Body);
-        }
-
         private void EvaluateExpressionStatement(BoundExpressionStatement node)
         {
             _lastValue = EvaluateExpression(node.Expression);
+        }
+
+        private bool EvaluateConditionalGotoStatement(BoundConditionalGotoStatement s)
+        {
+            bool condition = (bool)EvaluateExpression(s.Condition);
+
+            return condition ^ s.JumpIfFalse;
         }
 
         #endregion EvaluateStatement

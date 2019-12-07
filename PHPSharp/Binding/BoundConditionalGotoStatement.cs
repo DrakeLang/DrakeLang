@@ -18,24 +18,19 @@
 
 namespace PHPSharp.Binding
 {
-    public enum BoundNodeKind
+    internal sealed class BoundConditionalGotoStatement : BoundStatement
     {
-        // Statements
-        BlockStatement,
-        VariableDeclarationStatement,
-        IfStatement,
-        WhileStatement,
-        ForStatement,
-        LabelStatement,
-        GotoStatement,
-        ConditionalGotoStatement,
-        ExpressionStatement,
+        public BoundConditionalGotoStatement(LabelSymbol label, BoundExpression condition, bool jumpIfFalse = false)
+        {
+            Label = label;
+            Condition = condition;
+            JumpIfFalse = jumpIfFalse;
+        }
 
-        // Expressions
-        LiteralExpression,
-        VariableExpression,
-        AssignmentExpression,
-        UnaryExpression,
-        BinaryExpression,
+        public override BoundNodeKind Kind => BoundNodeKind.ConditionalGotoStatement;
+
+        public LabelSymbol Label { get; }
+        public BoundExpression Condition { get; }
+        public bool JumpIfFalse { get; }
     }
 }

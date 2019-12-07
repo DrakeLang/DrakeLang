@@ -20,7 +20,7 @@ using System;
 
 namespace PHPSharp
 {
-    public class VariableSymbol
+    public sealed class VariableSymbol
     {
         internal VariableSymbol(string name, bool isReadOnly, Type type)
         {

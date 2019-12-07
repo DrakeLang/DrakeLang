@@ -23,6 +23,8 @@ namespace PHPSharp.Binding
 {
     internal abstract class BoundTreeRewriter
     {
+        #region RewriteStatement
+
         public virtual BoundStatement RewriteStatement(BoundStatement node)
         {
             return node.Kind switch
@@ -32,6 +34,9 @@ namespace PHPSharp.Binding
                 BoundNodeKind.IfStatement => RewriteIfStatement((BoundIfStatement)node),
                 BoundNodeKind.WhileStatement => RewriteWhileStatement((BoundWhileStatement)node),
                 BoundNodeKind.ForStatement => RewriteForStatement((BoundForStatement)node),
+                BoundNodeKind.LabelStatement => RewriteLabelStatement((BoundLabelStatement)node),
+                BoundNodeKind.GotoStatement => RewriteGotoStatement((BoundGotoStatement)node),
+                BoundNodeKind.ConditionalGotoStatement => RewriteConditionalGotoStatement((BoundConditionalGotoStatement)node),
                 BoundNodeKind.ExpressionStatement => RewriteExpressionStatement((BoundExpressionStatement)node),
 
                 _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
@@ -118,6 +123,25 @@ namespace PHPSharp.Binding
             return new BoundForStatement(initializationStatement, condition, body, updateStatement);
         }
 
+        protected virtual BoundStatement RewriteLabelStatement(BoundLabelStatement node)
+        {
+            return node;
+        }
+
+        protected virtual BoundStatement RewriteGotoStatement(BoundGotoStatement node)
+        {
+            return node;
+        }
+
+        protected virtual BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
+        {
+            BoundExpression condition = RewriteExpression(node.Condition);
+            if (condition == node.Condition)
+                return node;
+
+            return new BoundConditionalGotoStatement(node.Label, condition, node.JumpIfFalse);
+        }
+
         protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
         {
             BoundExpression expression = RewriteExpression(node.Expression);
@@ -126,6 +150,10 @@ namespace PHPSharp.Binding
 
             return new BoundExpressionStatement(expression);
         }
+
+        #endregion RewriteStatement
+
+        #region RewriteExpression
 
         public virtual BoundExpression RewriteExpression(BoundExpression node)
         {
@@ -179,5 +207,7 @@ namespace PHPSharp.Binding
 
             return new BoundBinaryExpression(left, node.Op, right);
         }
+
+        #endregion RewriteExpression
     }
 }

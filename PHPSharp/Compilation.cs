@@ -71,15 +71,16 @@ namespace PHPSharp
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics.ToImmutableArray(), null);
 
-            BoundStatement statement = GetStatement();
+            BoundBlockStatement statement = GetStatement();
             IEvaluator evaluator = new Evaluator(statement, variables);
             //IEvaluator evaluator = new PHPEvaluator(statement);
+
             object? result = evaluator.Evaluate();
 
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, result);
         }
 
-        private BoundStatement GetStatement()
+        private BoundBlockStatement GetStatement()
         {
             return Lowerer.Lower(GlobalScope.Statement);
         }
