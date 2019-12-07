@@ -17,6 +17,8 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace PHPSharp.Binding
 {
@@ -35,5 +37,10 @@ namespace PHPSharp.Binding
         public object Value { get; }
 
         #endregion Properties
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            return Enumerable.Empty<BoundNode>();
+        }
     }
 }

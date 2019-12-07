@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace PHPSharp.Binding
 {
     internal sealed class BoundExpressionStatement : BoundStatement
@@ -32,5 +34,10 @@ namespace PHPSharp.Binding
         public BoundExpression Expression { get; }
 
         #endregion Properties
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            yield return Expression;
+        }
     }
 }

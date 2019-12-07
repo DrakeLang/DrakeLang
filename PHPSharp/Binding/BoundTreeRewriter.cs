@@ -109,18 +109,18 @@ namespace PHPSharp.Binding
         {
             BoundStatement initializationStatement = RewriteStatement(node.InitializationStatement);
             BoundExpression condition = RewriteExpression(node.Condition);
-            BoundStatement body = RewriteStatement(node.Body);
             BoundStatement updateStatement = RewriteStatement(node.UpdateStatement);
+            BoundStatement body = RewriteStatement(node.Body);
 
             if (initializationStatement == node.InitializationStatement &&
                 condition == node.Condition &&
-                body == node.Body &&
-                updateStatement == node.UpdateStatement)
+                updateStatement == node.UpdateStatement &&
+                body == node.Body)
             {
                 return node;
             }
 
-            return new BoundForStatement(initializationStatement, condition, body, updateStatement);
+            return new BoundForStatement(initializationStatement, condition, updateStatement, body);
         }
 
         protected virtual BoundStatement RewriteLabelStatement(BoundLabelStatement node)

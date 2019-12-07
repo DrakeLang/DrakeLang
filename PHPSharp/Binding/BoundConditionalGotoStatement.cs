@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace PHPSharp.Binding
 {
     internal sealed class BoundConditionalGotoStatement : BoundStatement
@@ -27,10 +29,19 @@ namespace PHPSharp.Binding
             JumpIfFalse = jumpIfFalse;
         }
 
+        #region Properties
+
         public override BoundNodeKind Kind => BoundNodeKind.ConditionalGotoStatement;
 
         public LabelSymbol Label { get; }
         public BoundExpression Condition { get; }
         public bool JumpIfFalse { get; }
+
+        #endregion Properties
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            yield return Condition;
+        }
     }
 }

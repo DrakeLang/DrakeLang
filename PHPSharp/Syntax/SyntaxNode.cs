@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Text;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -44,16 +45,18 @@ namespace PHPSharp.Syntax
 
         public void WriteTo(TextWriter writer)
         {
+            if (writer is null)
+                throw new ArgumentNullException(nameof(writer));
+
             PrintTree(writer, this);
         }
 
         public override string ToString()
         {
-            using (StringWriter writer = new StringWriter())
-            {
-                WriteTo(writer);
-                return writer.ToString();
-            }
+            using StringWriter writer = new StringWriter();
+
+            WriteTo(writer);
+            return writer.ToString();
         }
 
         #endregion Methods

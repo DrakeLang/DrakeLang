@@ -17,6 +17,8 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace PHPSharp.Binding
 {
@@ -27,9 +29,18 @@ namespace PHPSharp.Binding
             Variable = variable;
         }
 
+        #region Properties
+
         public override BoundNodeKind Kind => BoundNodeKind.VariableExpression;
 
         public VariableSymbol Variable { get; }
         public override Type Type => Variable.Type;
+
+        #endregion Properties
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            return Enumerable.Empty<BoundNode>();
+        }
     }
 }

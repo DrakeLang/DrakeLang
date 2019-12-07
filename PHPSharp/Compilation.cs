@@ -19,14 +19,16 @@
 using PHPSharp.Binding;
 using PHPSharp.Lowering;
 using PHPSharp.Syntax;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Threading;
 
 namespace PHPSharp
 {
-    public class Compilation
+    public sealed class Compilation
     {
         private BoundGlobalScope? _globalScope;
 
@@ -80,10 +82,18 @@ namespace PHPSharp
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, result);
         }
 
+        public void PrintProgram(TextWriter writer)
+        {
+            BoundBlockStatement statement = GetStatement();
+            statement.WriteTo(writer);
+        }
+
         private BoundBlockStatement GetStatement()
         {
             return Lowerer.Lower(GlobalScope.Statement);
         }
+
+       
 
         #endregion Methods
     }

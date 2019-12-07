@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 
 namespace PHPSharp.Binding
 {
@@ -36,5 +37,10 @@ namespace PHPSharp.Binding
         public BoundExpression Operand { get; }
 
         #endregion Properties
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            yield return Operand;
+        }
     }
 }

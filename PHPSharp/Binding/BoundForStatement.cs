@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace PHPSharp.Binding
 {
     internal sealed class BoundForStatement : BoundStatement
@@ -34,9 +36,17 @@ namespace PHPSharp.Binding
 
         public BoundStatement InitializationStatement { get; }
         public BoundExpression Condition { get; }
-        public BoundStatement Body { get; }
         public BoundStatement UpdateStatement { get; }
+        public BoundStatement Body { get; }
 
         #endregion Properties
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            yield return InitializationStatement;
+            yield return Condition;
+            yield return UpdateStatement;
+            yield return Body;
+        }
     }
 }

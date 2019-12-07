@@ -16,6 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+using System.Linq;
+
 namespace PHPSharp.Binding
 {
     internal sealed class BoundLabelStatement : BoundStatement
@@ -25,8 +28,17 @@ namespace PHPSharp.Binding
             Label = label;
         }
 
+        #region Properties
+
         public LabelSymbol Label { get; }
 
         public override BoundNodeKind Kind => BoundNodeKind.LabelStatement;
+
+        #endregion Properties
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            return Enumerable.Empty<BoundNode>();
+        }
     }
 }

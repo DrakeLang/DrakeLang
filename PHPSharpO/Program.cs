@@ -25,9 +25,10 @@ using System.Text;
 
 namespace PHPSharpO
 {
-    internal class Program
+    internal static class Program
     {
         private static bool _showTree = false;
+        private static bool _showProgram = false;
 
         private static Compilation? _currentState;
         private readonly static Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
@@ -46,6 +47,11 @@ namespace PHPSharpO
                         case "tree":
                             _showTree ^= true;
                             Console.WriteLine(_showTree ? "Parse tree visible" : "Parse tree hidden");
+                            break;
+
+                        case "program":
+                            _showProgram ^= true;
+                            Console.WriteLine(_showProgram ? "Program visible" : "Program hidden");
                             break;
 
                         case "cls":
@@ -85,12 +91,11 @@ namespace PHPSharpO
         private static void Parse(string content)
         {
             SyntaxTree syntaxTree = SyntaxTree.Parse(content);
-
-            if (_showTree)
-                PrintTreeToConsole(syntaxTree);
-
             Compilation compilation = _currentState?.ContinueWith(syntaxTree) ?? new Compilation(syntaxTree);
             EvaluationResult result = compilation.Evaluate(_variables);
+
+            if (_showTree) PrintTreeToConsole(syntaxTree);
+            if (_showProgram) PrintProgramToConsole(compilation);
 
             if (result.Diagnostics.Length == 0)
             {
@@ -168,6 +173,15 @@ namespace PHPSharpO
             Console.ForegroundColor = ConsoleColor.DarkGray;
 
             tree.PrintTree(Console.Out);
+
+            Console.ResetColor();
+        }
+
+        private static void PrintProgramToConsole(Compilation compilation)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+
+            compilation.PrintProgram(Console.Out);
 
             Console.ResetColor();
         }

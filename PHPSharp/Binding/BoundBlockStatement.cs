@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace PHPSharp.Binding
@@ -34,5 +35,10 @@ namespace PHPSharp.Binding
         public ImmutableArray<BoundStatement> Statements { get; }
 
         #endregion Properties
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            return Statements;
+        }
     }
 }

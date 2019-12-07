@@ -168,7 +168,7 @@ namespace PHPSharp.Binding
             return BindExpression(syntax.Expression);
         }
 
-        private BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)
+        private static BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)
         {
             object value = syntax.Value ?? 0;
             return new BoundLiteralExpression(value);
