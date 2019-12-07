@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Binding;
+using System.Collections.Immutable;
 
 namespace PHPSharp.Lowering
 {
@@ -30,6 +31,39 @@ namespace PHPSharp.Lowering
         {
             Lowerer lowerer = new Lowerer();
             return lowerer.RewriteStatement(statement);
+        }
+
+        protected override BoundStatement RewriteForStatement(BoundForStatement node)
+        {
+            /**
+             * Initial form:
+             * for (<init>; <condition>; <update>)
+             * {
+             *    <body>
+             * }
+             *
+             * --------
+             *
+             * Lowered form:
+             * {
+             *    <init>
+             *    while (<condition>)
+             *    {
+             *       <body>
+             *       <update>
+             *    }
+             * }
+             *
+             */
+
+            // Create the inner while statement (condition, body, update).
+            BoundBlockStatement whileBlock = new BoundBlockStatement(ImmutableArray.Create(node.Body, node.UpdateStatement));
+            BoundWhileStatement whileStatement = new BoundWhileStatement(node.Condition, whileBlock);
+
+            // Create the outer block statement (init, while).
+            BoundBlockStatement result = new BoundBlockStatement(ImmutableArray.Create(node.InitializationStatement, whileStatement));
+
+            return RewriteStatement(result);
         }
     }
 }
