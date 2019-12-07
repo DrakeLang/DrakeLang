@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Binding;
+using PHPSharp.Lowering;
 using PHPSharp.Syntax;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -70,10 +71,16 @@ namespace PHPSharp
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics.ToImmutableArray(), null);
 
-            Evaluator evaluator = new Evaluator(GlobalScope.Statement, variables);
+            BoundStatement statement = GetStatement();
+            Evaluator evaluator = new Evaluator(statement, variables);
             object? result = evaluator.Evaluate();
 
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, result);
+        }
+
+        private BoundStatement GetStatement()
+        {
+            return Lowerer.Lower(GlobalScope.Statement);
         }
 
         #endregion Methods

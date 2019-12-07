@@ -118,7 +118,7 @@ namespace PHPSharp
             while (condition())
             {
                 EvaluateStatement(node.Body);
-                EvaluateExpressionStatement(node.UpdateStatement);
+                EvaluateStatement(node.UpdateStatement);
             }
         }
 
@@ -186,23 +186,15 @@ namespace PHPSharp
             }
 
             object operant = EvaluateExpression(node.Operand);
-            switch (node.Op.Kind)
+            return node.Op.Kind switch
             {
-                case BoundUnaryOperatorKind.Identity:
-                    return (int)operant;
+                BoundUnaryOperatorKind.Identity => (int)operant,
+                BoundUnaryOperatorKind.Negation => -(int)operant,
+                BoundUnaryOperatorKind.LogicalNegation => !(bool)operant,
+                BoundUnaryOperatorKind.OnesComplement => ~(int)operant,
 
-                case BoundUnaryOperatorKind.Negation:
-                    return -(int)operant;
-
-                case BoundUnaryOperatorKind.LogicalNegation:
-                    return !(bool)operant;
-
-                case BoundUnaryOperatorKind.OnesComplement:
-                    return ~(int)operant;
-
-                default:
-                    throw new Exception($"Unexpected unary operator '{node.Op.Kind}'.");
-            }
+                _ => throw new Exception($"Unexpected unary operator '{node.Op.Kind}'."),
+            };
         }
 
         private object EvaluateBinaryExpression(BoundBinaryExpression node)

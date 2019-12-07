@@ -26,7 +26,7 @@ namespace PHPSharp.Syntax
             SyntaxToken forKeyword,
             SyntaxToken openParenthesisToken,
             StatementSyntax initializationStatement, SyntaxToken initializationSemicolon,
-            ExpressionSyntax condition, SyntaxToken conditionSemicolon, ExpressionStatementSyntax updateStatement,
+            ExpressionSyntax condition, SyntaxToken conditionSemicolon, StatementSyntax updateStatement,
             SyntaxToken closeParenthesisToken,
             StatementSyntax body)
         {
@@ -51,7 +51,7 @@ namespace PHPSharp.Syntax
         public SyntaxToken InitializationSemicolon { get; }
         public ExpressionSyntax Condition { get; }
         public SyntaxToken ConditionSemicolon { get; }
-        public ExpressionStatementSyntax UpdateStatement { get; }
+        public StatementSyntax UpdateStatement { get; }
         public SyntaxToken CloseParenthesisToken { get; }
         public StatementSyntax Body { get; }
 

@@ -195,7 +195,7 @@ namespace PHPSharp.Syntax
             ExpressionSyntax condition = ParseExpression();
             SyntaxToken conditionSemicolon = MatchToken(SyntaxKind.SemicolonToken);
 
-            ExpressionStatementSyntax updateStatement = ParseExpressionStatement(requireSemicolon: false);
+            StatementSyntax updateStatement = ParseStatement(requireSemicolon: false);
 
             SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 

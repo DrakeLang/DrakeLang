@@ -16,27 +16,20 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-namespace PHPSharp.Binding
+using PHPSharp.Binding;
+
+namespace PHPSharp.Lowering
 {
-    internal sealed class BoundForStatement : BoundStatement
+    internal sealed class Lowerer : BoundTreeRewriter
     {
-        public BoundForStatement(BoundStatement initializationStatement, BoundExpression condition, BoundStatement updateStatement, BoundStatement body)
+        private Lowerer()
         {
-            InitializationStatement = initializationStatement;
-            Condition = condition;
-            UpdateStatement = updateStatement;
-            Body = body;
         }
 
-        #region Properties
-
-        public override BoundNodeKind Kind => BoundNodeKind.ForStatement;
-
-        public BoundStatement InitializationStatement { get; }
-        public BoundExpression Condition { get; }
-        public BoundStatement Body { get; }
-        public BoundStatement UpdateStatement { get; }
-
-        #endregion Properties
+        public static BoundStatement Lower(BoundStatement statement)
+        {
+            Lowerer lowerer = new Lowerer();
+            return lowerer.RewriteStatement(statement);
+        }
     }
 }

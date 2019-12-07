@@ -122,7 +122,7 @@ namespace PHPSharp.Binding
 
             BoundStatement initStatement = BindStatement(syntax.InitializationStatement);
             BoundExpression condition = BindExpression(syntax.Condition, typeof(bool));
-            BoundExpressionStatement updateStatement = BindExpressionStatement(syntax.UpdateStatement);
+            BoundStatement updateStatement = BindStatement(syntax.UpdateStatement);
             BoundStatement body = BindStatement(syntax.Body);
 
             PopScope();
