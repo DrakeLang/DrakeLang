@@ -196,6 +196,12 @@ namespace PHPSharp.Tests
             yield return ("{ var a = 0; (a = 10) * a; }", 100);
             yield return ("{ var a = 11; ++a; }", 12);
             yield return ("{ var a = 11; --a; }", 10);
+            yield return ("{ var a = 11; a++; }", 11);
+            yield return ("{ var a = 11; a--; }", 11);
+            yield return ("{ var a = 11; ++a; a; }", 12);
+            yield return ("{ var a = 11; --a; a; }", 10);
+            yield return ("{ var a = 11; a++; a; }", 12);
+            yield return ("{ var a = 11; a--; a; }", 10);
             yield return ("{ var a = 11; a += -1; }", 10);
             yield return ("{ var a = 11; a -= 1; }", 10);
             yield return ("{ var a = 10; a *= 2; }", 20);

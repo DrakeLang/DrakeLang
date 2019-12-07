@@ -113,6 +113,24 @@ namespace PHPSharp.Syntax
             };
         }
 
+        /// <summary>
+        /// Returns a value indicating if the given syntax kind is an unary operator (+, -, ++, --, !).
+        /// </summary>
+        internal static bool GetKindIsUnaryOperator(SyntaxKind kind)
+        {
+            return kind switch
+            {
+                SyntaxKind.PlusToken => true,
+                SyntaxKind.PlusPlusToken => true,
+                SyntaxKind.MinusToken => true,
+                SyntaxKind.MinusMinusToken => true,
+                SyntaxKind.BangToken => true,
+                SyntaxKind.TildeToken => true,
+
+                _ => false,
+            };
+        }
+
         public static IEnumerable<SyntaxKind> GetUnaryOperatorKinds()
         {
             SyntaxKind[] kinds = (SyntaxKind[])Enum.GetValues(typeof(SyntaxKind));

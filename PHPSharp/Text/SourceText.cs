@@ -113,8 +113,8 @@ namespace PHPSharp.Text
         private static void AddLine(ImmutableArray<TextLine>.Builder result, SourceText sourceText, int position, int lineStart, int lineBreakWidth)
         {
             int lineLength = position - lineStart;
-            int lineLengthInclidingLineBreak = lineLength + lineBreakWidth;
-            TextLine line = new TextLine(sourceText, lineStart, lineLength, lineLengthInclidingLineBreak);
+            int lineLengthIncludingLineBreak = lineLength + lineBreakWidth;
+            TextLine line = new TextLine(sourceText, lineStart, lineLength, lineLengthIncludingLineBreak);
 
             result.Add(line);
         }

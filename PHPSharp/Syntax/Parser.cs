@@ -25,7 +25,6 @@ namespace PHPSharp.Syntax
     internal class Parser
     {
         private readonly ImmutableArray<SyntaxToken> _tokens;
-        private readonly SourceText _text;
         private int _position;
 
         public Parser(SourceText text)
@@ -44,7 +43,6 @@ namespace PHPSharp.Syntax
 
             _tokens = tokens.ToImmutableArray();
             Diagnostics.AddRange(lexer.Diagnostics);
-            _text = text;
         }
 
         #region Properties
@@ -237,17 +235,17 @@ namespace PHPSharp.Syntax
             {
                 left = ParseAssignmentExpression();
             }
+            else if (CanParseSuffixUnaryExpression())
+            {
+                left = ParsePostIncrementOrDecrement();
+            }
+            else if (CanParsePrefixUnaryExpression(parentPrecedence, out int unaryOperatorPrecedence))
+            {
+                left = ParsePreUnaryExpression(unaryOperatorPrecedence);
+            }
             else
             {
-                int unaryOperatorPrecedence = Current.Kind.GetUnaryOperatorPrecedence();
-                if (unaryOperatorPrecedence != 0 && unaryOperatorPrecedence > parentPrecedence)
-                {
-                    left = ParseUnaryExpression(unaryOperatorPrecedence);
-                }
-                else
-                {
-                    left = ParsePrimaryExpression();
-                }
+                left = ParsePrimaryExpression();
             }
 
             while (true)
@@ -265,6 +263,23 @@ namespace PHPSharp.Syntax
             return left;
         }
 
+        private bool CanParseSuffixUnaryExpression()
+        {
+            if (Current.Kind != SyntaxKind.IdentifierToken)
+                return false;
+
+            if (!SyntaxFacts.GetKindIsUnaryOperator(LookAhead.Kind))
+                return false;
+
+            return LookAhead.Kind == SyntaxKind.PlusPlusToken || LookAhead.Kind == SyntaxKind.MinusMinusToken;
+        }
+
+        private bool CanParsePrefixUnaryExpression(int parentPrecedence, out int unaryOperatorPrecedence)
+        {
+            unaryOperatorPrecedence = Current.Kind.GetUnaryOperatorPrecedence();
+            return unaryOperatorPrecedence != 0 && unaryOperatorPrecedence > parentPrecedence;
+        }
+
         private AssignmentExpressionSyntax ParseAssignmentExpression()
         {
             SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
@@ -274,7 +289,15 @@ namespace PHPSharp.Syntax
             return new AssignmentExpressionSyntax(identifierToken, operatorToken, right);
         }
 
-        private UnaryExpressionSyntax ParseUnaryExpression(int unaryOperatorPrecedence)
+        private UnaryExpressionSyntax ParsePostIncrementOrDecrement()
+        {
+            NameExpressionSyntax identifierToken = ParseNameExpression();
+            SyntaxToken operatorToken = NextToken();
+
+            return new UnaryExpressionSyntax(operatorToken, identifierToken, UnaryType.Post);
+        }
+
+        private UnaryExpressionSyntax ParsePreUnaryExpression(int unaryOperatorPrecedence)
         {
             SyntaxToken operatorToken = NextToken();
 
@@ -284,7 +307,7 @@ namespace PHPSharp.Syntax
             else
                 operand = ParseExpression(unaryOperatorPrecedence);
 
-            return new UnaryExpressionSyntax(operatorToken, operand);
+            return new UnaryExpressionSyntax(operatorToken, operand, UnaryType.Pre);
         }
 
         private ExpressionSyntax ParsePrimaryExpression()

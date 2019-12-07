@@ -145,7 +145,7 @@ namespace PHPSharp
             };
         }
 
-        private object EvaluateLiteralExpression(BoundLiteralExpression node)
+        private static object EvaluateLiteralExpression(BoundLiteralExpression node)
         {
             if (node.Type != typeof(bool))
                 return node.Value;
@@ -176,6 +176,14 @@ namespace PHPSharp
                 _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
                 return _variables[variableExpression.Variable];
             }
+            else if (node.Op.Kind == BoundUnaryOperatorKind.PostDecrement || node.Op.Kind == BoundUnaryOperatorKind.PostIncrement)
+            {
+                BoundVariableExpression variableExpression = (BoundVariableExpression)node.Operand;
+                int value = (int)_variables[variableExpression.Variable];
+
+                _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PostIncrement ? 1 : -1);
+                return value;
+            }
 
             object operant = EvaluateExpression(node.Operand);
             switch (node.Op.Kind)
@@ -185,8 +193,6 @@ namespace PHPSharp
 
                 case BoundUnaryOperatorKind.Negation:
                     return -(int)operant;
-
-                case BoundUnaryOperatorKind.PreDecrement:
 
                 case BoundUnaryOperatorKind.LogicalNegation:
                     return !(bool)operant;

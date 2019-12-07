@@ -16,37 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-
 namespace PHPSharp.Syntax
 {
-    public sealed class UnaryExpressionSyntax : ExpressionSyntax
+    public enum UnaryType
     {
-        public UnaryExpressionSyntax(SyntaxToken operatorToken, ExpressionSyntax operand, UnaryType unaryType)
-        {
-            OperatorToken = operatorToken;
-            Operand = operand;
-            UnaryType = unaryType;
-        }
-
-        #region Properties
-
-        public override SyntaxKind Kind => SyntaxKind.UnaryExpression;
-
-        public SyntaxToken OperatorToken { get; }
-        public ExpressionSyntax Operand { get; }
-        public UnaryType UnaryType { get; }
-
-        #endregion Properties
-
-        #region Methods
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return OperatorToken;
-            yield return Operand;
-        }
-
-        #endregion Methods
+        Pre,
+        Post,
     }
 }

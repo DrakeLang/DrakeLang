@@ -39,7 +39,7 @@ namespace PHPSharpO
             while (true)
             {
                 string line = ReadInput(firstLine: input.Length == 0);
-                if (line != null && line.StartsWith('#'))
+                if (line.StartsWith('#'))
                 {
                     switch (line.Substring(1))
                     {

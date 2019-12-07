@@ -255,7 +255,7 @@ namespace PHPSharp.Binding
         private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax)
         {
             BoundExpression boundOperand = BindExpression(syntax.Operand);
-            BoundUnaryOperator? op = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, boundOperand.Type);
+            BoundUnaryOperator? op = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, syntax.UnaryType, boundOperand.Type);
 
             if (op is null)
             {

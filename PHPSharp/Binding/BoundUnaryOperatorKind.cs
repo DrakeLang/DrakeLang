@@ -22,8 +22,11 @@ namespace PHPSharp.Binding
     {
         Identity,
         Negation,
+
         PreIncrement,
         PreDecrement,
+        PostDecrement,
+        PostIncrement,
 
         LogicalNegation,
         OnesComplement,
