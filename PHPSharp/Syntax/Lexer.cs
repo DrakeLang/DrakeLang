@@ -192,6 +192,11 @@ namespace PHPSharp.Syntax
                         syntaxKind = SyntaxKind.SlashToken;
                     return true;
 
+                case '%':
+                    Next();
+                    syntaxKind = SyntaxKind.PercentToken;
+                    return true;
+
                 case '(':
                     Next();
                     syntaxKind = SyntaxKind.OpenParenthesisToken;

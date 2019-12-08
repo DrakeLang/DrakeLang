@@ -37,6 +37,7 @@ namespace PHPSharp.Syntax
         StarEqualsToken,
         SlashToken,
         SlashEqualsToken,
+        PercentToken,
         BangToken,
         TildeToken,
         HatToken,

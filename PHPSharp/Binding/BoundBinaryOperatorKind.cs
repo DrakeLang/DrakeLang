@@ -24,6 +24,7 @@ namespace PHPSharp.Binding
         Subtraction,
         Multiplication,
         Division,
+        Modulo,
         BitwiseAnd,
         LogicalAnd,
         BitwiseOr,

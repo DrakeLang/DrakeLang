@@ -181,7 +181,7 @@ namespace PHPSharp.Lowering
         #region Utilities
 
         private int _labelCount;
-        private readonly Dictionary<string, int> _labelCounters = new Dictionary<string, int>();
+        private readonly Dictionary<LabelCategory, int> _labelCounters = new Dictionary<LabelCategory, int>();
 
         private enum LabelCategory
         {
@@ -192,14 +192,14 @@ namespace PHPSharp.Lowering
 
         private LabelSymbol GenerateLabel(LabelCategory category)
         {
-            _labelCounters.TryGetValue(category.ToString(), out int count);
+            _labelCounters.TryGetValue(category, out int count);
 
             string name = $"{category}{count}_{_labelCount}";
 
             count++;
             _labelCount++;
 
-            _labelCounters[name] = count;
+            _labelCounters[category] = count;
             return new LabelSymbol(name);
         }
 

@@ -29,13 +29,11 @@ namespace PHPSharp.Syntax
             {
                 case SyntaxKind.PlusPlusToken:
                 case SyntaxKind.MinusMinusToken:
-                    return 7;
-
                 case SyntaxKind.PlusToken:
                 case SyntaxKind.MinusToken:
                 case SyntaxKind.BangToken:
                 case SyntaxKind.TildeToken:
-                    return 6;
+                    return 10;
 
                 default:
                     return 0;
@@ -48,27 +46,36 @@ namespace PHPSharp.Syntax
             {
                 case SyntaxKind.StarToken:
                 case SyntaxKind.SlashToken:
-                    return 5;
+                case SyntaxKind.PercentToken:
+                    return 9;
 
                 case SyntaxKind.PlusToken:
                 case SyntaxKind.MinusToken:
-                    return 4;
+                    return 8;
 
-                case SyntaxKind.EqualsEqualsToken:
-                case SyntaxKind.BangEqualsToken:
                 case SyntaxKind.LessToken:
                 case SyntaxKind.LessOrEqualsToken:
                 case SyntaxKind.GreaterToken:
                 case SyntaxKind.GreaterOrEqualsToken:
-                    return 3;
+                    return 7;
+
+                case SyntaxKind.EqualsEqualsToken:
+                case SyntaxKind.BangEqualsToken:
+                    return 6;
 
                 case SyntaxKind.AmpersandToken:
+                    return 5;
+
+                case SyntaxKind.HatToken:
+                    return 4;
+
+                case SyntaxKind.PipeToken:
+                    return 3;
+
                 case SyntaxKind.AmpersandAmpersandToken:
                     return 2;
 
-                case SyntaxKind.PipeToken:
                 case SyntaxKind.PipePipeToken:
-                case SyntaxKind.HatToken:
                     return 1;
 
                 default:
@@ -185,6 +192,7 @@ namespace PHPSharp.Syntax
                 SyntaxKind.StarEqualsToken => "*=",
                 SyntaxKind.SlashToken => "/",
                 SyntaxKind.SlashEqualsToken => "/=",
+                SyntaxKind.PercentToken => "%",
                 SyntaxKind.BangToken => "!",
                 SyntaxKind.BangEqualsToken => "!=",
                 SyntaxKind.EqualsToken => "=",

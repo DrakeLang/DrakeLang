@@ -250,6 +250,9 @@ namespace PHPSharp
                         return (double)left / (double)right;
                     }
 
+                case BoundBinaryOperatorKind.Modulo:
+                    return (int)left % (int)right;
+
                 case BoundBinaryOperatorKind.BitwiseAnd:
                     if (node.Type == TypeSymbol.Int)
                         return (int)left & (int)right;
