@@ -21,12 +21,15 @@ using PHPSharp.Syntax;
 using PHPSharp.Text;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text;
 
 namespace PHPSharpO
 {
     internal static class Program
     {
+        private static bool _shutDownInitiated;
+
         private static bool _showTree = false;
         private static bool _showProgram = false;
 
@@ -37,42 +40,13 @@ namespace PHPSharpO
         {
             StringBuilder input = new StringBuilder();
 
-            while (true)
+            while (!_shutDownInitiated)
             {
                 string line = ReadInput(firstLine: input.Length == 0);
-                if (line.StartsWith('#'))
-                {
-                    switch (line.Substring(1))
-                    {
-                        case "tree":
-                            _showTree ^= true;
-                            Console.WriteLine(_showTree ? "Parse tree visible" : "Parse tree hidden");
-                            break;
+                if (TryEvaluateSharpOCommand(line))
+                    continue;
 
-                        case "program":
-                            _showProgram ^= true;
-                            Console.WriteLine(_showProgram ? "Program visible" : "Program hidden");
-                            break;
-
-                        case "cls":
-                        case "clear":
-                            Console.Clear();
-                            break;
-
-                        case "reset":
-                            _currentState = null;
-                            _variables.Clear();
-                            break;
-
-                        case "exit":
-                            return;
-
-                        default:
-                            Console.WriteLine("Invalid command.");
-                            break;
-                    }
-                }
-                else if (!string.IsNullOrWhiteSpace(line))
+                if (!string.IsNullOrWhiteSpace(line))
                 {
                     input.AppendLine(line);
                 }
@@ -84,19 +58,57 @@ namespace PHPSharpO
             }
         }
 
-        /// <summary>
-        /// Parses a string.
-        /// </summary>
-        /// <param name="content">The string to parse.</param>
-        private static void Parse(string content)
+        private static bool TryEvaluateSharpOCommand(string input)
         {
-            SyntaxTree syntaxTree = SyntaxTree.Parse(content);
+            if (!input.StartsWith('#'))
+                return false;
+
+            switch (input.Substring(1))
+            {
+                case "tree":
+                    _showTree ^= true;
+                    Console.WriteLine(_showTree ? "Parse tree visible" : "Parse tree hidden");
+                    break;
+
+                case "program":
+                    _showProgram ^= true;
+                    Console.WriteLine(_showProgram ? "Program visible" : "Program hidden");
+                    break;
+
+                case "cls":
+                case "clear":
+                    Console.Clear();
+                    break;
+
+                case "reset":
+                    _currentState = null;
+                    _variables.Clear();
+                    break;
+
+                case "exit":
+                    _shutDownInitiated = true;
+                    break;
+
+                default:
+                    Console.WriteLine("Invalid command.");
+                    break;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Parses the given code.
+        /// </summary>
+        private static void Parse(string code)
+        {
+            SyntaxTree syntaxTree = SyntaxTree.Parse(code);
             Compilation compilation = _currentState?.ContinueWith(syntaxTree) ?? new Compilation(syntaxTree);
-            EvaluationResult result = compilation.Evaluate(_variables);
 
             if (_showTree) PrintTreeToConsole(syntaxTree);
             if (_showProgram) PrintProgramToConsole(compilation);
 
+            EvaluationResult result = compilation.Evaluate(_variables);
             if (result.Diagnostics.Length == 0)
             {
                 PrintResult(result.Value);
@@ -104,42 +116,39 @@ namespace PHPSharpO
             }
             else
             {
-                SourceText text = syntaxTree.Text;
+                HandleDiagonstics(syntaxTree.Text, result.Diagnostics);
+            }
+        }
 
-                foreach (Diagnostic diagnostic in result.Diagnostics)
-                {
-                    int lineIndex = text.GetLineIndex(diagnostic.Span.Start);
-                    TextLine line = text.Lines[lineIndex];
-                    int lineNumer = lineIndex + 1;
-                    int character = diagnostic.Span.Start - line.Start + 1;
-
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.WriteLine();
-                    Console.Write($"({lineNumer}, {character}): ");
-                    Console.WriteLine(diagnostic);
-                    Console.ResetColor();
-
-                    TextSpan prefixSpan = TextSpan.FromBounds(line.Start, diagnostic.Span.Start);
-                    TextSpan suffixSpan = TextSpan.FromBounds(diagnostic.Span.End, line.End);
-
-                    string prefix = text.ToString(prefixSpan);
-                    string error = text.ToString(diagnostic.Span);
-                    string suffix = text.ToString(suffixSpan);
-
-                    Console.Write("    ");
-                    Console.Write(prefix);
-
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.Write(error);
-                    Console.ResetColor();
-
-                    Console.Write(suffix);
-
-                    Console.WriteLine();
-                }
+        private static void HandleDiagonstics(SourceText text, ImmutableArray<Diagnostic> diagnostics)
+        {
+            foreach (Diagnostic diagnostic in diagnostics)
+            {
+                int lineIndex = text.GetLineIndex(diagnostic.Span.Start);
+                TextLine line = text.Lines[lineIndex];
+                int lineNumer = lineIndex + 1;
+                int character = diagnostic.Span.Start - line.Start + 1;
 
                 Console.WriteLine();
+                ConsoleExt.WriteLine($"({lineNumer}, {character}): {diagnostic}", ConsoleColor.DarkRed);
+
+                TextSpan prefixSpan = TextSpan.FromBounds(line.Start, diagnostic.Span.Start);
+                TextSpan suffixSpan = TextSpan.FromBounds(diagnostic.Span.End, line.End);
+
+                string prefix = text.ToString(prefixSpan);
+                string error = text.ToString(diagnostic.Span);
+                string suffix = text.ToString(suffixSpan);
+
+                Console.Write("    ");
+                Console.Write(prefix);
+
+                ConsoleExt.WriteLine(error, ConsoleColor.DarkRed);
+
+                Console.Write(suffix);
+                Console.WriteLine();
             }
+
+            Console.WriteLine();
         }
 
         #region Console helpers
