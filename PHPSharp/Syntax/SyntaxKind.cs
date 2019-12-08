@@ -63,13 +63,14 @@ namespace PHPSharp.Syntax
         BoolKeyword,
         IntKeyword,
         StringKeyword,
-        ElseKeyword,
-        FalseKeyword,
-        ForKeyword,
-        IfKeyword,
-        TrueKeyword,
         VarKeyword,
+        TrueKeyword,
+        FalseKeyword,
+        IfKeyword,
+        ElseKeyword,
         WhileKeyword,
+        ForKeyword,
+        TypeofKeyword,
 
         // Nodes
         CompilationUnit,
@@ -89,6 +90,7 @@ namespace PHPSharp.Syntax
         UnaryExpression,
         BinaryExpression,
         ParenthesizedExpression,
+        TypeofExpression,
         AssignmentExpression,
     }
 }

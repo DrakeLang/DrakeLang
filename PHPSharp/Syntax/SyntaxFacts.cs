@@ -83,14 +83,16 @@ namespace PHPSharp.Syntax
                 "bool" => SyntaxKind.BoolKeyword,
                 "int" => SyntaxKind.IntKeyword,
                 "string" => SyntaxKind.StringKeyword,
-
-                "else" => SyntaxKind.ElseKeyword,
-                "false" => SyntaxKind.FalseKeyword,
-                "for" => SyntaxKind.ForKeyword,
-                "if" => SyntaxKind.IfKeyword,
-                "true" => SyntaxKind.TrueKeyword,
                 "var" => SyntaxKind.VarKeyword,
+
+                "true" => SyntaxKind.TrueKeyword,
+                "false" => SyntaxKind.FalseKeyword,
+                "if" => SyntaxKind.IfKeyword,
+                "else" => SyntaxKind.ElseKeyword,
                 "while" => SyntaxKind.WhileKeyword,
+                "for" => SyntaxKind.ForKeyword,
+
+                "typeof" => SyntaxKind.TypeofKeyword,
 
                 _ => SyntaxKind.IdentifierToken,
             };
@@ -118,7 +120,7 @@ namespace PHPSharp.Syntax
         /// <summary>
         /// Returns a value indicating if the given syntax kind is an unary operator (+, -, ++, --, !).
         /// </summary>
-        internal static bool GetKindIsUnaryOperator(SyntaxKind kind)
+        public static bool GetKindIsUnaryOperator(SyntaxKind kind)
         {
             return kind switch
             {
@@ -128,6 +130,19 @@ namespace PHPSharp.Syntax
                 SyntaxKind.MinusMinusToken => true,
                 SyntaxKind.BangToken => true,
                 SyntaxKind.TildeToken => true,
+
+                _ => false,
+            };
+        }
+
+        public static bool GetKindIsTypeKeyword(SyntaxKind kind)
+        {
+            return kind switch
+            {
+                SyntaxKind.BoolKeyword => true,
+                SyntaxKind.IntKeyword => true,
+                SyntaxKind.StringKeyword => true,
+                SyntaxKind.VarKeyword => true,
 
                 _ => false,
             };
@@ -187,18 +202,19 @@ namespace PHPSharp.Syntax
                 SyntaxKind.CloseParenthesisToken => ")",
                 SyntaxKind.OpenBraceToken => "{",
                 SyntaxKind.CloseBraceToken => "}",
+                SyntaxKind.SemicolonToken => ";",
 
                 SyntaxKind.BoolKeyword => "bool",
                 SyntaxKind.IntKeyword => "int",
                 SyntaxKind.StringKeyword => "string",
-                SyntaxKind.ElseKeyword => "else",
-                SyntaxKind.FalseKeyword => "false",
-                SyntaxKind.ForKeyword => "for",
-                SyntaxKind.IfKeyword => "if",
-                SyntaxKind.TrueKeyword => "true",
                 SyntaxKind.VarKeyword => "var",
+                SyntaxKind.TrueKeyword => "true",
+                SyntaxKind.FalseKeyword => "false",
+                SyntaxKind.IfKeyword => "if",
+                SyntaxKind.ElseKeyword => "else",
                 SyntaxKind.WhileKeyword => "while",
-                SyntaxKind.SemicolonToken => ";",
+                SyntaxKind.ForKeyword => "for",
+                SyntaxKind.TypeofKeyword => "typeof",
 
                 _ => null,
             };

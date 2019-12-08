@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace PHPSharp.Syntax
 {
-    public sealed class ParenthesizedExpressionSyntax : ExpressionSyntax
+    internal sealed class ParenthesizedExpressionSyntax : ExpressionSyntax
     {
         public ParenthesizedExpressionSyntax(SyntaxToken openParenthesisToken, ExpressionSyntax expression, SyntaxToken closeParenthesisToken)
         {

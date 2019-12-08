@@ -319,6 +319,9 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.OpenParenthesisToken:
                     return ParseParenthesizedExpression();
 
+                case SyntaxKind.TypeofKeyword:
+                    return ParseTypeOfExpression();
+
                 case SyntaxKind.TrueKeyword:
                 case SyntaxKind.FalseKeyword:
                     return ParseBooleanLiteral();
@@ -342,6 +345,31 @@ namespace PHPSharp.Syntax
             SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 
             return new ParenthesizedExpressionSyntax(leftParenthesis, expression, rightParenthesis);
+        }
+
+        private TypeofExpressionSyntax ParseTypeOfExpression()
+        {
+            SyntaxToken typeofKeyword = MatchToken(SyntaxKind.TypeofKeyword);
+            SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            LiteralExpressionSyntax typeLiteral = ParseTypeLiteral();
+            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+
+            return new TypeofExpressionSyntax(typeofKeyword, leftParenthesis, typeLiteral, rightParenthesis);
+        }
+
+        private LiteralExpressionSyntax ParseTypeLiteral()
+        {
+            if (!SyntaxFacts.GetKindIsTypeKeyword(Current.Kind))
+            {
+                Diagnostics.ReportTypeExpected(Current.Span, Current.Kind);
+            }
+            else if (Current.Kind == SyntaxKind.VarKeyword)
+            {
+                Diagnostics.ReportUnexpectedVarKeyword(Current.Span);
+            }
+
+            SyntaxToken typeToken = NextToken();
+            return new LiteralExpressionSyntax(typeToken, typeToken.Text);
         }
 
         private LiteralExpressionSyntax ParseBooleanLiteral()

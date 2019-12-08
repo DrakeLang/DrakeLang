@@ -22,7 +22,7 @@ namespace PHPSharp
 {
     public class Diagnostic
     {
-        public Diagnostic(TextSpan span, string? message)
+        public Diagnostic(TextSpan span, string message)
         {
             Span = span;
             Message = message;
@@ -31,13 +31,13 @@ namespace PHPSharp
         #region Properties
 
         public TextSpan Span { get; }
-        public string? Message { get; }
+        public string Message { get; }
 
         #endregion Properties
 
         #region Methods
 
-        public override string? ToString() => Message;
+        public override string ToString() => Message;
 
         #endregion Methods
     }

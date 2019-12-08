@@ -20,34 +20,37 @@ using System.Collections.Generic;
 
 namespace PHPSharp.Syntax
 {
-    internal sealed class WhileStatementSyntax : StatementSyntax
+    internal sealed class TypeofExpressionSyntax : ExpressionSyntax
     {
-        public WhileStatementSyntax(SyntaxToken whileKeyword, ParenthesizedExpressionSyntax condition, StatementSyntax body)
+        public TypeofExpressionSyntax(
+            SyntaxToken typeofKeyword,
+            SyntaxToken leftParenthesis,
+            LiteralExpressionSyntax typeLiteral,
+            SyntaxToken rightParenthesis)
         {
-            WhileKeyword = whileKeyword;
-            Condition = condition;
-            Body = body;
+            TypeofKeyword = typeofKeyword;
+            LeftParenthesis = leftParenthesis;
+            TypeLiteral = typeLiteral;
+            RightParenthesis = rightParenthesis;
         }
 
         #region Properties
 
-        public override SyntaxKind Kind => SyntaxKind.WhileStatement;
+        public override SyntaxKind Kind => SyntaxKind.TypeofExpression;
 
-        public SyntaxToken WhileKeyword { get; }
-        public ParenthesizedExpressionSyntax Condition { get; }
-        public StatementSyntax Body { get; }
+        public SyntaxToken TypeofKeyword { get; }
+        public SyntaxToken LeftParenthesis { get; }
+        public LiteralExpressionSyntax TypeLiteral { get; }
+        public SyntaxToken RightParenthesis { get; }
 
         #endregion Properties
 
-        #region Methods
-
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return WhileKeyword;
-            yield return Condition;
-            yield return Body;
+            yield return TypeofKeyword;
+            yield return LeftParenthesis;
+            yield return TypeLiteral;
+            yield return RightParenthesis;
         }
-
-        #endregion Methods
     }
 }

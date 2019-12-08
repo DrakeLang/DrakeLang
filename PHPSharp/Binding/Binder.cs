@@ -141,6 +141,7 @@ namespace PHPSharp.Binding
             return syntax.Kind switch
             {
                 SyntaxKind.ParenthesizedExpression => BindParenthesizedExpression((ParenthesizedExpressionSyntax)syntax),
+                SyntaxKind.TypeofExpression => BindTypeofExpression((TypeofExpressionSyntax)syntax),
                 SyntaxKind.LiteralExpression => BindLiteralExpression((LiteralExpressionSyntax)syntax),
                 SyntaxKind.NameExpression => BindNameExpression((NameExpressionSyntax)syntax),
                 SyntaxKind.AssignmentExpression => BindAssignmentExpression((AssignmentExpressionSyntax)syntax),
@@ -163,6 +164,11 @@ namespace PHPSharp.Binding
         private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax)
         {
             return BindExpression(syntax.Expression);
+        }
+
+        private static BoundExpression BindTypeofExpression(TypeofExpressionSyntax syntax)
+        {
+            return new BoundLiteralExpression(syntax.TypeLiteral.Value ?? string.Empty);
         }
 
         private static BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)

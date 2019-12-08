@@ -37,7 +37,7 @@ namespace PHPSharp
             _diagnostics.AddRange(diagnostics);
         }
 
-        private void Report(TextSpan span, string? message)
+        private void Report(TextSpan span, string message)
         {
             Diagnostic diagnostic = new Diagnostic(span, message);
             _diagnostics.Add(diagnostic);
@@ -65,6 +65,18 @@ namespace PHPSharp
         public void ReportUnexpectedToken(TextSpan span, SyntaxKind actualKind, SyntaxKind expectedKind)
         {
             string message = $"Unexpected token <{actualKind}>, expected <{expectedKind}>";
+            Report(span, message);
+        }
+
+        public void ReportTypeExpected(TextSpan span, SyntaxKind actualKind)
+        {
+            string message = $"Unexpected token <{actualKind}>, expected type.";
+            Report(span, message);
+        }
+
+        public void ReportUnexpectedVarKeyword(TextSpan span)
+        {
+            string message = "The contextual keyword 'var' may only appear within a local variable declaration.";
             Report(span, message);
         }
 

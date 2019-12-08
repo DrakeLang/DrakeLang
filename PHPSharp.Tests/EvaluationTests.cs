@@ -247,7 +247,7 @@ namespace PHPSharp.Tests
             for (int i = 0; i < expectedDiagnostics.Length; i++)
             {
                 string expectedMessage = expectedDiagnostics[i];
-                string? actualMessage = result.Diagnostics[i].Message;
+                string actualMessage = result.Diagnostics[i].Message;
 
                 TextSpan expectedSpan = annotaedText.Spans[i];
                 TextSpan actualSpan = result.Diagnostics[i].Span;

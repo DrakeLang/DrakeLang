@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace PHPSharp.Syntax
 {
-    public sealed class IfStatementSyntax : StatementSyntax
+    internal sealed class IfStatementSyntax : StatementSyntax
     {
         public IfStatementSyntax(SyntaxToken ifKeyword, ParenthesizedExpressionSyntax condition, StatementSyntax thenStatement, ElseClauseSyntax? elseClause)
         {
