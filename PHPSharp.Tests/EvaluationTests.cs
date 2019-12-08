@@ -217,6 +217,14 @@ namespace PHPSharp.Tests
             // While, for statement
             yield return ("{ var a = 0; while (a < 10) a = a + 1; a; }", 10);
             yield return ("{ var result = 0; for (var i = 0; i <= 10; ++i) result = result + i; result; }", 55);
+
+            // Typeof
+            yield return ("typeof(string);", TypeSymbol.String.Name);
+            yield return ("typeof(int);", TypeSymbol.Int.Name);
+            yield return ("typeof(bool);", TypeSymbol.Boolean.Name);
+
+            // Nameof
+            yield return ("{ var a = 0; nameof(a); }", "a");
         }
 
         private static void AssertValue(string text, object expectedValue)
