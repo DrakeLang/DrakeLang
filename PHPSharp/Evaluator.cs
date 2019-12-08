@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Binding;
+using PHPSharp.Symbols;
 using System;
 using System.Collections.Generic;
 

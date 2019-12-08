@@ -18,6 +18,7 @@
 
 using PHPSharp.Binding;
 using PHPSharp.Lowering;
+using PHPSharp.Symbols;
 using PHPSharp.Syntax;
 using System;
 using System.Collections.Generic;

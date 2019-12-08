@@ -18,7 +18,7 @@
 
 using System;
 
-namespace PHPSharp
+namespace PHPSharp.Symbols
 {
     public sealed class VariableSymbol
     {

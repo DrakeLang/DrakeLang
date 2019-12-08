@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp;
+using PHPSharp.Symbols;
 using PHPSharp.Syntax;
 using PHPSharp.Text;
 using System;
