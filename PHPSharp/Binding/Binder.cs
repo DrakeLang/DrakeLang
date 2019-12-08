@@ -206,51 +206,53 @@ namespace PHPSharp.Binding
             if (variable.IsReadOnly)
                 Diagnostics.ReportCannotAssign(syntax.EqualsToken.Span, name);
 
-            if (boundExpression.Type != variable.Type)
+            if (syntax.EqualsToken.Kind == SyntaxKind.EqualsToken)
             {
-                Diagnostics.ReportCannotConvert(syntax.Expression.Span, boundExpression.Type, variable.Type);
-                return boundExpression;
-            }
-
-            if (syntax.EqualsToken.Kind != SyntaxKind.EqualsToken)
-            {
-                BoundBinaryOperatorKind operatorKind;
-                switch (syntax.EqualsToken.Kind)
+                if (boundExpression.Type != variable.Type)
                 {
-                    case SyntaxKind.PlusEqualsToken:
-                        operatorKind = BoundBinaryOperatorKind.Addition;
-                        break;
-
-                    case SyntaxKind.MinusEqualsToken:
-                        operatorKind = BoundBinaryOperatorKind.Subtraction;
-                        break;
-
-                    case SyntaxKind.StarEqualsToken:
-                        operatorKind = BoundBinaryOperatorKind.Multiplication;
-                        break;
-
-                    case SyntaxKind.SlashEqualsToken:
-                        operatorKind = BoundBinaryOperatorKind.Division;
-                        break;
-
-                    case SyntaxKind.AmpersandEqualsToken:
-                    case SyntaxKind.PipeEqualsToken:
-                        Diagnostics.ReportUndefinedBinaryOperator(syntax.EqualsToken.Span, syntax.EqualsToken.Text, variable.Type, boundExpression.Type);
-                        return boundExpression;
-
-                    default:
-                        throw new Exception($"Unexpected assignment kind {syntax.EqualsToken.Kind}");
+                    Diagnostics.ReportCannotConvert(syntax.Expression.Span, boundExpression.Type, variable.Type);
+                    return boundExpression;
                 }
 
-                BoundVariableExpression boundVariable = new BoundVariableExpression(variable);
-                BoundBinaryOperator? boundOp = BoundBinaryOperator.Bind(operatorKind, variable.Type, boundExpression.Type);
-                if (boundOp is null)
-                {
-                    throw new InvalidOperationException();
-                }
-
-                boundExpression = new BoundBinaryExpression(boundVariable, boundOp, boundExpression);
+                return new BoundAssignmentExpression(variable, boundExpression);
             }
+
+            BoundBinaryOperatorKind operatorKind;
+            switch (syntax.EqualsToken.Kind)
+            {
+                case SyntaxKind.PlusEqualsToken:
+                    operatorKind = BoundBinaryOperatorKind.Addition;
+                    break;
+
+                case SyntaxKind.MinusEqualsToken:
+                    operatorKind = BoundBinaryOperatorKind.Subtraction;
+                    break;
+
+                case SyntaxKind.StarEqualsToken:
+                    operatorKind = BoundBinaryOperatorKind.Multiplication;
+                    break;
+
+                case SyntaxKind.SlashEqualsToken:
+                    operatorKind = BoundBinaryOperatorKind.Division;
+                    break;
+
+                case SyntaxKind.AmpersandEqualsToken:
+                case SyntaxKind.PipeEqualsToken:
+                    Diagnostics.ReportUndefinedBinaryOperator(syntax.EqualsToken.Span, syntax.EqualsToken.Text, variable.Type, boundExpression.Type);
+                    return boundExpression;
+
+                default:
+                    throw new Exception($"Unexpected assignment kind {syntax.EqualsToken.Kind}");
+            }
+
+            BoundVariableExpression boundVariable = new BoundVariableExpression(variable);
+            BoundBinaryOperator? boundOp = BoundBinaryOperator.Bind(operatorKind, variable.Type, boundExpression.Type);
+            if (boundOp is null)
+            {
+                throw new InvalidOperationException();
+            }
+
+            boundExpression = new BoundBinaryExpression(boundVariable, boundOp, boundExpression);
 
             return new BoundAssignmentExpression(variable, boundExpression);
         }

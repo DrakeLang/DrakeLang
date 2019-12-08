@@ -190,7 +190,12 @@ namespace PHPSharp
             switch (node.Op.Kind)
             {
                 case BoundBinaryOperatorKind.Addition:
-                    return (int)left + (int)right;
+                    if (node.Type == TypeSymbol.Int)
+                        return (int)left + (int)right;
+                    else if (node.Left.Type == TypeSymbol.String)
+                        return (string)left + right;
+                    else
+                        return left + (string)right;
 
                 case BoundBinaryOperatorKind.Subtraction:
                     return (int)left - (int)right;
