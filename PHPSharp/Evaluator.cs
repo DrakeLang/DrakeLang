@@ -130,6 +130,7 @@ namespace PHPSharp
                 BoundNodeKind.AssignmentExpression => EvaluateAssignmentExpression((BoundAssignmentExpression)node),
                 BoundNodeKind.UnaryExpression => EvaluateUnaryExpression((BoundUnaryExpression)node),
                 BoundNodeKind.BinaryExpression => EvaluateBinaryExpression((BoundBinaryExpression)node),
+                BoundNodeKind.CallExpression => EvaluateCallExpression((BoundCallExpression)node),
 
                 _ => throw new Exception($"Unexpected node '{node.Kind}'."),
             };
@@ -306,6 +307,21 @@ namespace PHPSharp
                 default:
                     throw new Exception($"Unexpected binary operator '{node.Op.Kind}'.");
             }
+        }
+
+        private object EvaluateCallExpression(BoundCallExpression node)
+        {
+            if (node.Method == BuiltinMethods.Input)
+            {
+                return Console.ReadLine();
+            }
+            else if (node.Method == BuiltinMethods.Print)
+            {
+                string message = (string)EvaluateExpression(node.Arguments[0]);
+                Console.WriteLine(message);
+                return 0; // cannot return null due to nullable reference types being enabled.
+            }
+            else throw new Exception($"Unexpected method '{node.Method}'.");
         }
 
         #endregion EvaluateExpression

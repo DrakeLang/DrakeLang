@@ -58,6 +58,7 @@ namespace PHPSharp.Syntax
         OpenBraceToken,
         CloseBraceToken,
         IdentifierToken,
+        CommaToken,
         WhitespaceToken,
         LineCommentToken,
 
@@ -97,5 +98,6 @@ namespace PHPSharp.Syntax
         TypeofExpression,
         NameofExpression,
         AssignmentExpression,
+        CallExpression,
     }
 }

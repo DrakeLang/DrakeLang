@@ -16,13 +16,20 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+using System.Collections.Immutable;
+
 namespace PHPSharp.Symbols
 {
-    public enum SymbolKind
+    internal static class BuiltinMethods
     {
-        Function,
-        Variable,
-        Type,
-        Parameter,
+        public static readonly MethodSymbol Print = new MethodSymbol("Print", ImmutableArray.Create(new ParameterSymbol("text", TypeSymbol.String)), TypeSymbol.Void);
+        public static readonly MethodSymbol Input = new MethodSymbol("Input", ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.String);
+
+        public static IEnumerable<MethodSymbol> GetAll()
+        {
+            yield return Print;
+            yield return Input; 
+        }
     }
 }

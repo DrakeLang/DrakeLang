@@ -16,40 +16,43 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using PHPSharp.Text;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace PHPSharp.Syntax
 {
-    public sealed class SyntaxToken : SyntaxNode
+    /**
+     * Syntax:
+     * - methodName();
+     * - methodName(param1);
+     * - methodName(param1, param2);
+     */
+
+    public sealed class CallExpressionSyntax : ExpressionSyntax
     {
-        public SyntaxToken(SyntaxKind kind, int position, string? text, object? value)
+        public CallExpressionSyntax(SyntaxToken identifier, SyntaxToken leftParenthesis, SeparatedSyntaxCollection<ExpressionSyntax> arguments, SyntaxToken rightParenthesis)
         {
-            Kind = kind;
-            Position = position;
-            Text = text;
-            Value = value;
+            Identifier = identifier;
+            LeftParenthesis = leftParenthesis;
+            Arguments = arguments;
+            RightParenthesis = rightParenthesis;
         }
 
-        #region Properties
+        public override SyntaxKind Kind => SyntaxKind.CallExpression;
 
-        public override SyntaxKind Kind { get; }
-
-        public int Position { get; }
-        public string? Text { get; }
-        public object? Value { get; }
-        public override TextSpan Span => new TextSpan(Position, Text?.Length ?? 0);
-
-        #endregion Properties
-
-        #region Methods
+        public SyntaxToken Identifier { get; }
+        public SyntaxToken LeftParenthesis { get; }
+        public SeparatedSyntaxCollection<ExpressionSyntax> Arguments { get; }
+        public SyntaxToken RightParenthesis { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            return Enumerable.Empty<SyntaxNode>();
-        }
+            yield return Identifier;
+            yield return LeftParenthesis;
 
-        #endregion Methods
+            foreach (var argument in Arguments.GetWithSeparators())
+                yield return argument;
+
+            yield return RightParenthesis;
+        }
     }
 }

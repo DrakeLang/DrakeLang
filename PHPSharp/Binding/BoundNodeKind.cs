@@ -38,5 +38,6 @@ namespace PHPSharp.Binding
         AssignmentExpression,
         UnaryExpression,
         BinaryExpression,
+        CallExpression,
     }
 }

@@ -316,12 +316,12 @@ namespace PHPSharp.Syntax
 
                 SyntaxKind.TrueKeyword => ParseBooleanLiteral(isTrue: true),
                 SyntaxKind.FalseKeyword => ParseBooleanLiteral(isTrue: false),
+
                 SyntaxKind.IntegerToken => ParseIntegerLiteral(),
                 SyntaxKind.FloatToken => ParseFloatLiteral(),
                 SyntaxKind.StringToken => ParseStringLiteral(),
-                SyntaxKind.IdentifierToken => ParseNameExpression(),
 
-                _ => ParseNameExpression(),
+                _ => ParseNameOrCallExpression(),
             };
         }
 
@@ -401,6 +401,46 @@ namespace PHPSharp.Syntax
         {
             SyntaxToken stringToken = MatchToken(SyntaxKind.StringToken);
             return new LiteralExpressionSyntax(stringToken);
+        }
+
+        private ExpressionSyntax ParseNameOrCallExpression()
+        {
+            if (LookAhead.Kind == SyntaxKind.OpenParenthesisToken)
+                return ParseCallExpression();
+            else
+                return ParseNameExpression();
+        }
+
+        private CallExpressionSyntax ParseCallExpression()
+        {
+            SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
+            SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            SeparatedSyntaxCollection<ExpressionSyntax> arguments = ParseArguments();
+            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+
+            return new CallExpressionSyntax(identifierToken, leftParenthesis, arguments, rightParenthesis);
+        }
+
+        private SeparatedSyntaxCollection<ExpressionSyntax> ParseArguments()
+        {
+            ImmutableArray<SyntaxNode>.Builder builder = ImmutableArray.CreateBuilder<SyntaxNode>();
+
+            while (Current.Kind != SyntaxKind.CloseParenthesisToken &&
+                   Current.Kind != SyntaxKind.EndOfFileToken)
+            {
+                ExpressionSyntax expression = ParseExpression();
+                builder.Add(expression);
+
+                // Don't expect comma after final argument.
+                if (Current.Kind != SyntaxKind.CloseParenthesisToken &&
+                    Current.Kind != SyntaxKind.EndOfFileToken)
+                {
+                    var comma = MatchToken(SyntaxKind.CommaToken);
+                    builder.Add(comma);
+                }
+            }
+
+            return new SeparatedSyntaxCollection<ExpressionSyntax>(builder.ToImmutable());
         }
 
         private NameExpressionSyntax ParseNameExpression()

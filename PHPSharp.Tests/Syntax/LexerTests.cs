@@ -118,7 +118,8 @@ namespace PHPSharp.Tests.Syntax
             var fixedTokens = Enum.GetValues(typeof(SyntaxKind))
                                    .Cast<SyntaxKind>()
                                    .Select(k => (kind: k, text: SyntaxFacts.GetText(k)))
-                                   .Where(t => t.text != null);
+                                   .Where(t => t.text != null)
+                                   .Cast<(SyntaxKind, string)>();
 
             var dynamicTokens = new[]
             {
@@ -139,8 +140,7 @@ namespace PHPSharp.Tests.Syntax
                 (SyntaxKind.LineCommentToken, "///////"),
             };
 
-            // We know that fixedTokens contains no null-reference strings.
-            return fixedTokens!.Concat(dynamicTokens);
+            return fixedTokens.Concat(dynamicTokens);
         }
 
         public static IEnumerable<(SyntaxKind kind, string text)> GetSeparators(bool linebreaksOnly = false)

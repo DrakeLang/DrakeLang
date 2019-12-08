@@ -16,14 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+#pragma warning disable CA1724 // on't have type named Compilation due to conflict with 'System.Web.Compilation'
+
 using PHPSharp.Binding;
 using PHPSharp.Lowering;
 using PHPSharp.Symbols;
 using PHPSharp.Syntax;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
+using System.IO; 
 using System.Linq;
 using System.Threading;
 
@@ -93,8 +94,6 @@ namespace PHPSharp
         {
             return Lowerer.Lower(GlobalScope.Statement);
         }
-
-       
 
         #endregion Methods
     }

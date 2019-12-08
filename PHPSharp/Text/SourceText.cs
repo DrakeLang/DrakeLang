@@ -71,7 +71,14 @@ namespace PHPSharp.Text
 
         public string ToString(int start, int length) => _text.Substring(start, length);
 
-        public string ToString(TextSpan span) => _text.Substring(span.Start, span.Length);
+        public string ToString(TextSpan span)
+        {
+            int length = span.Length;
+            if (length <= 0)
+                return string.Empty;
+
+            return _text.Substring(span.Start, length);
+        }
 
         #endregion Methods
 

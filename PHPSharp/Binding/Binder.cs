@@ -18,10 +18,12 @@
 
 using PHPSharp.Symbols;
 using PHPSharp.Syntax;
+using PHPSharp.Text;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace PHPSharp.Binding
 {
@@ -76,9 +78,17 @@ namespace PHPSharp.Binding
         {
             string name = syntax.Identifier.Text ?? "?";
             bool declare = syntax.Identifier.Text != null;
-            bool isReadOnly = false;
+            bool isReadOnly = false; // TODO: introduce readonly values and compile-time constants.
 
             BoundExpression initializer = BindExpression(syntax.Initializer);
+
+            // Don't allow void assignment
+            if (initializer.Type == TypeSymbol.Void)
+            {
+                TextSpan span = TextSpan.FromBounds(syntax.Identifier.Span.Start, syntax.Initializer.Span.End);
+                Diagnostics.ReportCannotAssignVoid(span);
+            }
+
             var variableType = syntax.Keyword.Kind switch
             {
                 SyntaxKind.BoolKeyword => TypeSymbol.Boolean,
@@ -90,8 +100,8 @@ namespace PHPSharp.Binding
                 _ => throw new Exception($"Unexpected keyword '{syntax.Keyword.Kind}'."),
             };
 
-            if (variableType != initializer.Type && 
-                variableType != TypeSymbol.Error && 
+            if (variableType != initializer.Type &&
+                variableType != TypeSymbol.Error &&
                 initializer.Type != TypeSymbol.Error)
             {
                 Diagnostics.ReportCannotConvert(syntax.Initializer.Span, initializer.Type, variableType);
@@ -152,6 +162,7 @@ namespace PHPSharp.Binding
                 SyntaxKind.TypeofExpression => BindTypeofExpression((TypeofExpressionSyntax)syntax),
                 SyntaxKind.NameofExpression => BindNameofExpression((NameofExpressionSyntax)syntax),
                 SyntaxKind.LiteralExpression => BindLiteralExpression((LiteralExpressionSyntax)syntax),
+                SyntaxKind.CallExpression => BindCallExpression((CallExpressionSyntax)syntax),
                 SyntaxKind.NameExpression => BindNameExpression((NameExpressionSyntax)syntax),
                 SyntaxKind.AssignmentExpression => BindAssignmentExpression((AssignmentExpressionSyntax)syntax),
                 SyntaxKind.UnaryExpression => BindUnaryExpression((UnaryExpressionSyntax)syntax),
@@ -199,6 +210,47 @@ namespace PHPSharp.Binding
             return new BoundLiteralExpression(value);
         }
 
+        private BoundExpression BindCallExpression(CallExpressionSyntax syntax)
+        {
+            // Locate method.
+            MethodSymbol method = BuiltinMethods.GetAll().SingleOrDefault(m => m.Name == syntax.Identifier.Text);
+            if (method is null)
+            {
+                Diagnostics.ReportUndefinedMethod(syntax.Identifier.Span, syntax.Identifier.Text);
+                return new BoundErrorExpression();
+            }
+
+            // Validate argument count.
+            if (syntax.Arguments.Count != method.Paramaters.Length)
+            {
+                Diagnostics.ReportWrongArgumentCount(syntax.Span, method.Name, method.Paramaters.Length, syntax.Arguments.Count);
+                return new BoundErrorExpression();
+            }
+
+            // Bind arguments.
+            var boundArguments = ImmutableArray.CreateBuilder<BoundExpression>();
+            foreach (var argument in syntax.Arguments)
+            {
+                var boundArgument = BindExpression(argument);
+                boundArguments.Add(boundArgument);
+            }
+
+            // Validate argument types.
+            for (int i = 0; i < method.Paramaters.Length; i++)
+            {
+                BoundExpression argument = boundArguments[i];
+                ParameterSymbol parameter = method.Paramaters[i];
+
+                if (argument.Type != parameter.Type)
+                {
+                    Diagnostics.ReportWrongArgumentType(syntax.Span, method.Name, parameter.Name, parameter.Type, argument.Type);
+                    return new BoundErrorExpression();
+                }
+            }
+
+            return new BoundCallExpression(method, boundArguments.ToImmutableArray());
+        }
+
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
         {
             if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable))
@@ -213,7 +265,7 @@ namespace PHPSharp.Binding
                 return new BoundErrorExpression();
 
             if (variable.IsReadOnly)
-                Diagnostics.ReportCannotAssign(syntax.EqualsToken.Span, variable.Name);
+                Diagnostics.ReportCannotAssignReadOnly(syntax.EqualsToken.Span, variable.Name);
 
             BoundExpression boundExpression = BindExpression(syntax.Expression);
             if (syntax.EqualsToken.Kind == SyntaxKind.EqualsToken)

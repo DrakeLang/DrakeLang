@@ -98,6 +98,24 @@ namespace PHPSharp
             Report(span, message);
         }
 
+        public void ReportUndefinedMethod(TextSpan span, string? name)
+        {
+            string message = $"Method '{name}' does not exist.";
+            Report(span, message);
+        }
+
+        public void ReportWrongArgumentCount(TextSpan span, string name, int expected, int actual)
+        {
+            string message = $"Method '{name}' requires {expected} arguments, but recieved {actual}.";
+            Report(span, message);
+        }
+
+        public void ReportWrongArgumentType(TextSpan span, string methodName, string parameterName, TypeSymbol expected, TypeSymbol actual)
+        {
+            string message = $"Parameter '{parameterName}' in method '{methodName}' requires value of type '{expected}', but recieved value of type '{actual}'.";
+            Report(span, message);
+        }
+
         public void ReportVariableAlreadyDeclared(TextSpan span, string? name)
         {
             string message = $"Variable '{name}' is already declared.";
@@ -110,7 +128,13 @@ namespace PHPSharp
             Report(span, message);
         }
 
-        public void ReportCannotAssign(TextSpan span, string? name)
+        public void ReportCannotAssignVoid(TextSpan span)
+        {
+            string message = "Cannot assign void to an implicitly-typed variable.";
+            Report(span, message);
+        }
+
+        public void ReportCannotAssignReadOnly(TextSpan span, string? name)
         {
             string message = $"Variable '{name}' is read-only and cannot be assigned.";
             Report(span, message);

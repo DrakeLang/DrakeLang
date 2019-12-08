@@ -16,11 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+#pragma warning disable CA1720 // Identifier contains type name
+
 namespace PHPSharp.Symbols
 {
     public sealed class TypeSymbol : Symbol
     {
         public static readonly TypeSymbol Error = new TypeSymbol("?");
+        public static readonly TypeSymbol Void = new TypeSymbol("void");
+
         public static readonly TypeSymbol Boolean = new TypeSymbol("bool");
         public static readonly TypeSymbol Int = new TypeSymbol("int");
         public static readonly TypeSymbol Float = new TypeSymbol("float");

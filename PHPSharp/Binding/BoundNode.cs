@@ -74,16 +74,17 @@ namespace PHPSharp.Binding
             {
                 return node switch
                 {
-                    BoundVariableDeclarationStatement v => v.Kind + " Type=" + v.Variable.Type + " VarName=" + v.Variable.Name,
-                    BoundVariableExpression v => v.Kind + " VarName=" + v.Variable.Name,
-                    BoundLiteralExpression l => l.Kind + " Type=" + l.Type + " Value=" + l.Value,
-                    BoundAssignmentExpression a => a.Kind + " Value=" + a.Variable.Name + " Type=" + a.Type,
+                    BoundVariableDeclarationStatement v => v.Kind + " Type=" + v.Variable.Type + " Variable=" + v.Variable,
+                    BoundLabelStatement l => l.Kind + " " + l.Label,
+                    BoundGotoStatement g => g.Kind + " " + g.Label,
+                    BoundConditionalGotoStatement g => g.Kind + " " + g.Label.Name + (g.JumpIfFalse ? " on false" : " on true"),
 
+                    BoundVariableExpression v => v.Kind + " Type=" + v.Type + " Variable=" + v.Variable,
+                    BoundCallExpression c => c.Kind + " Type=" + c.Type + " Method=" + c.Method,
+                    BoundLiteralExpression l => l.Kind + " Type=" + l.Type + " Value=" + l.Value,
+                    BoundAssignmentExpression a => a.Kind + " Type=" + a.Type + " Variable=" + a.Variable,
                     BoundBinaryExpression b => b.Op.Kind + "Expression Type=" + b.Type,
                     BoundUnaryExpression u => u.Op.Kind + "Expression Type=" + u.Type,
-                    BoundLabelStatement l => l.Kind + " " + l.Label.Name,
-                    BoundGotoStatement g => g.Kind + " " + g.Label.Name,
-                    BoundConditionalGotoStatement g => g.Kind + " " + g.Label.Name + (g.JumpIfFalse ? " on false" : " on true"),
 
                     BoundExpression e => e.Kind + " Type=" + e.Type,
 

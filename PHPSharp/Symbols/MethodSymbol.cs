@@ -16,13 +16,24 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Collections.Immutable;
+
 namespace PHPSharp.Symbols
 {
-    public enum SymbolKind
+    public sealed class MethodSymbol : Symbol
     {
-        Function,
-        Variable,
-        Type,
-        Parameter,
+        public MethodSymbol(string name, ImmutableArray<ParameterSymbol> paramaters, TypeSymbol returnType) : base(name)
+        {
+            Paramaters = paramaters;
+            ReturnType = returnType;
+        }
+
+        #region Properties
+
+        public override SymbolKind Kind => SymbolKind.Function;
+        public ImmutableArray<ParameterSymbol> Paramaters { get; }
+        public TypeSymbol ReturnType { get; }
+
+        #endregion Properties
     }
 }

@@ -18,11 +18,13 @@
 
 namespace PHPSharp.Symbols
 {
-    public enum SymbolKind
+    public sealed class ParameterSymbol : VariableSymbol
     {
-        Function,
-        Variable,
-        Type,
-        Parameter,
+        public ParameterSymbol(string name, TypeSymbol type) 
+            : base(name, isReadOnly: true, type)
+        {
+        }
+
+        public override SymbolKind Kind => SymbolKind.Parameter;
     }
 }

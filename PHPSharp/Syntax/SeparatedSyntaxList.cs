@@ -16,41 +16,41 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using PHPSharp.Symbols;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
-namespace PHPSharp.Binding
+namespace PHPSharp.Syntax
 {
-    internal abstract class BoundExpression : BoundNode
+    public sealed class SeparatedSyntaxCollection<T> : IReadOnlyList<T>
+        where T : SyntaxNode
     {
-        protected BoundExpression()
+        private readonly ImmutableArray<SyntaxNode> _nodesAndSeparators;
+
+        public SeparatedSyntaxCollection(ImmutableArray<SyntaxNode> separatorsAndNodes)
         {
+            _nodesAndSeparators = separatorsAndNodes;
         }
 
-        public abstract TypeSymbol Type { get; }
-    }
+        public int Count => (_nodesAndSeparators.Length + 1) / 2;
+        public T this[int index] => (T)_nodesAndSeparators[index * 2];
 
-    internal sealed class BoundCallExpression : BoundExpression
-    {
-        public BoundCallExpression(MethodSymbol method, ImmutableArray<BoundExpression> arguments)
+        public SyntaxToken GetSeparator(int index) => (SyntaxToken)_nodesAndSeparators[index * 2 + 1];
+
+        public ImmutableArray<SyntaxNode> GetWithSeparators() => _nodesAndSeparators;
+
+        #region IEnumerable<T>
+
+        public IEnumerator<T> GetEnumerator()
         {
-            Method = method;
-            Arguments = arguments;
+            for (int i = 0; i < Count; i++)
+            {
+                yield return this[i];
+            }
         }
 
-        #region Properties
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public override BoundNodeKind Kind => BoundNodeKind.CallExpression;
-        public override TypeSymbol Type => Method.ReturnType;
-        public MethodSymbol Method { get; }
-        public ImmutableArray<BoundExpression> Arguments { get; }
-
-        #endregion Properties
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            return Arguments;
-        }
+        #endregion IEnumerable<T>
     }
 }

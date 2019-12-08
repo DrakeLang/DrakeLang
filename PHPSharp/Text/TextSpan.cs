@@ -16,26 +16,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System;
+
 namespace PHPSharp.Text
 {
     /// <summary>
     /// Describes the position and length of a section of text.
     /// </summary>
-    public struct TextSpan
+    public readonly struct TextSpan : IEquatable<TextSpan>
     {
+        #region Constructors
+
         public TextSpan(int start, int length)
         {
             Start = start;
             Length = length;
-        }
-
-        public int Start { get; }
-        public int Length { get; }
-        public int End => Start + Length;
-
-        public override string ToString()
-        {
-            return $"{Start}..{End}";
         }
 
         /// <summary>
@@ -46,5 +41,54 @@ namespace PHPSharp.Text
             int length = end - start;
             return new TextSpan(start, length);
         }
+
+        #endregion Constructors
+
+        #region Properties
+
+        public int Start { get; }
+        public int Length { get; }
+        public int End => Start + Length;
+
+        #endregion Properties
+
+        public override string ToString()
+        {
+            return $"{Start}..{End}";
+        }
+
+        #region Operators
+
+        public override bool Equals(object? obj)
+        {
+            return obj is TextSpan span && Equals(span);
+        }
+
+        public bool Equals(TextSpan other)
+        {
+            return Start == other.Start &&
+                   Length == other.Length;
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 7;
+            hash = (hash * 11) + Start.GetHashCode();
+            hash = (hash * 11) + Length.GetHashCode();
+
+            return hash;
+        }
+
+        public static bool operator ==(TextSpan left, TextSpan right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(TextSpan left, TextSpan right)
+        {
+            return !(left == right);
+        }
+
+        #endregion Operators
     }
 }

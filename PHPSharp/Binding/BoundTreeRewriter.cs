@@ -165,6 +165,7 @@ namespace PHPSharp.Binding
                 BoundNodeKind.AssignmentExpression => RewriteAssignmentExpression((BoundAssignmentExpression)node),
                 BoundNodeKind.UnaryExpression => RewriteUnaryExpression((BoundUnaryExpression)node),
                 BoundNodeKind.BinaryExpression => RewriteBinaryExpression((BoundBinaryExpression)node),
+                BoundNodeKind.CallExpression => RewriteCallExpression((BoundCallExpression)node),
 
                 _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
             };
@@ -207,6 +208,32 @@ namespace PHPSharp.Binding
                 return node;
 
             return new BoundBinaryExpression(left, node.Op, right);
+        }
+
+        protected virtual BoundExpression RewriteCallExpression(BoundCallExpression node)
+        {
+            ImmutableArray<BoundExpression>.Builder? builder = null;
+            for (int i = 0; i < node.Arguments.Length; i++)
+            {
+                BoundExpression oldArgument = node.Arguments[i];
+                BoundExpression newArgument = RewriteExpression(oldArgument);
+
+                if (builder is null && newArgument != oldArgument)
+                {
+                    // There's at least one different element, so we initialize the builder and copy all ignored lines over.
+                    builder = ImmutableArray.CreateBuilder<BoundExpression>(node.Arguments.Length);
+                    for (int j = 0; j < i; j++)
+                        builder.Add(node.Arguments[j]);
+                }
+
+                if (builder != null)
+                    builder.Add(newArgument);
+            }
+
+            if (builder is null)
+                return node;
+
+            return new BoundCallExpression(node.Method, builder.MoveToImmutable());
         }
 
         #endregion RewriteExpression

@@ -205,6 +205,7 @@ namespace PHPSharp.Syntax
                 SyntaxKind.CloseParenthesisToken => ")",
                 SyntaxKind.OpenBraceToken => "{",
                 SyntaxKind.CloseBraceToken => "}",
+                SyntaxKind.CommaToken => ",",
                 SyntaxKind.SemicolonToken => ";",
 
                 SyntaxKind.BoolKeyword => "bool",
