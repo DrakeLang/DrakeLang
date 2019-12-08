@@ -21,7 +21,7 @@ using System.Collections.Generic;
 
 namespace PHPSharp.Binding
 {
-    internal class BoundAssignmentExpression : BoundExpression
+    internal sealed class BoundAssignmentExpression : BoundExpression
     {
         public BoundAssignmentExpression(VariableSymbol variable, BoundExpression expression)
         {

@@ -181,12 +181,12 @@ namespace PHPSharp.Binding
         {
             string? name = syntax.IdentifierToken.Text;
             if (string.IsNullOrEmpty(name))
-                return new BoundLiteralExpression(0);
+                return new BoundErrorExpression();
 
             if (!_scope.TryLookup(name, out VariableSymbol? variable))
             {
                 Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
-                return new BoundLiteralExpression(0);
+                return new BoundErrorExpression();
             }
 
             return new BoundVariableExpression(variable);
@@ -260,30 +260,36 @@ namespace PHPSharp.Binding
         private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax)
         {
             BoundExpression boundOperand = BindExpression(syntax.Operand);
-            BoundUnaryOperator? op = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, syntax.UnaryType, boundOperand.Type);
 
-            if (op is null)
+            if (boundOperand.Type == TypeSymbol.Error)
+                return new BoundErrorExpression();
+
+            BoundUnaryOperator? boundOp = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, syntax.UnaryType, boundOperand.Type);
+            if (boundOp is null)
             {
                 Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundOperand.Type);
-                return boundOperand;
+                return new BoundErrorExpression();
             }
 
-            return new BoundUnaryExpression(op, boundOperand);
+            return new BoundUnaryExpression(boundOp, boundOperand);
         }
 
         private BoundExpression BindBinaryExpression(BinaryExpressionSyntax syntax)
         {
             BoundExpression boundLeft = BindExpression(syntax.Left);
             BoundExpression boundRight = BindExpression(syntax.Right);
-            BoundBinaryOperator? op = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
 
-            if (op is null)
+            if (boundLeft.Type == TypeSymbol.Error || boundRight.Type == TypeSymbol.Error)
+                return new BoundErrorExpression();
+
+            BoundBinaryOperator? boundOp = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
+            if (boundOp is null)
             {
                 Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundLeft.Type, boundRight.Type);
-                return boundLeft;
+                return new BoundErrorExpression();
             }
 
-            return new BoundBinaryExpression(boundLeft, op, boundRight);
+            return new BoundBinaryExpression(boundLeft, boundOp, boundRight);
         }
 
         #endregion BindExpression

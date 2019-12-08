@@ -16,27 +16,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using PHPSharp.Symbols;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace PHPSharp.Binding
 {
-    public enum BoundNodeKind
+    internal sealed class BoundErrorExpression : BoundExpression
     {
-        // Statements
-        BlockStatement,
-        VariableDeclarationStatement,
-        IfStatement,
-        WhileStatement,
-        ForStatement,
-        LabelStatement,
-        GotoStatement,
-        ConditionalGotoStatement,
-        ExpressionStatement,
+        public override TypeSymbol Type => TypeSymbol.Error;
 
-        // Expressions
-        ErrorExpression,
-        LiteralExpression,
-        VariableExpression,
-        AssignmentExpression,
-        UnaryExpression,
-        BinaryExpression,
+        public override BoundNodeKind Kind => BoundNodeKind.ErrorExpression;
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            return Enumerable.Empty<BoundNode>();
+        }
     }
 }
