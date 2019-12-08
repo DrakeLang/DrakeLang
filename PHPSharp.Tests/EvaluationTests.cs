@@ -82,7 +82,7 @@ namespace PHPSharp.Tests
             ";
 
             string diagnostics = @"
-                Cannot convert type 'System.Boolean' to 'System.Int32'.
+                Cannot convert type 'bool' to 'int'.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -94,7 +94,7 @@ namespace PHPSharp.Tests
             string text = @"[+]true;";
 
             string diagnostics = @"
-                Unary operator '+' is not defined for type 'System.Boolean'.
+                Unary operator '+' is not defined for type 'bool'.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -106,7 +106,7 @@ namespace PHPSharp.Tests
             string text = @"10 [*] true;";
 
             string diagnostics = @"
-                Binary operator '*' is not defined for types 'System.Int32' and 'System.Boolean'.
+                Binary operator '*' is not defined for types 'int' and 'bool'.
             ";
 
             AssertDiagnostics(text, diagnostics);

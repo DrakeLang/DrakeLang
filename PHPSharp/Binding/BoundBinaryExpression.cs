@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System;
+using PHPSharp.Symbols;
 using System.Collections.Generic;
 
 namespace PHPSharp.Binding
@@ -33,7 +33,7 @@ namespace PHPSharp.Binding
         #region Properties
 
         public override BoundNodeKind Kind => BoundNodeKind.BinaryExpression;
-        public override Type Type => Op.ResultType;
+        public override TypeSymbol Type => Op.ResultType;
 
         public BoundExpression Left { get; }
         public BoundBinaryOperator Op { get; }

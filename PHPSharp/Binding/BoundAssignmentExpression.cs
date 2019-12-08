@@ -17,7 +17,6 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Symbols;
-using System;
 using System.Collections.Generic;
 
 namespace PHPSharp.Binding
@@ -32,7 +31,7 @@ namespace PHPSharp.Binding
 
         #region Properties
 
-        public override Type Type => Variable.Type;
+        public override TypeSymbol Type => Variable.Type;
         public override BoundNodeKind Kind => BoundNodeKind.AssignmentExpression;
         public VariableSymbol Variable { get; }
         public BoundExpression Expression { get; }

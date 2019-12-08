@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using PHPSharp.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,12 +28,21 @@ namespace PHPSharp.Binding
         public BoundLiteralExpression(object value)
         {
             Value = value;
+
+            Type = value switch
+            {
+                bool _ => TypeSymbol.Boolean,
+                int _ => TypeSymbol.Int,
+                string _ => TypeSymbol.String,
+
+                _ => throw new Exception($"Literal '{value}' of type '{value.GetType()}' is illegal."),
+            };
         }
 
         #region Properties
 
         public override BoundNodeKind Kind => BoundNodeKind.LiteralExpression;
-        public override Type Type => Value.GetType();
+        public override TypeSymbol Type { get; }
 
         public object Value { get; }
 

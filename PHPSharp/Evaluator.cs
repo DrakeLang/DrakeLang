@@ -137,12 +137,7 @@ namespace PHPSharp
 
         private static object EvaluateLiteralExpression(BoundLiteralExpression node)
         {
-            if (node.Type != typeof(bool))
-                return node.Value;
-            else
-            {
-                return (bool)node.Value;
-            }
+            return node.Value;
         }
 
         private object EvaluateVariableExpression(BoundVariableExpression node)
@@ -210,19 +205,19 @@ namespace PHPSharp
                     return (int)left / (int)right;
 
                 case BoundBinaryOperatorKind.BitwiseAnd:
-                    if (node.Type == typeof(int))
+                    if (node.Type == TypeSymbol.Int)
                         return (int)left & (int)right;
                     else
                         return (bool)left & (bool)right;
 
                 case BoundBinaryOperatorKind.BitwiseOr:
-                    if (node.Type == typeof(int))
+                    if (node.Type == TypeSymbol.Int)
                         return (int)left | (int)right;
                     else
                         return (bool)left | (bool)right;
 
                 case BoundBinaryOperatorKind.BitwiseXor:
-                    if (node.Type == typeof(int))
+                    if (node.Type == TypeSymbol.Int)
                         return (int)left ^ (int)right;
                     else
                         return (bool)left ^ (bool)right;

@@ -16,19 +16,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using PHPSharp.Symbols;
 using PHPSharp.Syntax;
-using System;
 
 namespace PHPSharp.Binding
 {
     internal class BoundUnaryOperator
     {
-        private BoundUnaryOperator(SyntaxKind syntaxKind, UnaryType unaryType, BoundUnaryOperatorKind kind, Type operandType)
+        private BoundUnaryOperator(SyntaxKind syntaxKind, UnaryType unaryType, BoundUnaryOperatorKind kind, TypeSymbol operandType)
             : this(syntaxKind, unaryType, kind, operandType, operandType)
         {
         }
 
-        private BoundUnaryOperator(SyntaxKind syntaxKind, UnaryType unaryType, BoundUnaryOperatorKind kind, Type operandType, Type resultType)
+        private BoundUnaryOperator(SyntaxKind syntaxKind, UnaryType unaryType, BoundUnaryOperatorKind kind, TypeSymbol operandType, TypeSymbol resultType)
         {
             SyntaxKind = syntaxKind;
             UnaryType = unaryType;
@@ -42,14 +42,14 @@ namespace PHPSharp.Binding
         public SyntaxKind SyntaxKind { get; }
         public UnaryType UnaryType { get; }
         public BoundUnaryOperatorKind Kind { get; }
-        public Type OperandType { get; }
-        public Type ResultType { get; }
+        public TypeSymbol OperandType { get; }
+        public TypeSymbol ResultType { get; }
 
         #endregion Properties
 
         #region Public statics
 
-        public static BoundUnaryOperator? Bind(SyntaxKind syntaxKind, UnaryType unaryType, Type operandType)
+        public static BoundUnaryOperator? Bind(SyntaxKind syntaxKind, UnaryType unaryType, TypeSymbol operandType)
         {
             foreach (BoundUnaryOperator op in _operators)
             {
@@ -70,17 +70,17 @@ namespace PHPSharp.Binding
 
         private static readonly BoundUnaryOperator[] _operators =
         {
-            new BoundUnaryOperator(SyntaxKind.BangToken, UnaryType.Pre, BoundUnaryOperatorKind.LogicalNegation, typeof(bool)),
+            new BoundUnaryOperator(SyntaxKind.BangToken, UnaryType.Pre, BoundUnaryOperatorKind.LogicalNegation, TypeSymbol.Boolean),
 
-            new BoundUnaryOperator(SyntaxKind.PlusToken, UnaryType.Pre, BoundUnaryOperatorKind.Identity, typeof(int)),
-            new BoundUnaryOperator(SyntaxKind.MinusToken, UnaryType.Pre, BoundUnaryOperatorKind.Negation, typeof(int)),
+            new BoundUnaryOperator(SyntaxKind.PlusToken, UnaryType.Pre, BoundUnaryOperatorKind.Identity, TypeSymbol.Int),
+            new BoundUnaryOperator(SyntaxKind.MinusToken, UnaryType.Pre, BoundUnaryOperatorKind.Negation, TypeSymbol.Int),
 
-            new BoundUnaryOperator(SyntaxKind.PlusPlusToken, UnaryType.Pre, BoundUnaryOperatorKind.PreIncrement, typeof(int)),
-            new BoundUnaryOperator(SyntaxKind.MinusMinusToken, UnaryType.Pre, BoundUnaryOperatorKind.PreDecrement, typeof(int)),
-            new BoundUnaryOperator(SyntaxKind.PlusPlusToken, UnaryType.Post, BoundUnaryOperatorKind.PostIncrement, typeof(int)),
-            new BoundUnaryOperator(SyntaxKind.MinusMinusToken, UnaryType.Post, BoundUnaryOperatorKind.PostDecrement, typeof(int)),
+            new BoundUnaryOperator(SyntaxKind.PlusPlusToken, UnaryType.Pre, BoundUnaryOperatorKind.PreIncrement, TypeSymbol.Int),
+            new BoundUnaryOperator(SyntaxKind.MinusMinusToken, UnaryType.Pre, BoundUnaryOperatorKind.PreDecrement, TypeSymbol.Int),
+            new BoundUnaryOperator(SyntaxKind.PlusPlusToken, UnaryType.Post, BoundUnaryOperatorKind.PostIncrement, TypeSymbol.Int),
+            new BoundUnaryOperator(SyntaxKind.MinusMinusToken, UnaryType.Post, BoundUnaryOperatorKind.PostDecrement, TypeSymbol.Int),
 
-            new BoundUnaryOperator(SyntaxKind.TildeToken, UnaryType.Pre, BoundUnaryOperatorKind.OnesComplement, typeof(int)),
+            new BoundUnaryOperator(SyntaxKind.TildeToken, UnaryType.Pre, BoundUnaryOperatorKind.OnesComplement, TypeSymbol.Int),
         };
 
         #endregion Private statics

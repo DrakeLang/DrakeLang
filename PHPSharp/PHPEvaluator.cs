@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Binding;
+using PHPSharp.Symbols;
 using System;
 using System.Text;
 
@@ -136,7 +137,7 @@ namespace PHPSharp
 
         private static string EvaluateLiteralExpression(BoundLiteralExpression node)
         {
-            if (node.Type != typeof(bool))
+            if (node.Type != TypeSymbol.Boolean)
                 return node.Value.ToString() ?? string.Empty;
             else
             {

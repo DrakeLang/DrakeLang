@@ -79,9 +79,9 @@ namespace PHPSharp.Binding
             BoundExpression initializer = BindExpression(syntax.Initializer);
             var variableType = syntax.Keyword.Kind switch
             {
-                SyntaxKind.BoolKeyword => typeof(bool),
-                SyntaxKind.IntKeyword => typeof(int),
-                SyntaxKind.StringKeyword => typeof(string),
+                SyntaxKind.BoolKeyword => TypeSymbol.Boolean,
+                SyntaxKind.IntKeyword => TypeSymbol.Int,
+                SyntaxKind.StringKeyword => TypeSymbol.String,
                 _ => initializer.Type,
             };
 
@@ -98,7 +98,7 @@ namespace PHPSharp.Binding
 
         private BoundIfStatement BindIfStatement(IfStatementSyntax syntax)
         {
-            BoundExpression condition = BindExpression(syntax.Condition.Expression, typeof(bool));
+            BoundExpression condition = BindExpression(syntax.Condition.Expression, TypeSymbol.Boolean);
             BoundStatement thenStatement = BindStatement(syntax.ThenStatement);
             BoundStatement? elseStatement = syntax.ElseClause is null ? null : BindStatement(syntax.ElseClause.ElseStatement);
 
@@ -107,7 +107,7 @@ namespace PHPSharp.Binding
 
         private BoundWhileStatement BindWhileStatement(WhileStatementSyntax syntax)
         {
-            BoundExpression condition = BindExpression(syntax.Condition.Expression, typeof(bool));
+            BoundExpression condition = BindExpression(syntax.Condition.Expression, TypeSymbol.Boolean);
             BoundStatement body = BindStatement(syntax.Body);
 
             return new BoundWhileStatement(condition, body);
@@ -118,7 +118,7 @@ namespace PHPSharp.Binding
             PushScope();
 
             BoundStatement initStatement = BindStatement(syntax.InitializationStatement);
-            BoundExpression condition = BindExpression(syntax.Condition, typeof(bool));
+            BoundExpression condition = BindExpression(syntax.Condition, TypeSymbol.Boolean);
             BoundStatement updateStatement = BindStatement(syntax.UpdateStatement);
             BoundStatement body = BindStatement(syntax.Body);
 
@@ -151,7 +151,7 @@ namespace PHPSharp.Binding
             };
         }
 
-        private BoundExpression BindExpression(ExpressionSyntax syntax, Type targetType)
+        private BoundExpression BindExpression(ExpressionSyntax syntax, TypeSymbol targetType)
         {
             BoundExpression expression = BindExpression(syntax);
             if (expression.Type != targetType)

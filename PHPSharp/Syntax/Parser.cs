@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using PHPSharp.Symbols;
 using PHPSharp.Text;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -355,7 +356,7 @@ namespace PHPSharp.Syntax
         {
             SyntaxToken numberToken = MatchToken(SyntaxKind.NumberToken);
             if (!int.TryParse(numberToken.Text, out int value))
-                Diagnostics.ReportInvalidNumber(numberToken.Span, numberToken.Text, typeof(int));
+                Diagnostics.ReportInvalidNumber(numberToken.Span, numberToken.Text, TypeSymbol.Int);
 
             return new LiteralExpressionSyntax(numberToken, value);
         }

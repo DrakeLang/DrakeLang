@@ -16,16 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using PHPSharp.Symbols;
-
-namespace PHPSharp.Binding
+namespace PHPSharp.Symbols
 {
-    internal abstract class BoundExpression : BoundNode
+    public enum SymbolKind
     {
-        protected BoundExpression()
-        {
-        }
-
-        public abstract TypeSymbol Type { get; }
+        Variable,
+        Type,
     }
 }

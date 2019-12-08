@@ -16,16 +16,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using PHPSharp.Symbols;
-
-namespace PHPSharp.Binding
+namespace PHPSharp.Symbols
 {
-    internal abstract class BoundExpression : BoundNode
+    public sealed class TypeSymbol : Symbol
     {
-        protected BoundExpression()
+        public static readonly TypeSymbol Boolean = new TypeSymbol("bool");
+        public static readonly TypeSymbol Int = new TypeSymbol("int");
+        public static readonly TypeSymbol String = new TypeSymbol("string");
+
+        internal TypeSymbol(string name) : base(name)
         {
         }
 
-        public abstract TypeSymbol Type { get; }
+        public override SymbolKind Kind => SymbolKind.Type;
     }
 }
