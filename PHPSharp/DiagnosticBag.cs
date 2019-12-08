@@ -43,9 +43,9 @@ namespace PHPSharp
             _diagnostics.Add(diagnostic);
         }
 
-        public void ReportInvalidNumber(TextSpan span, string? text, TypeSymbol type)
+        public void ReportInvalidValue(TextSpan span, string? text, TypeSymbol type)
         {
-            string message = $"The number '{text}' isn't valid '{type}'.";
+            string message = $"The number '{text}' is not a valid value for type '{type}'.";
             Report(span, message);
         }
 

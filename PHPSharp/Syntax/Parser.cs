@@ -63,6 +63,9 @@ namespace PHPSharp.Syntax
 
         public CompilationUnitSyntax ParseCompilationUnit()
         {
+            if (Current.Kind == SyntaxKind.LineCommentToken)
+                NextToken();
+
             StatementSyntax statement = ParseStatement();
             SyntaxToken endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
 
@@ -360,7 +363,6 @@ namespace PHPSharp.Syntax
             return new TypeofExpressionSyntax(typeofKeyword, leftParenthesis, typeLiteral, rightParenthesis);
         }
 
-
         private NameofExpressionSyntax ParseNameofExpression()
         {
             SyntaxToken nameofKeyword = MatchToken(SyntaxKind.NameofKeyword);
@@ -398,7 +400,7 @@ namespace PHPSharp.Syntax
         {
             SyntaxToken numberToken = MatchToken(SyntaxKind.NumberToken);
             if (!int.TryParse(numberToken.Text, out int value))
-                Diagnostics.ReportInvalidNumber(numberToken.Span, numberToken.Text, TypeSymbol.Int);
+                Diagnostics.ReportInvalidValue(numberToken.Span, numberToken.Text, TypeSymbol.Int);
 
             return new LiteralExpressionSyntax(numberToken, value);
         }
@@ -431,7 +433,12 @@ namespace PHPSharp.Syntax
         private SyntaxToken NextToken()
         {
             SyntaxToken current = Current;
-            _position++;
+
+            do
+            {
+                _position++;
+            }
+            while (Current.Kind == SyntaxKind.LineCommentToken);
 
             return current;
         }

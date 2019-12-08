@@ -58,9 +58,8 @@ namespace PHPSharp.Syntax
             _kind = SyntaxKind.BadToken;
             _value = null;
 
-            SyntaxKind? kind = LookupTokenKind();
-            if (kind.HasValue)
-                _kind = kind.Value;
+            if (TryLookupTokenKind(out SyntaxKind kind))
+                _kind = kind;
             else
             {
                 switch (Current)
@@ -97,7 +96,7 @@ namespace PHPSharp.Syntax
                         else
                         {
                             Diagnostics.ReportBadCharacter(_position, Current);
-                            _position++;
+                            Next();
                         }
                         break;
                 }
@@ -113,164 +112,197 @@ namespace PHPSharp.Syntax
             return new SyntaxToken(_kind, _start, text, _value);
         }
 
-        private SyntaxKind? LookupTokenKind()
+        private bool TryLookupTokenKind(out SyntaxKind syntaxKind)
         {
+            SyntaxKind? result;
             switch (Current)
             {
                 case '\0':
-                    return SyntaxKind.EndOfFileToken;
+                    result = SyntaxKind.EndOfFileToken;
+                    break;
 
                 case ';':
-                    _position++;
-                    return SyntaxKind.SemicolonToken;
+                    Next();
+                    result = SyntaxKind.SemicolonToken;
+                    break;
 
                 case '+':
-                    _position++;
+                    Next();
                     if (Current == '+')
                     {
-                        _position++;
-                        return SyntaxKind.PlusPlusToken;
+                        Next();
+                        result = SyntaxKind.PlusPlusToken;
                     }
                     else if (Current == '=')
                     {
-                        _position++;
-                        return SyntaxKind.PlusEqualsToken;
+                        Next();
+                        result = SyntaxKind.PlusEqualsToken;
                     }
                     else
-                        return SyntaxKind.PlusToken;
+                        result = SyntaxKind.PlusToken;
+                    break;
 
                 case '-':
-                    _position++;
+                    Next();
                     if (Current == '-')
                     {
-                        _position++;
-                        return SyntaxKind.MinusMinusToken;
+                        Next();
+                        result = SyntaxKind.MinusMinusToken;
                     }
                     else if (Current == '=')
                     {
-                        _position++;
-                        return SyntaxKind.MinusEqualsToken;
+                        Next();
+                        result = SyntaxKind.MinusEqualsToken;
                     }
                     else
-                        return SyntaxKind.MinusToken;
+                        result = SyntaxKind.MinusToken;
+                    break;
 
                 case '*':
-                    _position++;
+                    Next();
                     if (Current == '=')
                     {
-                        _position++;
-                        return SyntaxKind.StarEqualsToken;
+                        Next();
+                        result = SyntaxKind.StarEqualsToken;
                     }
                     else
-                        return SyntaxKind.StarToken;
-
+                        result = SyntaxKind.StarToken;
+                    break;
+                    
                 case '/':
-                    _position++;
+                    Next();
                     if (Current == '=')
                     {
-                        _position++;
-                        return SyntaxKind.SlashEqualsToken;
+                        Next();
+                        result = SyntaxKind.SlashEqualsToken;
+                    }
+                    else if (Current == '/')
+                    {
+                        do
+                        {
+                            Next();
+                        }
+                        while (Current != '\n' && Current != '\r' && Current != '\0');
+
+                        result = SyntaxKind.LineCommentToken;
                     }
                     else
-                        return SyntaxKind.SlashToken;
+                        result = SyntaxKind.SlashToken;
+                    break;
 
                 case '(':
-                    _position++;
-                    return SyntaxKind.OpenParenthesisToken;
+                    Next();
+                    result = SyntaxKind.OpenParenthesisToken;
+                    break;
 
                 case ')':
-                    _position++;
-                    return SyntaxKind.CloseParenthesisToken;
+                    Next();
+                    result = SyntaxKind.CloseParenthesisToken;
+                    break;
 
                 case '{':
-                    _position++;
-                    return SyntaxKind.OpenBraceToken;
+                    Next();
+                    result = SyntaxKind.OpenBraceToken;
+                    break;
 
                 case '}':
-                    _position++;
-                    return SyntaxKind.CloseBraceToken;
+                    Next();
+                    result = SyntaxKind.CloseBraceToken;
+                    break;
 
                 case '~':
-                    _position++;
-                    return SyntaxKind.TildeToken;
+                    Next();
+                    result = SyntaxKind.TildeToken;
+                    break;
 
                 case '^':
-                    _position++;
-                    return SyntaxKind.HatToken;
+                    Next();
+                    result = SyntaxKind.HatToken;
+                    break;
 
                 case '&':
-                    _position++;
+                    Next();
                     if (Current == '&')
                     {
-                        _position++;
-                        return SyntaxKind.AmpersandAmpersandToken;
+                        Next();
+                        result = SyntaxKind.AmpersandAmpersandToken;
                     }
                     else if (Current == '=')
                     {
-                        _position++;
-                        return SyntaxKind.AmpersandEqualsToken;
+                        Next();
+                        result = SyntaxKind.AmpersandEqualsToken;
                     }
                     else
-                        return SyntaxKind.AmpersandToken;
+                        result = SyntaxKind.AmpersandToken;
+                    break;
 
                 case '|':
-                    _position++;
+                    Next();
                     if (Current == '|')
                     {
-                        _position++;
-                        return SyntaxKind.PipePipeToken;
+                        Next();
+                        result = SyntaxKind.PipePipeToken;
                     }
                     else if (Current == '=')
                     {
-                        _position++;
-                        return SyntaxKind.PipeEqualsToken;
+                        Next();
+                        result = SyntaxKind.PipeEqualsToken;
                     }
                     else
-                        return SyntaxKind.PipeToken;
+                        result = SyntaxKind.PipeToken;
+                    break;
 
                 case '=':
-                    _position++;
+                    Next();
                     if (Current == '=')
                     {
-                        _position++;
-                        return SyntaxKind.EqualsEqualsToken;
+                        Next();
+                        result = SyntaxKind.EqualsEqualsToken;
                     }
                     else
-                        return SyntaxKind.EqualsToken;
+                        result = SyntaxKind.EqualsToken;
+                    break;
 
                 case '!':
-                    _position++;
+                    Next();
                     if (Current == '=')
                     {
-                        _position++;
-                        return SyntaxKind.BangEqualsToken;
+                        Next();
+                        result = SyntaxKind.BangEqualsToken;
                     }
                     else
-                        return SyntaxKind.BangToken;
+                        result = SyntaxKind.BangToken;
+                    break;
 
                 case '<':
-                    _position++;
+                    Next();
                     if (Current == '=')
                     {
-                        _position++;
-                        return SyntaxKind.LessOrEqualsToken;
+                        Next();
+                        result = SyntaxKind.LessOrEqualsToken;
                     }
                     else
-                        return SyntaxKind.LessToken;
+                        result = SyntaxKind.LessToken;
+                    break;
 
                 case '>':
-                    _position++;
+                    Next();
                     if (Current == '=')
                     {
-                        _position++;
-                        return SyntaxKind.GreaterOrEqualsToken;
+                        Next();
+                        result = SyntaxKind.GreaterOrEqualsToken;
                     }
                     else
-                        return SyntaxKind.GreaterToken;
+                        result = SyntaxKind.GreaterToken;
+                    break;
 
                 default:
-                    return null;
+                    syntaxKind = default;
+                    return false;
             }
+
+            syntaxKind = result.Value;
+            return true;
         }
 
         #endregion Methods

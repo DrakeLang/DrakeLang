@@ -225,6 +225,10 @@ namespace PHPSharp.Tests
 
             // Nameof
             yield return ("{ var a = 0; nameof(a); }", "a");
+
+            // Line comment
+            yield return ("{ var a = 3; nameof(a); // gets the name of a\n }", "a");
+            yield return ("{ var a = 5; //nameof(a); \n }", 5);
         }
 
         private static void AssertValue(string text, object expectedValue)

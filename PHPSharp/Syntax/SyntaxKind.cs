@@ -58,6 +58,7 @@ namespace PHPSharp.Syntax
         CloseBraceToken,
         IdentifierToken,
         WhitespaceToken,
+        LineCommentToken,
 
         // Keywords
         BoolKeyword,

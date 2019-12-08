@@ -128,32 +128,33 @@ namespace PHPSharp.Tests.Syntax
                 (SyntaxKind.IdentifierToken, "abc"),
                 (SyntaxKind.StringToken, "\"a\""),
                 (SyntaxKind.StringToken, "\"JOIN THE ASCENDENCY!\""),
+                (SyntaxKind.LineCommentToken, "//"),
+                (SyntaxKind.LineCommentToken, "// "),
+                (SyntaxKind.LineCommentToken, "// comment"),
+                (SyntaxKind.LineCommentToken, "///////"),
             };
 
             // We know that fixedTokens contains no null-reference strings.
             return fixedTokens!.Concat(dynamicTokens);
         }
 
-        public static IEnumerable<(SyntaxKind kind, string text)> GetSeparators()
+        public static IEnumerable<(SyntaxKind kind, string text)> GetSeparators(bool linebreaksOnly = false)
         {
-            return new[]
+            if (!linebreaksOnly)
             {
-                (SyntaxKind.WhitespaceToken, " "),
-                (SyntaxKind.WhitespaceToken, "  "),
-                (SyntaxKind.WhitespaceToken, "\r"),
-                (SyntaxKind.WhitespaceToken, "\n"),
-                (SyntaxKind.WhitespaceToken, "\r\n"),
-            };
+                yield return (SyntaxKind.WhitespaceToken, " ");
+                yield return (SyntaxKind.WhitespaceToken, "  ");
+            }
+
+            yield return (SyntaxKind.WhitespaceToken, "\r");
+            yield return (SyntaxKind.WhitespaceToken, "\n");
+            yield return (SyntaxKind.WhitespaceToken, "\r\n");
         }
 
         private static bool RequiresSeparator(SyntaxKind t1Kind, SyntaxKind t2Kind)
         {
             bool t1IsKeyword = t1Kind.ToString().EndsWith("Keyword");
             bool t2IsKeyword = t2Kind.ToString().EndsWith("Keyword");
-
-            if (t1Kind == SyntaxKind.IdentifierToken && t2Kind == SyntaxKind.IdentifierToken)
-                return true;
-
             if (t1IsKeyword && t2IsKeyword)
                 return true;
 
@@ -163,103 +164,93 @@ namespace PHPSharp.Tests.Syntax
             if (t1Kind == SyntaxKind.IdentifierToken && t2IsKeyword)
                 return true;
 
+            if (t1Kind == SyntaxKind.IdentifierToken && t2Kind == SyntaxKind.IdentifierToken)
+                return true;
+
             if (t1Kind == SyntaxKind.NumberToken && t2Kind == SyntaxKind.NumberToken)
                 return true;
 
-            if (t1Kind == SyntaxKind.BangToken && t2Kind == SyntaxKind.EqualsToken)
-                return true;
+            if (t1Kind == SyntaxKind.BangToken)
+            {
+                if (t2Kind == SyntaxKind.EqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+            }
 
-            if (t1Kind == SyntaxKind.BangToken && t2Kind == SyntaxKind.EqualsEqualsToken)
-                return true;
+            if (t1Kind == SyntaxKind.EqualsToken)
+            {
+                if (t2Kind == SyntaxKind.EqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+            }
 
-            if (t1Kind == SyntaxKind.EqualsToken && t2Kind == SyntaxKind.EqualsToken)
-                return true;
+            if (t1Kind == SyntaxKind.LessToken)
+            {
+                if (t2Kind == SyntaxKind.EqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+            }
 
-            if (t1Kind == SyntaxKind.EqualsToken && t2Kind == SyntaxKind.EqualsEqualsToken)
-                return true;
+            if (t1Kind == SyntaxKind.GreaterToken)
+            {
+                if (t2Kind == SyntaxKind.EqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+            }
 
-            if (t1Kind == SyntaxKind.LessToken && t2Kind == SyntaxKind.EqualsToken)
-                return true;
+            if (t1Kind == SyntaxKind.PlusToken)
+            {
+                if (t2Kind == SyntaxKind.PlusToken) return true;
+                if (t2Kind == SyntaxKind.PlusPlusToken) return true;
+                if (t2Kind == SyntaxKind.EqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+                if (t2Kind == SyntaxKind.PlusEqualsToken) return true;
+            }
 
-            if (t1Kind == SyntaxKind.LessToken && t2Kind == SyntaxKind.EqualsEqualsToken)
-                return true;
+            if (t1Kind == SyntaxKind.MinusToken)
+            {
+                if (t2Kind == SyntaxKind.MinusToken) return true;
+                if (t2Kind == SyntaxKind.MinusMinusToken) return true;
+                if (t2Kind == SyntaxKind.EqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+                if (t2Kind == SyntaxKind.MinusEqualsToken) return true;
+            }
 
-            if (t1Kind == SyntaxKind.GreaterToken && t2Kind == SyntaxKind.EqualsToken)
-                return true;
+            if (t1Kind == SyntaxKind.StarToken)
+            {
+                if (t2Kind == SyntaxKind.EqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+            }
 
-            if (t1Kind == SyntaxKind.GreaterToken && t2Kind == SyntaxKind.EqualsEqualsToken)
-                return true;
+            if (t1Kind == SyntaxKind.SlashToken)
+            {
+                if (t2Kind == SyntaxKind.SlashToken) return true;
+                if (t2Kind == SyntaxKind.EqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+                if (t2Kind == SyntaxKind.SlashEqualsToken) return true;
+                if (t2Kind == SyntaxKind.LineCommentToken) return true;
+            }
 
-            if (t1Kind == SyntaxKind.PlusToken && t2Kind == SyntaxKind.PlusToken)
-                return true;
+            if (t1Kind == SyntaxKind.PipeToken)
+            {
+                if (t2Kind == SyntaxKind.PipeToken) return true;
+                if (t2Kind == SyntaxKind.PipePipeToken) return true;
+                if (t2Kind == SyntaxKind.EqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+                if (t2Kind == SyntaxKind.PipeEqualsToken) return true;
+            }
 
-            if (t1Kind == SyntaxKind.PlusToken && t2Kind == SyntaxKind.PlusPlusToken)
-                return true;
+            if (t1Kind == SyntaxKind.AmpersandToken)
+            {
+                if (t2Kind == SyntaxKind.AmpersandToken) return true;
+                if (t2Kind == SyntaxKind.AmpersandAmpersandToken) return true;
+                if (t2Kind == SyntaxKind.EqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+                if (t2Kind == SyntaxKind.AmpersandEqualsToken) return true;
+            }
 
-            if (t1Kind == SyntaxKind.PlusToken && t2Kind == SyntaxKind.EqualsToken)
-                return true;
+            return RequiresLinebreak(t1Kind, t2Kind);
+        }
 
-            if (t1Kind == SyntaxKind.PlusToken && t2Kind == SyntaxKind.EqualsEqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.PlusToken && t2Kind == SyntaxKind.PlusEqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.MinusToken && t2Kind == SyntaxKind.MinusToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.MinusToken && t2Kind == SyntaxKind.MinusMinusToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.MinusToken && t2Kind == SyntaxKind.EqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.MinusToken && t2Kind == SyntaxKind.EqualsEqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.MinusToken && t2Kind == SyntaxKind.MinusEqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.StarToken && t2Kind == SyntaxKind.EqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.StarToken && t2Kind == SyntaxKind.EqualsEqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.SlashToken && t2Kind == SyntaxKind.EqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.SlashToken && t2Kind == SyntaxKind.EqualsEqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.PipeToken && t2Kind == SyntaxKind.PipeToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.PipeToken && t2Kind == SyntaxKind.PipePipeToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.PipeToken && t2Kind == SyntaxKind.EqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.PipeToken && t2Kind == SyntaxKind.EqualsEqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.PipeToken && t2Kind == SyntaxKind.PipeEqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.AmpersandToken && t2Kind == SyntaxKind.AmpersandToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.AmpersandToken && t2Kind == SyntaxKind.AmpersandAmpersandToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.AmpersandToken && t2Kind == SyntaxKind.EqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.AmpersandToken && t2Kind == SyntaxKind.EqualsEqualsToken)
-                return true;
-
-            if (t1Kind == SyntaxKind.AmpersandToken && t2Kind == SyntaxKind.AmpersandEqualsToken)
+        private static bool RequiresLinebreak(SyntaxKind t1Kind, SyntaxKind t2Kind)
+        {
+            if (t1Kind == SyntaxKind.LineCommentToken)
                 return true;
 
             return false;
@@ -287,8 +278,11 @@ namespace PHPSharp.Tests.Syntax
                 {
                     if (RequiresSeparator(t1Kind, t2Kind))
                     {
-                        foreach ((SyntaxKind separatorKind, string separatorText) in GetSeparators())
+                        bool requiresLinebreak = RequiresLinebreak(t1Kind, t2Kind);
+                        foreach ((SyntaxKind separatorKind, string separatorText) in GetSeparators(requiresLinebreak))
+                        {
                             yield return (t1Kind, t1Text, separatorKind, separatorText, t2Kind, t2Text);
+                        }
                     }
                 }
             }
