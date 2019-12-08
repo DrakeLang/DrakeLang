@@ -126,6 +126,8 @@ namespace PHPSharp.Tests.Syntax
                 (SyntaxKind.NumberToken, "123"),
                 (SyntaxKind.IdentifierToken, "a"),
                 (SyntaxKind.IdentifierToken, "abc"),
+                (SyntaxKind.StringToken, "\"a\""),
+                (SyntaxKind.StringToken, "\"JOIN THE ASCENDENCY!\""),
             };
 
             // We know that fixedTokens contains no null-reference strings.

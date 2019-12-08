@@ -142,7 +142,7 @@ namespace PHPSharpO
                 Console.Write("    ");
                 Console.Write(prefix);
 
-                ConsoleExt.WriteLine(error, ConsoleColor.DarkRed);
+                ConsoleExt.Write(error, ConsoleColor.DarkRed);
 
                 Console.Write(suffix);
                 Console.WriteLine();

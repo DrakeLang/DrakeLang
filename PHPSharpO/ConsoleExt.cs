@@ -22,6 +22,16 @@ namespace PHPSharpO
 {
     public static class ConsoleExt
     {
+        internal static void Write(string value, ConsoleColor foreground)
+        {
+            ConsoleColor oldColor = Console.ForegroundColor;
+            Console.ForegroundColor = foreground;
+
+            Console.Write(value);
+
+            Console.ForegroundColor = oldColor;
+        }
+
         public static void WriteLine(string value, ConsoleColor foreground)
         {
             ConsoleColor oldColor = Console.ForegroundColor;
@@ -31,5 +41,7 @@ namespace PHPSharpO
 
             Console.ForegroundColor = oldColor;
         }
+
+   
     }
 }

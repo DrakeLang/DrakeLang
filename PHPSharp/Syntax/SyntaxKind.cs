@@ -25,6 +25,7 @@ namespace PHPSharp.Syntax
         EndOfFileToken,
         SemicolonToken,
         NumberToken,
+        StringToken,
         PlusToken,
         PlusPlusToken,
         PlusEqualsToken,
@@ -60,11 +61,12 @@ namespace PHPSharp.Syntax
 
         // Keywords
         BoolKeyword,
+        IntKeyword,
+        StringKeyword,
         ElseKeyword,
         FalseKeyword,
         ForKeyword,
         IfKeyword,
-        IntKeyword,
         TrueKeyword,
         VarKeyword,
         WhileKeyword,

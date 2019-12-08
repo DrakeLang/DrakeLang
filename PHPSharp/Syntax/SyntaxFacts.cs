@@ -81,11 +81,13 @@ namespace PHPSharp.Syntax
             return word switch
             {
                 "bool" => SyntaxKind.BoolKeyword,
+                "int" => SyntaxKind.IntKeyword,
+                "string" => SyntaxKind.StringKeyword,
+
                 "else" => SyntaxKind.ElseKeyword,
                 "false" => SyntaxKind.FalseKeyword,
                 "for" => SyntaxKind.ForKeyword,
                 "if" => SyntaxKind.IfKeyword,
-                "int" => SyntaxKind.IntKeyword,
                 "true" => SyntaxKind.TrueKeyword,
                 "var" => SyntaxKind.VarKeyword,
                 "while" => SyntaxKind.WhileKeyword,
@@ -185,12 +187,14 @@ namespace PHPSharp.Syntax
                 SyntaxKind.CloseParenthesisToken => ")",
                 SyntaxKind.OpenBraceToken => "{",
                 SyntaxKind.CloseBraceToken => "}",
+
                 SyntaxKind.BoolKeyword => "bool",
+                SyntaxKind.IntKeyword => "int",
+                SyntaxKind.StringKeyword => "string",
                 SyntaxKind.ElseKeyword => "else",
                 SyntaxKind.FalseKeyword => "false",
                 SyntaxKind.ForKeyword => "for",
                 SyntaxKind.IfKeyword => "if",
-                SyntaxKind.IntKeyword => "int",
                 SyntaxKind.TrueKeyword => "true",
                 SyntaxKind.VarKeyword => "var",
                 SyntaxKind.WhileKeyword => "while",

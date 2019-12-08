@@ -17,10 +17,11 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Text;
+using System.Text;
 
 namespace PHPSharp.Syntax
 {
-    internal class Lexer
+    internal sealed class Lexer
     {
         private readonly SourceText _text;
 
@@ -48,6 +49,9 @@ namespace PHPSharp.Syntax
 
         #region Methods
 
+        /// <summary>
+        /// Lexes the next token in the source text.
+        /// </summary>
         public SyntaxToken Lex()
         {
             _start = _position;
@@ -55,12 +59,16 @@ namespace PHPSharp.Syntax
             _value = null;
 
             SyntaxKind? kind = LookupTokenKind();
-            if (kind != null)
-                _kind = (SyntaxKind)kind;
+            if (kind.HasValue)
+                _kind = kind.Value;
             else
             {
                 switch (Current)
                 {
+                    case '"':
+                        ReadString();
+                        break;
+
                     case '0':
                     case '1':
                     case '2':
@@ -283,12 +291,64 @@ namespace PHPSharp.Syntax
             _position++;
         }
 
-        private void ReadWhitespace()
+        private void ReadString()
         {
-            while (char.IsWhiteSpace(Current))
-                Next();
+            // Skip quote start.
+            _position++;
 
-            _kind = SyntaxKind.WhitespaceToken;
+            StringBuilder sb = new StringBuilder();
+
+            bool done = false;
+            bool escape = false;
+            while (!done)
+            {
+                switch (Current)
+                {
+                    case '\0':
+                    case '\r':
+                    case '\n':
+                        TextSpan span = new TextSpan(_start, 1);
+                        Diagnostics.ReportUnterminatedString(span);
+                        done = true;
+                        break;
+
+                    case '"':
+                        _position++;
+                        if (escape)
+                        {
+                            sb.Append('"');
+                            escape = false;
+                        }
+                        else
+                        {
+                            done = true;
+                        }
+                        break;
+
+                    case '\\':
+                        _position++;
+                        if (escape)
+                        {
+                            sb.Append('\\');
+                            escape = false;
+                        }
+                        else
+                        {
+                            escape = true;
+                        }
+
+                        break;
+
+                    default:
+                        sb.Append(Current);
+                        _position++;
+                        escape = false;
+                        break;
+                }
+            }
+
+            _kind = SyntaxKind.StringToken;
+            _value = sb.ToString();
         }
 
         private void ReadNumberToken()
@@ -297,6 +357,14 @@ namespace PHPSharp.Syntax
                 Next();
 
             _kind = SyntaxKind.NumberToken;
+        }
+
+        private void ReadWhitespace()
+        {
+            while (char.IsWhiteSpace(Current))
+                Next();
+
+            _kind = SyntaxKind.WhitespaceToken;
         }
 
         private void ReadIdentifierOrKeyword()

@@ -81,6 +81,7 @@ namespace PHPSharp.Syntax
 
                 case SyntaxKind.BoolKeyword:
                 case SyntaxKind.IntKeyword:
+                case SyntaxKind.StringKeyword:
                 case SyntaxKind.VarKeyword:
                     return ParseVariableDeclarationStatement(requireSemicolon);
 
@@ -324,6 +325,9 @@ namespace PHPSharp.Syntax
                 case SyntaxKind.NumberToken:
                     return ParseNumberLiteral();
 
+                case SyntaxKind.StringToken:
+                    return ParseStringLiteral();
+
                 case SyntaxKind.IdentifierToken:
                 default:
                     return ParseNameExpression();
@@ -354,6 +358,12 @@ namespace PHPSharp.Syntax
                 Diagnostics.ReportInvalidNumber(numberToken.Span, numberToken.Text, typeof(int));
 
             return new LiteralExpressionSyntax(numberToken, value);
+        }
+
+        private LiteralExpressionSyntax ParseStringLiteral()
+        {
+            SyntaxToken stringToken = MatchToken(SyntaxKind.StringToken);
+            return new LiteralExpressionSyntax(stringToken);
         }
 
         private NameExpressionSyntax ParseNameExpression()

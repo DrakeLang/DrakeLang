@@ -76,17 +76,13 @@ namespace PHPSharp.Binding
             bool isReadOnly = false;
 
             BoundExpression initializer = BindExpression(syntax.Initializer);
-            Type variableType = initializer.Type;
-            switch (syntax.Keyword.Kind)
+            var variableType = syntax.Keyword.Kind switch
             {
-                case SyntaxKind.BoolKeyword:
-                    variableType = typeof(bool);
-                    break;
-
-                case SyntaxKind.IntKeyword:
-                    variableType = typeof(int);
-                    break;
-            }
+                SyntaxKind.BoolKeyword => typeof(bool),
+                SyntaxKind.IntKeyword => typeof(int),
+                SyntaxKind.StringKeyword => typeof(string),
+                _ => initializer.Type,
+            };
 
             if (variableType != initializer.Type)
                 Diagnostics.ReportCannotConvert(syntax.Initializer.Span, initializer.Type, variableType);
