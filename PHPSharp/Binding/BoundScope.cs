@@ -57,14 +57,11 @@ namespace PHPSharp.Binding
             return true;
         }
 
-        public bool TryLookup(string? name, [NotNullWhen(true)] out VariableSymbol? variable)
+        /// <summary>
+        /// Attempts to locate a variable with the given name in this scope, or one of its parents.
+        /// </summary>
+        public bool TryLookup(string name, [NotNullWhen(true)] out VariableSymbol? variable)
         {
-            if (name is null)
-            {
-                variable = null;
-                return false;
-            }
-
             if (_variables.TryGetValue(name, out variable))
                 return true;
 

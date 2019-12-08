@@ -21,6 +21,7 @@ using PHPSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PHPSharp.Binding
 {
@@ -56,7 +57,7 @@ namespace PHPSharp.Binding
             };
         }
 
-        private BoundBlockStatement BindBlockStatement(BlockStatementSyntax syntax)
+        private BoundStatement BindBlockStatement(BlockStatementSyntax syntax)
         {
             ImmutableArray<BoundStatement>.Builder statements = ImmutableArray.CreateBuilder<BoundStatement>();
             PushScope();
@@ -71,9 +72,10 @@ namespace PHPSharp.Binding
             return new BoundBlockStatement(statements.ToImmutable());
         }
 
-        private BoundVariableDeclarationStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
+        private BoundStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
         {
-            string name = syntax.Identifier.Text ?? throw new Exception("Variable name cannot be null");
+            string name = syntax.Identifier.Text ?? "?";
+            bool declare = name != "?";
             bool isReadOnly = false;
 
             BoundExpression initializer = BindExpression(syntax.Initializer);
@@ -85,18 +87,17 @@ namespace PHPSharp.Binding
                 _ => initializer.Type,
             };
 
-            if (variableType != initializer.Type)
+            if (variableType != initializer.Type && variableType != TypeSymbol.Error)
                 Diagnostics.ReportCannotConvert(syntax.Initializer.Span, initializer.Type, variableType);
 
             VariableSymbol variable = new VariableSymbol(name, isReadOnly, variableType);
-
-            if (!_scope.TryDeclare(variable))
+            if (declare && !_scope.TryDeclare(variable))
                 Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
 
             return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
-        private BoundIfStatement BindIfStatement(IfStatementSyntax syntax)
+        private BoundStatement BindIfStatement(IfStatementSyntax syntax)
         {
             BoundExpression condition = BindExpression(syntax.Condition.Expression, TypeSymbol.Boolean);
             BoundStatement thenStatement = BindStatement(syntax.ThenStatement);
@@ -105,7 +106,7 @@ namespace PHPSharp.Binding
             return new BoundIfStatement(condition, thenStatement, elseStatement);
         }
 
-        private BoundWhileStatement BindWhileStatement(WhileStatementSyntax syntax)
+        private BoundStatement BindWhileStatement(WhileStatementSyntax syntax)
         {
             BoundExpression condition = BindExpression(syntax.Condition.Expression, TypeSymbol.Boolean);
             BoundStatement body = BindStatement(syntax.Body);
@@ -113,7 +114,7 @@ namespace PHPSharp.Binding
             return new BoundWhileStatement(condition, body);
         }
 
-        private BoundForStatement BindForStatement(ForStatementSyntax syntax)
+        private BoundStatement BindForStatement(ForStatementSyntax syntax)
         {
             PushScope();
 
@@ -126,7 +127,7 @@ namespace PHPSharp.Binding
             return new BoundForStatement(initStatement, condition, updateStatement, body);
         }
 
-        private BoundExpressionStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
+        private BoundStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
         {
             BoundExpression expression = BindExpression(syntax.Expression);
             return new BoundExpressionStatement(expression);
@@ -156,6 +157,9 @@ namespace PHPSharp.Binding
         private BoundExpression BindExpression(ExpressionSyntax syntax, TypeSymbol targetType)
         {
             BoundExpression expression = BindExpression(syntax);
+            if (expression.Type == TypeSymbol.Error)
+                return new BoundErrorExpression();
+
             if (expression.Type != targetType)
                 Diagnostics.ReportCannotConvert(syntax.Span, expression.Type, targetType);
 
@@ -174,16 +178,10 @@ namespace PHPSharp.Binding
 
         private BoundExpression BindNameofExpression(NameofExpressionSyntax syntax)
         {
-            string? name = syntax.IdentifierToken.Text;
-            if (string.IsNullOrEmpty(name))
+            if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable))
                 return new BoundErrorExpression();
-            if (!_scope.TryLookup(name, out _))
-            {
-                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
-                return new BoundErrorExpression();
-            }
 
-            return new BoundLiteralExpression(name);
+            return new BoundLiteralExpression(variable.Name);
         }
 
         private static BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)
@@ -194,35 +192,26 @@ namespace PHPSharp.Binding
 
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
         {
-            string? name = syntax.IdentifierToken.Text;
-            if (string.IsNullOrEmpty(name))
+            if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable))
                 return new BoundErrorExpression();
-
-            if (!_scope.TryLookup(name, out VariableSymbol? variable))
-            {
-                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
-                return new BoundErrorExpression();
-            }
 
             return new BoundVariableExpression(variable);
         }
 
         private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax)
         {
-            string? name = syntax.IdentifierToken.Text;
-            BoundExpression boundExpression = BindExpression(syntax.Expression);
-
-            if (!_scope.TryLookup(name, out VariableSymbol? variable))
-            {
-                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
-                return boundExpression;
-            }
+            if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable))
+                return new BoundErrorExpression();
 
             if (variable.IsReadOnly)
-                Diagnostics.ReportCannotAssign(syntax.EqualsToken.Span, name);
+                Diagnostics.ReportCannotAssign(syntax.EqualsToken.Span, variable.Name);
 
+            BoundExpression boundExpression = BindExpression(syntax.Expression);
             if (syntax.EqualsToken.Kind == SyntaxKind.EqualsToken)
             {
+                if (boundExpression.Type == TypeSymbol.Error || variable.Type == TypeSymbol.Error)
+                    return new BoundErrorExpression();
+
                 if (boundExpression.Type != variable.Type)
                 {
                     Diagnostics.ReportCannotConvert(syntax.Expression.Span, boundExpression.Type, variable.Type);
@@ -325,6 +314,26 @@ namespace PHPSharp.Binding
         private void PopScope()
         {
             _scope = _scope.Parent ?? throw new InvalidOperationException("Scope's parent was null");
+        }
+
+        private bool TryFindVariable(SyntaxToken identifierToken, [NotNullWhen(true)] out VariableSymbol? variable)
+        {
+            string? name = identifierToken.Text;
+            if (string.IsNullOrEmpty(name))
+            {
+                variable = null;
+                return false;
+            }
+
+            if (!_scope.TryLookup(name, out variable))
+            {
+                Diagnostics.ReportUndefinedName(identifierToken.Span, name);
+
+                _scope.TryDeclare(new VariableSymbol(name, isReadOnly: true, TypeSymbol.Error));
+                return false;
+            }
+
+            return true;
         }
 
         #endregion Helpers

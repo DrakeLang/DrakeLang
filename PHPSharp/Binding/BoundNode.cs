@@ -74,15 +74,18 @@ namespace PHPSharp.Binding
             {
                 return node switch
                 {
-                    BoundVariableDeclarationStatement v => v.Kind.ToString() + " " + v.Variable.Type + " " + v.Variable.Name,
-                    BoundVariableExpression v => v.Kind.ToString() + " " + v.Variable.Name,
-                    BoundLiteralExpression l => l.Kind.ToString() + " " + l.Value,
+                    BoundVariableDeclarationStatement v => v.Kind.ToString() + " Type=" + v.Variable.Type + " VarName=" + v.Variable.Name,
+                    BoundVariableExpression v => v.Kind.ToString() + " VarName=" + v.Variable.Name,
+                    BoundLiteralExpression l => l.Kind.ToString() + " Value=" + l.Value,
+                    BoundAssignmentExpression a => a.Kind.ToString() + " Value=" + a.Variable.Name + " Type=" + a.Type.ToString(),
 
-                    BoundBinaryExpression b => b.Op.Kind.ToString() + "Expression " + b.Type,
-                    BoundUnaryExpression u => u.Op.Kind.ToString() + "Expression " + u.Type,
+                    BoundBinaryExpression b => b.Op.Kind.ToString() + "Expression Type=" + b.Type,
+                    BoundUnaryExpression u => u.Op.Kind.ToString() + "Expression Type=" + u.Type,
                     BoundLabelStatement l => l.Kind.ToString() + " " + l.Label.Name,
                     BoundGotoStatement g => g.Kind.ToString() + " " + g.Label.Name,
                     BoundConditionalGotoStatement g => g.Kind.ToString() + " " + g.Label.Name + (g.JumpIfFalse ? " on false" : " on true"),
+
+                    BoundExpression e => e.Kind.ToString() + " Type=" + e.Type.ToString(),
 
                     _ => node.Kind.ToString(),
                 };
