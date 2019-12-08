@@ -93,6 +93,7 @@ namespace PHPSharp.Syntax
                 "for" => SyntaxKind.ForKeyword,
 
                 "typeof" => SyntaxKind.TypeofKeyword,
+                "nameof" => SyntaxKind.NameofKeyword,
 
                 _ => SyntaxKind.IdentifierToken,
             };
@@ -215,6 +216,7 @@ namespace PHPSharp.Syntax
                 SyntaxKind.WhileKeyword => "while",
                 SyntaxKind.ForKeyword => "for",
                 SyntaxKind.TypeofKeyword => "typeof",
+                SyntaxKind.NameofKeyword => "nameof",
 
                 _ => null,
             };

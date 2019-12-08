@@ -320,7 +320,10 @@ namespace PHPSharp.Syntax
                     return ParseParenthesizedExpression();
 
                 case SyntaxKind.TypeofKeyword:
-                    return ParseTypeOfExpression();
+                    return ParseTypeofExpression();
+
+                case SyntaxKind.NameofKeyword:
+                    return ParseNameofExpression();
 
                 case SyntaxKind.TrueKeyword:
                 case SyntaxKind.FalseKeyword:
@@ -347,7 +350,7 @@ namespace PHPSharp.Syntax
             return new ParenthesizedExpressionSyntax(leftParenthesis, expression, rightParenthesis);
         }
 
-        private TypeofExpressionSyntax ParseTypeOfExpression()
+        private TypeofExpressionSyntax ParseTypeofExpression()
         {
             SyntaxToken typeofKeyword = MatchToken(SyntaxKind.TypeofKeyword);
             SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
@@ -355,6 +358,17 @@ namespace PHPSharp.Syntax
             SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 
             return new TypeofExpressionSyntax(typeofKeyword, leftParenthesis, typeLiteral, rightParenthesis);
+        }
+
+
+        private NameofExpressionSyntax ParseNameofExpression()
+        {
+            SyntaxToken nameofKeyword = MatchToken(SyntaxKind.NameofKeyword);
+            SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
+            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+
+            return new NameofExpressionSyntax(nameofKeyword, leftParenthesis, identifierToken, rightParenthesis);
         }
 
         private LiteralExpressionSyntax ParseTypeLiteral()

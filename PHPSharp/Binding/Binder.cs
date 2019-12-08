@@ -142,6 +142,7 @@ namespace PHPSharp.Binding
             {
                 SyntaxKind.ParenthesizedExpression => BindParenthesizedExpression((ParenthesizedExpressionSyntax)syntax),
                 SyntaxKind.TypeofExpression => BindTypeofExpression((TypeofExpressionSyntax)syntax),
+                SyntaxKind.NameofExpression => BindNameofExpression((NameofExpressionSyntax)syntax),
                 SyntaxKind.LiteralExpression => BindLiteralExpression((LiteralExpressionSyntax)syntax),
                 SyntaxKind.NameExpression => BindNameExpression((NameExpressionSyntax)syntax),
                 SyntaxKind.AssignmentExpression => BindAssignmentExpression((AssignmentExpressionSyntax)syntax),
@@ -169,6 +170,20 @@ namespace PHPSharp.Binding
         private static BoundExpression BindTypeofExpression(TypeofExpressionSyntax syntax)
         {
             return new BoundLiteralExpression(syntax.TypeLiteral.Value ?? string.Empty);
+        }
+
+        private BoundExpression BindNameofExpression(NameofExpressionSyntax syntax)
+        {
+            string? name = syntax.IdentifierToken.Text;
+            if (string.IsNullOrEmpty(name))
+                return new BoundErrorExpression();
+            if (!_scope.TryLookup(name, out _))
+            {
+                Diagnostics.ReportUndefinedName(syntax.IdentifierToken.Span, name);
+                return new BoundErrorExpression();
+            }
+
+            return new BoundLiteralExpression(name);
         }
 
         private static BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)

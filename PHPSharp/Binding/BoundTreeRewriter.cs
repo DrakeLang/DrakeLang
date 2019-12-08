@@ -159,6 +159,7 @@ namespace PHPSharp.Binding
         {
             return node.Kind switch
             {
+                BoundNodeKind.ErrorExpression => node,
                 BoundNodeKind.LiteralExpression => RewriteLiteralExpression((BoundLiteralExpression)node),
                 BoundNodeKind.VariableExpression => RewriteVariableExpression((BoundVariableExpression)node),
                 BoundNodeKind.AssignmentExpression => RewriteAssignmentExpression((BoundAssignmentExpression)node),

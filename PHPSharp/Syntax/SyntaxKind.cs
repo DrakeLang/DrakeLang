@@ -71,6 +71,7 @@ namespace PHPSharp.Syntax
         WhileKeyword,
         ForKeyword,
         TypeofKeyword,
+        NameofKeyword,
 
         // Nodes
         CompilationUnit,
@@ -91,6 +92,7 @@ namespace PHPSharp.Syntax
         BinaryExpression,
         ParenthesizedExpression,
         TypeofExpression,
+        NameofExpression,
         AssignmentExpression,
     }
 }
