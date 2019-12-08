@@ -82,6 +82,7 @@ namespace PHPSharp.Syntax
             {
                 "bool" => SyntaxKind.BoolKeyword,
                 "int" => SyntaxKind.IntKeyword,
+                "float" => SyntaxKind.FloatKeyword,
                 "string" => SyntaxKind.StringKeyword,
                 "var" => SyntaxKind.VarKeyword,
 
@@ -142,6 +143,7 @@ namespace PHPSharp.Syntax
             {
                 SyntaxKind.BoolKeyword => true,
                 SyntaxKind.IntKeyword => true,
+                SyntaxKind.FloatKeyword => true,
                 SyntaxKind.StringKeyword => true,
                 SyntaxKind.VarKeyword => true,
 
@@ -207,6 +209,7 @@ namespace PHPSharp.Syntax
 
                 SyntaxKind.BoolKeyword => "bool",
                 SyntaxKind.IntKeyword => "int",
+                SyntaxKind.FloatKeyword => "float",
                 SyntaxKind.StringKeyword => "string",
                 SyntaxKind.VarKeyword => "var",
                 SyntaxKind.TrueKeyword => "true",

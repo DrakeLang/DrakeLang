@@ -20,6 +20,7 @@ using PHPSharp.Symbols;
 using PHPSharp.Text;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 
 namespace PHPSharp.Syntax
 {
@@ -78,29 +79,18 @@ namespace PHPSharp.Syntax
 
         private StatementSyntax ParseStatement(bool requireSemicolon = true)
         {
-            switch (Current.Kind)
+            if (SyntaxFacts.GetKindIsTypeKeyword(Current.Kind))
+                return ParseVariableDeclarationStatement(requireSemicolon);
+
+            return Current.Kind switch
             {
-                case SyntaxKind.OpenBraceToken:
-                    return ParseBlockStatement();
+                SyntaxKind.OpenBraceToken => ParseBlockStatement(),
+                SyntaxKind.IfKeyword => ParseIfStatement(),
+                SyntaxKind.WhileKeyword => ParseWhileStatement(),
+                SyntaxKind.ForKeyword => ParseForStatement(),
 
-                case SyntaxKind.BoolKeyword:
-                case SyntaxKind.IntKeyword:
-                case SyntaxKind.StringKeyword:
-                case SyntaxKind.VarKeyword:
-                    return ParseVariableDeclarationStatement(requireSemicolon);
-
-                case SyntaxKind.IfKeyword:
-                    return ParseIfStatement();
-
-                case SyntaxKind.WhileKeyword:
-                    return ParseWhileStatement();
-
-                case SyntaxKind.ForKeyword:
-                    return ParseForStatement();
-
-                default:
-                    return ParseExpressionStatement(requireSemicolon);
-            }
+                _ => ParseExpressionStatement(requireSemicolon),
+            };
         }
 
         private BlockStatementSyntax ParseBlockStatement()
@@ -317,31 +307,22 @@ namespace PHPSharp.Syntax
 
         private ExpressionSyntax ParsePrimaryExpression()
         {
-            switch (Current.Kind)
+            return Current.Kind switch
             {
-                case SyntaxKind.OpenParenthesisToken:
-                    return ParseParenthesizedExpression();
+                SyntaxKind.OpenParenthesisToken => ParseParenthesizedExpression(),
 
-                case SyntaxKind.TypeofKeyword:
-                    return ParseTypeofExpression();
+                SyntaxKind.TypeofKeyword => ParseTypeofExpression(),
+                SyntaxKind.NameofKeyword => ParseNameofExpression(),
 
-                case SyntaxKind.NameofKeyword:
-                    return ParseNameofExpression();
+                SyntaxKind.TrueKeyword => ParseBooleanLiteral(isTrue: true),
+                SyntaxKind.FalseKeyword => ParseBooleanLiteral(isTrue: false),
+                SyntaxKind.IntegerToken => ParseIntegerLiteral(),
+                SyntaxKind.FloatToken => ParseFloatLiteral(),
+                SyntaxKind.StringToken => ParseStringLiteral(),
+                SyntaxKind.IdentifierToken => ParseNameExpression(),
 
-                case SyntaxKind.TrueKeyword:
-                case SyntaxKind.FalseKeyword:
-                    return ParseBooleanLiteral();
-
-                case SyntaxKind.NumberToken:
-                    return ParseNumberLiteral();
-
-                case SyntaxKind.StringToken:
-                    return ParseStringLiteral();
-
-                case SyntaxKind.IdentifierToken:
-                default:
-                    return ParseNameExpression();
-            }
+                _ => ParseNameExpression(),
+            };
         }
 
         private ParenthesizedExpressionSyntax ParseParenthesizedExpression()
@@ -388,21 +369,32 @@ namespace PHPSharp.Syntax
             return new LiteralExpressionSyntax(typeToken, typeToken.Text);
         }
 
-        private LiteralExpressionSyntax ParseBooleanLiteral()
+        private LiteralExpressionSyntax ParseBooleanLiteral(bool isTrue)
         {
-            bool isTrue = Current.Kind == SyntaxKind.TrueKeyword;
             SyntaxToken keywordToken = MatchToken(isTrue ? SyntaxKind.TrueKeyword : SyntaxKind.FalseKeyword);
 
             return new LiteralExpressionSyntax(keywordToken, isTrue);
         }
 
-        private LiteralExpressionSyntax ParseNumberLiteral()
+        private LiteralExpressionSyntax ParseIntegerLiteral()
         {
-            SyntaxToken numberToken = MatchToken(SyntaxKind.NumberToken);
-            if (!int.TryParse(numberToken.Text, out int value))
-                Diagnostics.ReportInvalidValue(numberToken.Span, numberToken.Text, TypeSymbol.Int);
+            SyntaxToken integerToken = MatchToken(SyntaxKind.IntegerToken);
+            if (!int.TryParse(integerToken.Text, out int value))
+                Diagnostics.ReportInvalidValue(integerToken.Span, integerToken.Text, TypeSymbol.Int);
 
-            return new LiteralExpressionSyntax(numberToken, value);
+            return new LiteralExpressionSyntax(integerToken, value);
+        }
+
+        private LiteralExpressionSyntax ParseFloatLiteral()
+        {
+            SyntaxToken floatToken = MatchToken(SyntaxKind.FloatToken);
+
+            // Remove eventual 'f' character.
+            string? floatString = floatToken.Text?.Replace("f", "", ignoreCase: false, CultureInfo.InvariantCulture);
+            if (!double.TryParse(floatString, out double value))
+                Diagnostics.ReportInvalidValue(floatToken.Span, floatToken.Text, TypeSymbol.Float);
+
+            return new LiteralExpressionSyntax(floatToken, value);
         }
 
         private LiteralExpressionSyntax ParseStringLiteral()

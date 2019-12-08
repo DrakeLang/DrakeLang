@@ -155,31 +155,57 @@ namespace PHPSharp
 
         private object EvaluateUnaryExpression(BoundUnaryExpression node)
         {
+            // Pre- and post increment/decrement.
             if (node.Op.Kind == BoundUnaryOperatorKind.PreDecrement || node.Op.Kind == BoundUnaryOperatorKind.PreIncrement)
             {
                 BoundVariableExpression variableExpression = (BoundVariableExpression)node.Operand;
-                _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
+
+                if (node.Type == TypeSymbol.Int)
+                    _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
+                else
+                    _variables[variableExpression.Variable] = (double)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
+
                 return _variables[variableExpression.Variable];
             }
             else if (node.Op.Kind == BoundUnaryOperatorKind.PostDecrement || node.Op.Kind == BoundUnaryOperatorKind.PostIncrement)
             {
                 BoundVariableExpression variableExpression = (BoundVariableExpression)node.Operand;
-                int value = (int)_variables[variableExpression.Variable];
 
-                _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PostIncrement ? 1 : -1);
+                object value = _variables[variableExpression.Variable];
+                if (node.Type == TypeSymbol.Int)
+                {
+                    _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PostIncrement ? 1 : -1);
+                }
+                else
+                {
+                    _variables[variableExpression.Variable] = (double)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PostIncrement ? 1 : -1);
+                }
+
                 return value;
             }
 
+            // Other unary operations.
             object operant = EvaluateExpression(node.Operand);
-            return node.Op.Kind switch
+            switch (node.Op.Kind)
             {
-                BoundUnaryOperatorKind.Identity => (int)operant,
-                BoundUnaryOperatorKind.Negation => -(int)operant,
-                BoundUnaryOperatorKind.LogicalNegation => !(bool)operant,
-                BoundUnaryOperatorKind.OnesComplement => ~(int)operant,
+                case BoundUnaryOperatorKind.Identity:
+                    return operant;
 
-                _ => throw new Exception($"Unexpected unary operator '{node.Op.Kind}'."),
-            };
+                case BoundUnaryOperatorKind.Negation:
+                    if (node.Type == TypeSymbol.Int)
+                        return -(int)operant;
+                    else
+                        return -(double)operant;
+
+                case BoundUnaryOperatorKind.LogicalNegation:
+                    return !(bool)operant;
+
+                case BoundUnaryOperatorKind.OnesComplement:
+                    return ~(int)operant;
+
+                default:
+                    throw new Exception($"Unexpected unary operator '{node.Op.Kind}'.");
+            }
         }
 
         private object EvaluateBinaryExpression(BoundBinaryExpression node)
@@ -192,22 +218,36 @@ namespace PHPSharp
                 case BoundBinaryOperatorKind.Addition:
                     if (node.Type == TypeSymbol.Int)
                         return (int)left + (int)right;
-                    else if (node.Left.Type == TypeSymbol.String)
+                    if (node.Type == TypeSymbol.Float)
+                        return (double)left + (double)right;
+                    if (node.Left.Type == TypeSymbol.String)
                         return (string)left + right;
                     else
                         return left + (string)right;
 
                 case BoundBinaryOperatorKind.Subtraction:
-                    return (int)left - (int)right;
+                    if (node.Type == TypeSymbol.Int)
+                        return (int)left - (int)right;
+                    else
+                        return (double)left - (double)right;
 
                 case BoundBinaryOperatorKind.Multiplication:
-                    return (int)left * (int)right;
+                    if (node.Type == TypeSymbol.Int)
+                        return (int)left * (int)right;
+                    else
+                        return (double)left * (double)right;
 
                 case BoundBinaryOperatorKind.Division:
-                    if ((int)right == 0)
-                        return "ERR: Can't divide by zero";
-
-                    return (int)left / (int)right;
+                    if (node.Type == TypeSymbol.Int)
+                    {
+                        if ((int)right == 0) return "ERR: Can't divide by zero";
+                        return (int)left / (int)right;
+                    }
+                    else
+                    {
+                        if ((double)right == 0) return "ERR: Can't divide by zero";
+                        return (double)left / (double)right;
+                    }
 
                 case BoundBinaryOperatorKind.BitwiseAnd:
                     if (node.Type == TypeSymbol.Int)
@@ -240,16 +280,28 @@ namespace PHPSharp
                     return !Equals(left, right);
 
                 case BoundBinaryOperatorKind.LessThan:
-                    return (int)left < (int)right;
+                    if (node.Left.Type == TypeSymbol.Int)
+                        return (int)left < (int)right;
+                    else
+                        return (double)left < (double)right;
 
                 case BoundBinaryOperatorKind.LessThanOrEquals:
-                    return (int)left <= (int)right;
+                    if (node.Left.Type == TypeSymbol.Int)
+                        return (int)left <= (int)right;
+                    else
+                        return (double)left <= (double)right;
 
                 case BoundBinaryOperatorKind.GreaterThan:
-                    return (int)left > (int)right;
+                    if (node.Left.Type == TypeSymbol.Int)
+                        return (int)left > (int)right;
+                    else
+                        return (double)left > (double)right;
 
                 case BoundBinaryOperatorKind.GreaterThanOrEquals:
-                    return (int)left >= (int)right;
+                    if (node.Left.Type == TypeSymbol.Int)
+                        return (int)left >= (int)right;
+                    else
+                        return (double)left >= (double)right;
 
                 default:
                     throw new Exception($"Unexpected binary operator '{node.Op.Kind}'.");

@@ -70,8 +70,10 @@ namespace PHPSharp.Binding
 
         private static readonly BoundUnaryOperator[] _operators =
         {
+            // Bool
             new BoundUnaryOperator(SyntaxKind.BangToken, UnaryType.Pre, BoundUnaryOperatorKind.LogicalNegation, TypeSymbol.Boolean),
 
+            // Int
             new BoundUnaryOperator(SyntaxKind.PlusToken, UnaryType.Pre, BoundUnaryOperatorKind.Identity, TypeSymbol.Int),
             new BoundUnaryOperator(SyntaxKind.MinusToken, UnaryType.Pre, BoundUnaryOperatorKind.Negation, TypeSymbol.Int),
 
@@ -81,6 +83,15 @@ namespace PHPSharp.Binding
             new BoundUnaryOperator(SyntaxKind.MinusMinusToken, UnaryType.Post, BoundUnaryOperatorKind.PostDecrement, TypeSymbol.Int),
 
             new BoundUnaryOperator(SyntaxKind.TildeToken, UnaryType.Pre, BoundUnaryOperatorKind.OnesComplement, TypeSymbol.Int),
+
+            // Float
+            new BoundUnaryOperator(SyntaxKind.PlusToken, UnaryType.Pre, BoundUnaryOperatorKind.Identity, TypeSymbol.Float),
+            new BoundUnaryOperator(SyntaxKind.MinusToken, UnaryType.Pre, BoundUnaryOperatorKind.Negation, TypeSymbol.Float),
+
+            new BoundUnaryOperator(SyntaxKind.PlusPlusToken, UnaryType.Pre, BoundUnaryOperatorKind.PreIncrement, TypeSymbol.Float),
+            new BoundUnaryOperator(SyntaxKind.MinusMinusToken, UnaryType.Pre, BoundUnaryOperatorKind.PreDecrement, TypeSymbol.Float),
+            new BoundUnaryOperator(SyntaxKind.PlusPlusToken, UnaryType.Post, BoundUnaryOperatorKind.PostIncrement, TypeSymbol.Float),
+            new BoundUnaryOperator(SyntaxKind.MinusMinusToken, UnaryType.Post, BoundUnaryOperatorKind.PostDecrement, TypeSymbol.Float),
         };
 
         #endregion Private statics

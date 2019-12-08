@@ -122,6 +122,40 @@ namespace PHPSharp.Tests
 
         private static IEnumerable<(string statement, object result)> GetStatements()
         {
+            // Bool statements
+            yield return ("true;", true);
+            yield return ("false;", false);
+            yield return ("!true;", false);
+            yield return ("!false;", true);
+            yield return ("true || true;", true);
+            yield return ("true || false;", true);
+            yield return ("false || true;", true);
+            yield return ("false || false;", false);
+            yield return ("true && true;", true);
+            yield return ("true && false;", false);
+            yield return ("false && true;", false);
+            yield return ("false && false;", false);
+
+            // Bool comparisons
+            yield return ("false == false;", true);
+            yield return ("true == false;", false);
+            yield return ("false != false;", false);
+            yield return ("true != false;", true);
+
+            // Bool bitwise operations
+            yield return ("false | false;", false);
+            yield return ("false | true;", true);
+            yield return ("true | false;", true);
+            yield return ("true | true;", true);
+            yield return ("false & false;", false);
+            yield return ("false & true;", false);
+            yield return ("true & false;", false);
+            yield return ("true & true;", true);
+            yield return ("false ^ false;", false);
+            yield return ("false ^ true;", true);
+            yield return ("true ^ false;", true);
+            yield return ("true ^ true;", false);
+
             // Int statements
             yield return ("1;", 1);
             yield return ("+1;", 1);
@@ -149,7 +183,7 @@ namespace PHPSharp.Tests
             yield return ("5 >= 4;", true);
             yield return ("4 >= 5;", false);
 
-            // Bitwise int operations
+            // Int bitwise operations
             yield return ("1 | 2;", 3);
             yield return ("1 | 0;", 1);
             yield return ("1 & 2;", 0);
@@ -159,41 +193,7 @@ namespace PHPSharp.Tests
             yield return ("0 ^ 1;", 1);
             yield return ("1 ^ 3;", 2);
 
-            // Bool statements
-            yield return ("true;", true);
-            yield return ("false;", false);
-            yield return ("!true;", false);
-            yield return ("!false;", true);
-            yield return ("true || true;", true);
-            yield return ("true || false;", true);
-            yield return ("false || true;", true);
-            yield return ("false || false;", false);
-            yield return ("true && true;", true);
-            yield return ("true && false;", false);
-            yield return ("false && true;", false);
-            yield return ("false && false;", false);
-
-            // Bool comparisons
-            yield return ("false == false;", true);
-            yield return ("true == false;", false);
-            yield return ("false != false;", false);
-            yield return ("true != false;", true);
-
-            // Bitwize bool operations
-            yield return ("false | false;", false);
-            yield return ("false | true;", true);
-            yield return ("true | false;", true);
-            yield return ("true | true;", true);
-            yield return ("false & false;", false);
-            yield return ("false & true;", false);
-            yield return ("true & false;", false);
-            yield return ("true & true;", true);
-            yield return ("false ^ false;", false);
-            yield return ("false ^ true;", true);
-            yield return ("true ^ false;", true);
-            yield return ("true ^ true;", false);
-
-            // Variable & assignment
+            // Int variable & assignment
             yield return ("{ var a = 0; (a = 10) * a; }", 100);
             yield return ("{ var a = 11; ++a; }", 12);
             yield return ("{ var a = 11; --a; }", 10);
@@ -207,6 +207,47 @@ namespace PHPSharp.Tests
             yield return ("{ var a = 11; a -= 1; }", 10);
             yield return ("{ var a = 10; a *= 2; }", 20);
             yield return ("{ var a = 10; a /= 2; }", 5);
+
+            // Float statements
+            yield return ("1f;", 1d);
+            yield return ("+1f;", 1d);
+            yield return ("-1f;", -1d);
+            yield return ("14f + 12f;", 26d);
+            yield return ("12f - 3f;", 9d);
+            yield return ("4f * 2f;", 8d);
+            yield return ("9f / 3f;", 3d);
+            yield return ("(10f);", 10d);
+
+            // Float comparisons
+            yield return ("12f == 3f;", false);
+            yield return ("3f == 3f;", true);
+            yield return ("12f != 3f;", true);
+            yield return ("3f != 3f;", false);
+            yield return ("3f < 4f;", true);
+            yield return ("5f < 4f;", false);
+            yield return ("4f <= 4f;", true);
+            yield return ("4f <= 5f;", true);
+            yield return ("5f <= 4f;", false);
+            yield return ("4f > 3f;", true);
+            yield return ("4f > 5f;", false);
+            yield return ("4f >= 4f;", true);
+            yield return ("5f >= 4f;", true);
+            yield return ("4f >= 5f;", false);
+
+            // Float variable & assignment
+            yield return ("{ var a = 0f; (a = 10f) * a; }", 100d);
+            yield return ("{ var a = 11f; ++a; }", 12d);
+            yield return ("{ var a = 11f; --a; }", 10d);
+            yield return ("{ var a = 11f; a++; }", 11d);
+            yield return ("{ var a = 11f; a--; }", 11d);
+            yield return ("{ var a = 11f; ++a; a; }", 12d);
+            yield return ("{ var a = 11f; --a; a; }", 10d);
+            yield return ("{ var a = 11f; a++; a; }", 12d);
+            yield return ("{ var a = 11f; a--; a; }", 10d);
+            yield return ("{ var a = 11f; a += -1f; }", 10d);
+            yield return ("{ var a = 11f; a -= 1f; }", 10d);
+            yield return ("{ var a = 10f; a *= 2f; }", 20d);
+            yield return ("{ var a = 10f; a /= 2f; }", 5d);
 
             // If-else-statement
             yield return ("{ var a = 0; if (a == 0) a = 10; a; }", 10);

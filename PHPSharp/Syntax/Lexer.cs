@@ -45,6 +45,8 @@ namespace PHPSharp.Syntax
 
         private char Current => Peek(0);
 
+        private char LookAhead => Peek(1);
+
         #endregion Private properties
 
         #region Methods
@@ -78,6 +80,7 @@ namespace PHPSharp.Syntax
                     case '7':
                     case '8':
                     case '9':
+                    case '.':
                         ReadNumberToken();
                         break;
 
@@ -168,7 +171,7 @@ namespace PHPSharp.Syntax
                     else
                         result = SyntaxKind.StarToken;
                     break;
-                    
+
                 case '/':
                     Next();
                     if (Current == '=')
@@ -385,10 +388,22 @@ namespace PHPSharp.Syntax
 
         private void ReadNumberToken()
         {
-            while (char.IsDigit(Current))
+            // Keep reading digits as long as their available,
+            // as well as a single decimal separator *if* the following char is a digit as well.
+            bool isFloat = false;
+            while (char.IsDigit(Current) || (!isFloat && Current == '.' && char.IsDigit(LookAhead)))
+            {
                 Next();
+                isFloat |= Peek(-1) == '.';
+            }
 
-            _kind = SyntaxKind.NumberToken;
+            if (Current == 'f')
+            {
+                Next();
+                isFloat = true;
+            }
+
+            _kind = isFloat ? SyntaxKind.FloatToken : SyntaxKind.IntegerToken;
         }
 
         private void ReadWhitespace()

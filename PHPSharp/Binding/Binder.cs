@@ -75,7 +75,7 @@ namespace PHPSharp.Binding
         private BoundStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
         {
             string name = syntax.Identifier.Text ?? "?";
-            bool declare = name != "?";
+            bool declare = syntax.Identifier.Text != null;
             bool isReadOnly = false;
 
             BoundExpression initializer = BindExpression(syntax.Initializer);
@@ -84,11 +84,18 @@ namespace PHPSharp.Binding
                 SyntaxKind.BoolKeyword => TypeSymbol.Boolean,
                 SyntaxKind.IntKeyword => TypeSymbol.Int,
                 SyntaxKind.StringKeyword => TypeSymbol.String,
-                _ => initializer.Type,
+                SyntaxKind.FloatKeyword => TypeSymbol.Float,
+                SyntaxKind.VarKeyword => initializer.Type,
+
+                _ => throw new Exception($"Unexpected keyword '{syntax.Keyword.Kind}'."),
             };
 
-            if (variableType != initializer.Type && variableType != TypeSymbol.Error)
+            if (variableType != initializer.Type && 
+                variableType != TypeSymbol.Error && 
+                initializer.Type != TypeSymbol.Error)
+            {
                 Diagnostics.ReportCannotConvert(syntax.Initializer.Span, initializer.Type, variableType);
+            }
 
             VariableSymbol variable = new VariableSymbol(name, isReadOnly, variableType);
             if (declare && !_scope.TryDeclare(variable))
@@ -157,11 +164,13 @@ namespace PHPSharp.Binding
         private BoundExpression BindExpression(ExpressionSyntax syntax, TypeSymbol targetType)
         {
             BoundExpression expression = BindExpression(syntax);
-            if (expression.Type == TypeSymbol.Error)
-                return new BoundErrorExpression();
 
-            if (expression.Type != targetType)
+            if (expression.Type != targetType &&
+                expression.Type != TypeSymbol.Error &&
+                targetType != TypeSymbol.Error)
+            {
                 Diagnostics.ReportCannotConvert(syntax.Span, expression.Type, targetType);
+            }
 
             return expression;
         }

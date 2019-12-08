@@ -34,6 +34,7 @@ namespace PHPSharp.Binding
                 bool _ => TypeSymbol.Boolean,
                 int _ => TypeSymbol.Int,
                 string _ => TypeSymbol.String,
+                double _ => TypeSymbol.Float,
 
                 _ => throw new Exception($"Literal '{value}' of type '{value.GetType()}' is illegal."),
             };

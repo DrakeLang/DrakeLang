@@ -122,8 +122,13 @@ namespace PHPSharp.Tests.Syntax
 
             var dynamicTokens = new[]
             {
-                (SyntaxKind.NumberToken, "1"),
-                (SyntaxKind.NumberToken, "123"),
+                (SyntaxKind.IntegerToken, "1"),
+                (SyntaxKind.IntegerToken, "123"),
+                (SyntaxKind.FloatToken, "4f"),
+                (SyntaxKind.FloatToken, "1.1"),
+                (SyntaxKind.FloatToken, "0.1"),
+                (SyntaxKind.FloatToken, ".4"),
+                (SyntaxKind.FloatToken, ".4f"),
                 (SyntaxKind.IdentifierToken, "a"),
                 (SyntaxKind.IdentifierToken, "abc"),
                 (SyntaxKind.StringToken, "\"a\""),
@@ -167,8 +172,25 @@ namespace PHPSharp.Tests.Syntax
             if (t1Kind == SyntaxKind.IdentifierToken && t2Kind == SyntaxKind.IdentifierToken)
                 return true;
 
-            if (t1Kind == SyntaxKind.NumberToken && t2Kind == SyntaxKind.NumberToken)
-                return true;
+            if (t1Kind == SyntaxKind.IntegerToken)
+            {
+                if (t2Kind == SyntaxKind.IntegerToken) return true;
+                if (t2Kind == SyntaxKind.FloatToken) return true;
+
+                if (t2Kind == SyntaxKind.ForKeyword) return true; // the 'f' is mistaken for the float specifier
+                if (t2Kind == SyntaxKind.FloatKeyword) return true; // the 'f' is mistaken for the float specifier
+                if (t2Kind == SyntaxKind.FalseKeyword) return true; // the 'f' is mistaken for the float specifier
+            }
+
+            if (t1Kind == SyntaxKind.FloatToken)
+            {
+                if (t2Kind == SyntaxKind.IntegerToken) return true;
+                if (t2Kind == SyntaxKind.FloatToken) return true;
+
+                if (t2Kind == SyntaxKind.ForKeyword) return true; // the 'f' is mistaken for the float specifier
+                if (t2Kind == SyntaxKind.FloatKeyword) return true; // the 'f' is mistaken for the float specifier
+                if (t2Kind == SyntaxKind.FalseKeyword) return true; // the 'f' is mistaken for the float specifier
+            }
 
             if (t1Kind == SyntaxKind.BangToken)
             {
