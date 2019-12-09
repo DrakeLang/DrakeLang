@@ -23,18 +23,72 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 namespace PHPSharp.Binding
 {
-    internal class Binder
+    internal sealed class Binder
     {
         private BoundScope _scope;
 
-        public Binder(BoundScope? parent)
+        #region Constructors
+
+        private Binder(BoundScope parent)
         {
             _scope = new BoundScope(parent);
         }
+
+        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope? previous, CompilationUnitSyntax syntax)
+        {
+            BoundScope parentScope = CreateParentScopes(previous);
+
+            Binder binder = new Binder(parentScope);
+            BoundStatement statement = binder.BindStatement(syntax.Statement);
+
+            ImmutableArray<Diagnostic> diagnostics = previous is null ?
+                binder.Diagnostics.ToImmutableArray() :
+                previous.Diagnostics.AddRange(binder.Diagnostics);
+
+            ImmutableArray<VariableSymbol> variables = binder._scope.GetDeclaredVariables();
+            return new BoundGlobalScope(previous, diagnostics, variables, statement);
+        }
+
+        private static BoundScope CreateParentScopes(BoundGlobalScope? previous)
+        {
+            if (previous is null)
+                return CreateRootScope();
+
+            Stack<BoundGlobalScope> stack = new Stack<BoundGlobalScope>();
+            while (previous != null)
+            {
+                stack.Push(previous);
+                previous = previous.Previous;
+            }
+
+            BoundScope parent = CreateRootScope();
+            while (stack.Count > 0)
+            {
+                previous = stack.Pop();
+                BoundScope scope = new BoundScope(parent);
+                foreach (var v in previous.Variables)
+                    scope.TryDeclareVariable(v);
+
+                parent = scope;
+            }
+
+            return parent;
+        }
+
+        private static BoundScope CreateRootScope()
+        {
+            BoundScope root = new BoundScope();
+
+            foreach (var method in BuiltinMethods.GetAll())
+                root.TryDeclareMethod(method);
+
+            return root;
+        }
+
+        #endregion Constructors
 
         #region Properties
 
@@ -108,7 +162,7 @@ namespace PHPSharp.Binding
             }
 
             VariableSymbol variable = new VariableSymbol(name, isReadOnly, variableType);
-            if (declare && !_scope.TryDeclare(variable))
+            if (declare && !_scope.TryDeclareVariable(variable))
                 Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
 
             return new BoundVariableDeclarationStatement(variable, initializer);
@@ -199,7 +253,7 @@ namespace PHPSharp.Binding
         private BoundExpression BindNameofExpression(NameofExpressionSyntax syntax)
         {
             if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable))
-                return new BoundErrorExpression();
+                return BoundErrorExpression.Instace;
 
             return new BoundLiteralExpression(variable.Name);
         }
@@ -213,18 +267,17 @@ namespace PHPSharp.Binding
         private BoundExpression BindCallExpression(CallExpressionSyntax syntax)
         {
             // Locate method.
-            MethodSymbol method = BuiltinMethods.GetAll().SingleOrDefault(m => m.Name == syntax.Identifier.Text);
-            if (method is null)
+            if (!_scope.TryLookupMethod(syntax.Identifier.Text, out MethodSymbol? method))
             {
                 Diagnostics.ReportUndefinedMethod(syntax.Identifier.Span, syntax.Identifier.Text);
-                return new BoundErrorExpression();
+                return BoundErrorExpression.Instace;
             }
 
             // Validate argument count.
             if (syntax.Arguments.Count != method.Paramaters.Length)
             {
                 Diagnostics.ReportWrongArgumentCount(syntax.Span, method.Name, method.Paramaters.Length, syntax.Arguments.Count);
-                return new BoundErrorExpression();
+                return BoundErrorExpression.Instace;
             }
 
             // Bind arguments.
@@ -244,7 +297,7 @@ namespace PHPSharp.Binding
                 if (argument.Type != parameter.Type)
                 {
                     Diagnostics.ReportWrongArgumentType(syntax.Span, method.Name, parameter.Name, parameter.Type, argument.Type);
-                    return new BoundErrorExpression();
+                    return BoundErrorExpression.Instace;
                 }
             }
 
@@ -254,7 +307,7 @@ namespace PHPSharp.Binding
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
         {
             if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable))
-                return new BoundErrorExpression();
+                return BoundErrorExpression.Instace;
 
             return new BoundVariableExpression(variable);
         }
@@ -262,7 +315,7 @@ namespace PHPSharp.Binding
         private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax)
         {
             if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable))
-                return new BoundErrorExpression();
+                return BoundErrorExpression.Instace;
 
             if (variable.IsReadOnly)
                 Diagnostics.ReportCannotAssignReadOnly(syntax.EqualsToken.Span, variable.Name);
@@ -271,7 +324,7 @@ namespace PHPSharp.Binding
             if (syntax.EqualsToken.Kind == SyntaxKind.EqualsToken)
             {
                 if (boundExpression.Type == TypeSymbol.Error || variable.Type == TypeSymbol.Error)
-                    return new BoundErrorExpression();
+                    return BoundErrorExpression.Instace;
 
                 if (boundExpression.Type != variable.Type)
                 {
@@ -327,13 +380,13 @@ namespace PHPSharp.Binding
             BoundExpression boundOperand = BindExpression(syntax.Operand);
 
             if (boundOperand.Type == TypeSymbol.Error)
-                return new BoundErrorExpression();
+                return BoundErrorExpression.Instace;
 
             BoundUnaryOperator? boundOp = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, syntax.UnaryType, boundOperand.Type);
             if (boundOp is null)
             {
                 Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundOperand.Type);
-                return new BoundErrorExpression();
+                return BoundErrorExpression.Instace;
             }
 
             return new BoundUnaryExpression(boundOp, boundOperand);
@@ -345,13 +398,13 @@ namespace PHPSharp.Binding
             BoundExpression boundRight = BindExpression(syntax.Right);
 
             if (boundLeft.Type == TypeSymbol.Error || boundRight.Type == TypeSymbol.Error)
-                return new BoundErrorExpression();
+                return BoundErrorExpression.Instace;
 
             BoundBinaryOperator? boundOp = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
             if (boundOp is null)
             {
                 Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundLeft.Type, boundRight.Type);
-                return new BoundErrorExpression();
+                return BoundErrorExpression.Instace;
             }
 
             return new BoundBinaryExpression(boundLeft, boundOp, boundRight);
@@ -386,11 +439,11 @@ namespace PHPSharp.Binding
                 return false;
             }
 
-            if (!_scope.TryLookup(name, out variable))
+            if (!_scope.TryLookupVariable(name, out variable))
             {
                 Diagnostics.ReportUndefinedName(identifierToken.Span, name);
 
-                _scope.TryDeclare(new VariableSymbol(name, isReadOnly: true, TypeSymbol.Error));
+                _scope.TryDeclareVariable(new VariableSymbol(name, isReadOnly: true, TypeSymbol.Error));
                 return false;
             }
 
@@ -398,47 +451,5 @@ namespace PHPSharp.Binding
         }
 
         #endregion Helpers
-
-        #region Statics
-
-        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope? previous, CompilationUnitSyntax syntax)
-        {
-            BoundScope? parentScope = CreateParentScopes(previous);
-
-            Binder binder = new Binder(parentScope);
-            BoundStatement statement = binder.BindStatement(syntax.Statement);
-            ImmutableArray<VariableSymbol> variables = binder._scope.GetDeclaredVariables();
-
-            ImmutableArray<Diagnostic> diagnostics = previous == null ?
-                binder.Diagnostics.ToImmutableArray() :
-                previous.Diagnostics.AddRange(binder.Diagnostics);
-
-            return new BoundGlobalScope(previous, diagnostics, variables, statement);
-        }
-
-        private static BoundScope? CreateParentScopes(BoundGlobalScope? previous)
-        {
-            Stack<BoundGlobalScope> stack = new Stack<BoundGlobalScope>();
-            while (previous != null)
-            {
-                stack.Push(previous);
-                previous = previous.Previous;
-            }
-
-            BoundScope? parent = null;
-            while (stack.Count > 0)
-            {
-                previous = stack.Pop();
-                BoundScope scope = new BoundScope(parent);
-                foreach (var v in previous.Variables)
-                    scope.TryDeclare(v);
-
-                parent = scope;
-            }
-
-            return parent;
-        }
-
-        #endregion Statics
     }
 }

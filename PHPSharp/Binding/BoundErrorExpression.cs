@@ -24,6 +24,12 @@ namespace PHPSharp.Binding
 {
     internal sealed class BoundErrorExpression : BoundExpression
     {
+        public static BoundErrorExpression Instace { get; } = new BoundErrorExpression();
+
+        private BoundErrorExpression()
+        {
+        }
+
         public override TypeSymbol Type => TypeSymbol.Error;
 
         public override BoundNodeKind Kind => BoundNodeKind.ErrorExpression;

@@ -25,7 +25,8 @@ namespace PHPSharp.Binding
 {
     internal sealed class BoundScope
     {
-        private readonly Dictionary<string, VariableSymbol> _variables = new Dictionary<string, VariableSymbol>();
+        private Dictionary<string, VariableSymbol>? _variables;
+        private Dictionary<string, MethodSymbol>? _methods;
 
         #region Constructors
 
@@ -48,8 +49,18 @@ namespace PHPSharp.Binding
 
         #region Methods
 
-        public bool TryDeclare(VariableSymbol variable)
+        public bool TryDeclareVariable(VariableSymbol variable)
         {
+            if (_variables is null)
+            {
+                _variables = new Dictionary<string, VariableSymbol>
+                {
+                    [variable.Name] = variable
+                };
+
+                return true;
+            }
+
             if (_variables.ContainsKey(variable.Name))
                 return false;
 
@@ -60,20 +71,75 @@ namespace PHPSharp.Binding
         /// <summary>
         /// Attempts to locate a variable with the given name in this scope, or one of its parents.
         /// </summary>
-        public bool TryLookup(string name, [NotNullWhen(true)] out VariableSymbol? variable)
+        public bool TryLookupVariable(string name, [NotNullWhen(true)] out VariableSymbol? variable)
         {
-            if (_variables.TryGetValue(name, out variable))
+            if (_variables != null && _variables.TryGetValue(name, out variable))
                 return true;
 
             if (Parent is null)
+            {
+                variable = null;
+                return false;
+            }
+
+            return Parent.TryLookupVariable(name, out variable);
+        }
+
+        public bool TryDeclareMethod(MethodSymbol method)
+        {
+            if (_methods is null)
+            {
+                _methods = new Dictionary<string, MethodSymbol>
+                {
+                    [method.Name] = method
+                };
+                return true;
+            }
+
+            if (_methods.ContainsKey(method.Name))
                 return false;
 
-            return Parent.TryLookup(name, out variable);
+            _methods[method.Name] = method;
+            return true;
+        }
+
+        /// <summary>
+        /// Attempts to locate a variable with the given name in this scope, or one of its parents.
+        /// </summary>
+        public bool TryLookupMethod(string? name, [NotNullWhen(true)] out MethodSymbol? method)
+        {
+            if (name is null)
+            {
+                method = null;
+                return false;
+            }
+
+            if (_methods != null && _methods.TryGetValue(name, out method))
+                return true;
+
+            if (Parent is null)
+            {
+                method = null;
+                return false;
+            }
+
+            return Parent.TryLookupMethod(name, out method);
         }
 
         public ImmutableArray<VariableSymbol> GetDeclaredVariables()
         {
+            if (_variables is null)
+                return ImmutableArray<VariableSymbol>.Empty;
+
             return _variables.Values.ToImmutableArray();
+        }
+
+        public ImmutableArray<MethodSymbol> GetDeclaredMethods()
+        {
+            if (_methods is null)
+                return ImmutableArray<MethodSymbol>.Empty;
+
+            return _methods.Values.ToImmutableArray();
         }
 
         #endregion Methods
