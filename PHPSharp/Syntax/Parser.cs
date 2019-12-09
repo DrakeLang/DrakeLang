@@ -39,8 +39,14 @@ namespace PHPSharp.Syntax
             {
                 token = lexer.Lex();
 
-                if (token.Kind != SyntaxKind.BadToken && token.Kind != SyntaxKind.WhitespaceToken)
-                    tokens.Add(token);
+                if (token.Kind == SyntaxKind.BadToken ||
+                    token.Kind == SyntaxKind.WhitespaceToken ||
+                    token.Kind == SyntaxKind.LineCommentToken)
+                {
+                    continue;
+                }
+
+                tokens.Add(token);
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
             _tokens = tokens.ToImmutableArray();
@@ -64,9 +70,6 @@ namespace PHPSharp.Syntax
 
         public CompilationUnitSyntax ParseCompilationUnit()
         {
-            if (Current.Kind == SyntaxKind.LineCommentToken)
-                NextToken();
-
             StatementSyntax statement = ParseStatement();
             SyntaxToken endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
 
@@ -212,10 +215,7 @@ namespace PHPSharp.Syntax
         {
             ExpressionSyntax expression = ParseExpression();
 
-            SyntaxToken? semicolonToken = null;
-            if (requireSemicolon)
-                semicolonToken = MatchToken(SyntaxKind.SemicolonToken);
-
+            SyntaxToken? semicolonToken = requireSemicolon ? MatchToken(SyntaxKind.SemicolonToken) : null;
             return new ExpressionStatementSyntax(expression, semicolonToken);
         }
 
@@ -465,12 +465,7 @@ namespace PHPSharp.Syntax
         private SyntaxToken NextToken()
         {
             SyntaxToken current = Current;
-
-            do
-            {
-                _position++;
-            }
-            while (Current.Kind == SyntaxKind.LineCommentToken);
+            _position++;
 
             return current;
         }
