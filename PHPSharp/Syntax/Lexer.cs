@@ -394,7 +394,7 @@ namespace PHPSharp.Syntax
 
         private void ReadNumberToken()
         {
-            // Keep reading digits as long as their available,
+            // Keep reading digits as long as they're available,
             // as well as a single decimal separator *if* the following char is a digit as well.
             bool isFloat = false;
             while (char.IsDigit(Current) || (!isFloat && Current == '.' && char.IsDigit(LookAhead)))

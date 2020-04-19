@@ -17,15 +17,31 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Symbols;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace PHPSharp.Binding
 {
-    internal abstract class BoundExpression : BoundNode
+    internal sealed class BoundCallExpression : BoundExpression
     {
-        protected BoundExpression()
+        public BoundCallExpression(MethodSymbol method, ImmutableArray<BoundExpression> arguments)
         {
+            Method = method;
+            Arguments = arguments;
         }
 
-        public abstract TypeSymbol Type { get; }
+        #region Properties
+
+        public override BoundNodeKind Kind => BoundNodeKind.CallExpression;
+        public override TypeSymbol Type => Method.ReturnType;
+        public MethodSymbol Method { get; }
+        public ImmutableArray<BoundExpression> Arguments { get; }
+
+        #endregion Properties
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            return Arguments;
+        }
     }
 }

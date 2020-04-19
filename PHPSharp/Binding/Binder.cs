@@ -76,16 +76,16 @@ namespace PHPSharp.Binding
             }
 
             return parent;
-        }
 
-        private static BoundScope CreateRootScope()
-        {
-            BoundScope root = new BoundScope();
+            static BoundScope CreateRootScope()
+            {
+                BoundScope root = new BoundScope();
 
-            foreach (var method in BuiltinMethods.GetAll())
-                root.TryDeclareMethod(method);
+                foreach (var method in BuiltinMethods.GetAll())
+                    root.TryDeclareMethod(method);
 
-            return root;
+                return root;
+            }
         }
 
         #endregion Constructors

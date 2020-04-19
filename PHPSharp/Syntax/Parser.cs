@@ -321,7 +321,8 @@ namespace PHPSharp.Syntax
                 SyntaxKind.FloatToken => ParseFloatLiteral(),
                 SyntaxKind.StringToken => ParseStringLiteral(),
 
-                _ => ParseNameOrCallExpression(),
+                _ when LookAhead.Kind == SyntaxKind.OpenParenthesisToken => ParseCallExpression(),
+                _ => ParseNameExpression(),
             };
         }
 
@@ -403,14 +404,6 @@ namespace PHPSharp.Syntax
             return new LiteralExpressionSyntax(stringToken);
         }
 
-        private ExpressionSyntax ParseNameOrCallExpression()
-        {
-            if (LookAhead.Kind == SyntaxKind.OpenParenthesisToken)
-                return ParseCallExpression();
-            else
-                return ParseNameExpression();
-        }
-
         private CallExpressionSyntax ParseCallExpression()
         {
             SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
@@ -457,7 +450,7 @@ namespace PHPSharp.Syntax
         {
             int index = _position + offset;
             if (index >= _tokens.Length)
-                return _tokens[_tokens.Length - 1];
+                return _tokens[^1];
 
             return _tokens[index];
         }
