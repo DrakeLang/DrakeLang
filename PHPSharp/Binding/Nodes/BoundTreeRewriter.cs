@@ -194,6 +194,17 @@ namespace PHPSharp.Binding
         protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node)
         {
             BoundExpression operand = RewriteExpression(node.Operand);
+            if (operand.Kind == BoundNodeKind.LiteralExpression)
+            {
+                BoundLiteralExpression literalOperand = (BoundLiteralExpression)node.Operand;
+
+                var value = LiteralEvaluator.EvaluateUnaryExpression(node.Op, literalOperand.Value);
+                if (value == literalOperand.Value)
+                    return literalOperand;
+
+                return new BoundLiteralExpression(value);
+            }
+
             if (operand == node.Operand)
                 return node;
 
@@ -204,6 +215,20 @@ namespace PHPSharp.Binding
         {
             BoundExpression left = RewriteExpression(node.Left);
             BoundExpression right = RewriteExpression(node.Right);
+
+            if (left.Kind == BoundNodeKind.LiteralExpression && right.Kind == BoundNodeKind.LiteralExpression)
+            {
+                BoundLiteralExpression literalLeft = (BoundLiteralExpression)left;
+                BoundLiteralExpression literalRight = (BoundLiteralExpression)right;
+
+                var value = LiteralEvaluator.EvaluateBinaryExpression(node.Op, literalLeft.Value, literalRight.Value);
+                if (value == literalLeft.Value)
+                    return literalLeft;
+                else if (value == literalRight.Value)
+                    return literalRight;
+
+                return new BoundLiteralExpression(value);
+            }
 
             if (left == node.Left && right == node.Right)
                 return node;
@@ -240,6 +265,14 @@ namespace PHPSharp.Binding
         protected virtual BoundExpression RewriteExplicitCaseExpression(BoundExplicitCastExpression node)
         {
             BoundExpression expression = RewriteExpression(node.Expression);
+            if (expression.Kind == BoundNodeKind.LiteralExpression)
+            {
+                BoundLiteralExpression literalExpression = (BoundLiteralExpression)expression;
+                var value = LiteralEvaluator.EvaluateExplicitCastExpression(node.Type, literalExpression.Value);
+
+                return new BoundLiteralExpression(value);
+            }
+
             if (expression == node.Expression)
                 return node;
 

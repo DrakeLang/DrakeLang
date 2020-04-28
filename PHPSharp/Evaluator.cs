@@ -184,27 +184,8 @@ namespace PHPSharp
             }
 
             // Other unary operations.
-            object operant = EvaluateExpression(node.Operand);
-            switch (node.Op.Kind)
-            {
-                case BoundUnaryOperatorKind.Identity:
-                    return operant;
-
-                case BoundUnaryOperatorKind.Negation:
-                    if (node.Type == TypeSymbol.Int)
-                        return -(int)operant;
-                    else
-                        return -(double)operant;
-
-                case BoundUnaryOperatorKind.LogicalNegation:
-                    return !(bool)operant;
-
-                case BoundUnaryOperatorKind.OnesComplement:
-                    return ~(int)operant;
-
-                default:
-                    throw new Exception($"Unexpected unary operator '{node.Op.Kind}'.");
-            }
+            object operand = EvaluateExpression(node.Operand);
+            return LiteralEvaluator.EvaluateUnaryExpression(node.Op, operand);
         }
 
         private object EvaluateBinaryExpression(BoundBinaryExpression node)
@@ -212,102 +193,7 @@ namespace PHPSharp
             object left = EvaluateExpression(node.Left);
             object right = EvaluateExpression(node.Right);
 
-            switch (node.Op.Kind)
-            {
-                case BoundBinaryOperatorKind.Addition:
-                    if (node.Type == TypeSymbol.Int)
-                        return (int)left + (int)right;
-                    if (node.Type == TypeSymbol.Float)
-                        return (double)left + (double)right;
-                    if (node.Left.Type == TypeSymbol.String)
-                        return (string)left + right;
-                    else
-                        return left + (string)right;
-
-                case BoundBinaryOperatorKind.Subtraction:
-                    if (node.Type == TypeSymbol.Int)
-                        return (int)left - (int)right;
-                    else
-                        return (double)left - (double)right;
-
-                case BoundBinaryOperatorKind.Multiplication:
-                    if (node.Type == TypeSymbol.Int)
-                        return (int)left * (int)right;
-                    else
-                        return (double)left * (double)right;
-
-                case BoundBinaryOperatorKind.Division:
-                    if (node.Type == TypeSymbol.Int)
-                    {
-                        if ((int)right == 0) return "ERR: Can't divide by zero";
-                        return (int)left / (int)right;
-                    }
-                    else
-                    {
-                        if ((double)right == 0) return "ERR: Can't divide by zero";
-                        return (double)left / (double)right;
-                    }
-
-                case BoundBinaryOperatorKind.Modulo:
-                    return (int)left % (int)right;
-
-                case BoundBinaryOperatorKind.BitwiseAnd:
-                    if (node.Type == TypeSymbol.Int)
-                        return (int)left & (int)right;
-                    else
-                        return (bool)left & (bool)right;
-
-                case BoundBinaryOperatorKind.BitwiseOr:
-                    if (node.Type == TypeSymbol.Int)
-                        return (int)left | (int)right;
-                    else
-                        return (bool)left | (bool)right;
-
-                case BoundBinaryOperatorKind.BitwiseXor:
-                    if (node.Type == TypeSymbol.Int)
-                        return (int)left ^ (int)right;
-                    else
-                        return (bool)left ^ (bool)right;
-
-                case BoundBinaryOperatorKind.LogicalAnd:
-                    return (bool)left && (bool)right;
-
-                case BoundBinaryOperatorKind.LogicalOr:
-                    return (bool)left || (bool)right;
-
-                case BoundBinaryOperatorKind.Equals:
-                    return Equals(left, right);
-
-                case BoundBinaryOperatorKind.NotEquals:
-                    return !Equals(left, right);
-
-                case BoundBinaryOperatorKind.LessThan:
-                    if (node.Left.Type == TypeSymbol.Int)
-                        return (int)left < (int)right;
-                    else
-                        return (double)left < (double)right;
-
-                case BoundBinaryOperatorKind.LessThanOrEquals:
-                    if (node.Left.Type == TypeSymbol.Int)
-                        return (int)left <= (int)right;
-                    else
-                        return (double)left <= (double)right;
-
-                case BoundBinaryOperatorKind.GreaterThan:
-                    if (node.Left.Type == TypeSymbol.Int)
-                        return (int)left > (int)right;
-                    else
-                        return (double)left > (double)right;
-
-                case BoundBinaryOperatorKind.GreaterThanOrEquals:
-                    if (node.Left.Type == TypeSymbol.Int)
-                        return (int)left >= (int)right;
-                    else
-                        return (double)left >= (double)right;
-
-                default:
-                    throw new Exception($"Unexpected binary operator '{node.Op.Kind}'.");
-            }
+            return LiteralEvaluator.EvaluateBinaryExpression(node.Op, left, right);
         }
 
         private object EvaluateCallExpression(BoundCallExpression node)
@@ -328,23 +214,7 @@ namespace PHPSharp
         private object EvaluateExplicitCastExpression(BoundExplicitCastExpression node)
         {
             var value = EvaluateExpression(node.Expression);
-            if (node.Type == TypeSymbol.Boolean)
-            {
-                return Convert.ToBoolean(value);
-            }
-            else if (node.Type == TypeSymbol.Float)
-            {
-                return Convert.ToDouble(value);
-            }
-            else if (node.Type == TypeSymbol.Int)
-            {
-                return Convert.ToInt16(value);
-            }
-            else if (node.Type == TypeSymbol.String)
-            {
-                return Convert.ToString(value) ?? string.Empty;
-            }
-            else throw new Exception($"Unexpected type '{node.Type}'.");
+            return LiteralEvaluator.EvaluateExplicitCastExpression(node.Type, value);
         }
 
         #endregion EvaluateExpression
