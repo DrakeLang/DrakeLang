@@ -121,20 +121,18 @@ namespace PHPSharp
 
         #region EvaluateExpression
 
-        private object EvaluateExpression(BoundExpression node)
+        private object EvaluateExpression(BoundExpression node) => node.Kind switch
         {
-            return node.Kind switch
-            {
-                BoundNodeKind.LiteralExpression => EvaluateLiteralExpression((BoundLiteralExpression)node),
-                BoundNodeKind.VariableExpression => EvaluateVariableExpression((BoundVariableExpression)node),
-                BoundNodeKind.AssignmentExpression => EvaluateAssignmentExpression((BoundAssignmentExpression)node),
-                BoundNodeKind.UnaryExpression => EvaluateUnaryExpression((BoundUnaryExpression)node),
-                BoundNodeKind.BinaryExpression => EvaluateBinaryExpression((BoundBinaryExpression)node),
-                BoundNodeKind.CallExpression => EvaluateCallExpression((BoundCallExpression)node),
+            BoundNodeKind.LiteralExpression => EvaluateLiteralExpression((BoundLiteralExpression)node),
+            BoundNodeKind.VariableExpression => EvaluateVariableExpression((BoundVariableExpression)node),
+            BoundNodeKind.AssignmentExpression => EvaluateAssignmentExpression((BoundAssignmentExpression)node),
+            BoundNodeKind.UnaryExpression => EvaluateUnaryExpression((BoundUnaryExpression)node),
+            BoundNodeKind.BinaryExpression => EvaluateBinaryExpression((BoundBinaryExpression)node),
+            BoundNodeKind.CallExpression => EvaluateCallExpression((BoundCallExpression)node),
+            BoundNodeKind.ExplicitCastExpression => EvaluateExplicitCastExpression((BoundExplicitCastExpression)node),
 
-                _ => throw new Exception($"Unexpected node '{node.Kind}'."),
-            };
-        }
+            _ => throw new Exception($"Unexpected node '{node.Kind}'."),
+        };
 
         private static object EvaluateLiteralExpression(BoundLiteralExpression node)
         {
@@ -325,6 +323,28 @@ namespace PHPSharp
                 return 0; // cannot return null due to nullable reference types being enabled.
             }
             else throw new Exception($"Unexpected method '{node.Method}'.");
+        }
+
+        private object EvaluateExplicitCastExpression(BoundExplicitCastExpression node)
+        {
+            var value = EvaluateExpression(node.Expression);
+            if (node.Type == TypeSymbol.Boolean)
+            {
+                return Convert.ToBoolean(value);
+            }
+            else if (node.Type == TypeSymbol.Float)
+            {
+                return Convert.ToDouble(value);
+            }
+            else if (node.Type == TypeSymbol.Int)
+            {
+                return Convert.ToInt16(value);
+            }
+            else if (node.Type == TypeSymbol.String)
+            {
+                return Convert.ToString(value) ?? string.Empty;
+            }
+            else throw new Exception($"Unexpected type '{node.Type}'.");
         }
 
         #endregion EvaluateExpression

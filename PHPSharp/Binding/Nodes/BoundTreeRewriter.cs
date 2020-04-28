@@ -166,6 +166,7 @@ namespace PHPSharp.Binding
                 BoundNodeKind.UnaryExpression => RewriteUnaryExpression((BoundUnaryExpression)node),
                 BoundNodeKind.BinaryExpression => RewriteBinaryExpression((BoundBinaryExpression)node),
                 BoundNodeKind.CallExpression => RewriteCallExpression((BoundCallExpression)node),
+                BoundNodeKind.ExplicitCastExpression => RewriteExplicitCaseExpression((BoundExplicitCastExpression)node),
 
                 _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
             };
@@ -234,6 +235,15 @@ namespace PHPSharp.Binding
                 return node;
 
             return new BoundCallExpression(node.Method, builder.MoveToImmutable());
+        }
+
+        protected virtual BoundExpression RewriteExplicitCaseExpression(BoundExplicitCastExpression node)
+        {
+            BoundExpression expression = RewriteExpression(node.Expression);
+            if (expression == node.Expression)
+                return node;
+
+            return new BoundExplicitCastExpression(node.Type, expression);
         }
 
         #endregion RewriteExpression

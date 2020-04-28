@@ -16,31 +16,23 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-namespace PHPSharp.Binding
+using System.Collections.Generic;
+
+namespace PHPSharp.Syntax
 {
-    public enum BoundNodeKind
+    public sealed class TypeExpressionSyntax : ExpressionSyntax
     {
-        // Statements
+        public TypeExpressionSyntax(SyntaxToken typeIdentifier)
+        {
+            TypeIdentifier = typeIdentifier;
+        }
 
-        BlockStatement,
-        VariableDeclarationStatement,
-        IfStatement,
-        WhileStatement,
-        ForStatement,
-        LabelStatement,
-        GotoStatement,
-        ConditionalGotoStatement,
-        ExpressionStatement,
+        public override SyntaxKind Kind => SyntaxKind.TypeExpression;
+        public SyntaxToken TypeIdentifier { get; }
 
-        // Expressions
-
-        ErrorExpression,
-        LiteralExpression,
-        VariableExpression,
-        AssignmentExpression,
-        UnaryExpression,
-        BinaryExpression,
-        CallExpression,
-        ExplicitCastExpression,
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return TypeIdentifier;
+        }
     }
 }

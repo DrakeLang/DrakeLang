@@ -117,7 +117,7 @@ namespace PHPSharp.Tests.Syntax
         {
             var fixedTokens = Enum.GetValues(typeof(SyntaxKind))
                                    .Cast<SyntaxKind>()
-                                   .Select(k => (kind: k, text: SyntaxFacts.GetText(k)))
+                                   .Select(k => (kind: k, text: k.GetText()))
                                    .Where(t => t.text != null)
                                    .Cast<(SyntaxKind, string)>();
 

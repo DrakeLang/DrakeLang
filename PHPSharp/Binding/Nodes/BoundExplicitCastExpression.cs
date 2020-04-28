@@ -16,31 +16,27 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using PHPSharp.Symbols;
+using System.Collections.Generic;
+
 namespace PHPSharp.Binding
 {
-    public enum BoundNodeKind
+    internal sealed class BoundExplicitCastExpression : BoundExpression
     {
-        // Statements
+        public BoundExplicitCastExpression(TypeSymbol type, BoundExpression expression)
+        {
+            Type = type;
+            Expression = expression;
+        }
 
-        BlockStatement,
-        VariableDeclarationStatement,
-        IfStatement,
-        WhileStatement,
-        ForStatement,
-        LabelStatement,
-        GotoStatement,
-        ConditionalGotoStatement,
-        ExpressionStatement,
+        public override TypeSymbol Type { get; }
+        public BoundExpression Expression { get; }
 
-        // Expressions
+        public override BoundNodeKind Kind => BoundNodeKind.ExplicitCastExpression;
 
-        ErrorExpression,
-        LiteralExpression,
-        VariableExpression,
-        AssignmentExpression,
-        UnaryExpression,
-        BinaryExpression,
-        CallExpression,
-        ExplicitCastExpression,
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            yield return Expression;
+        }
     }
 }

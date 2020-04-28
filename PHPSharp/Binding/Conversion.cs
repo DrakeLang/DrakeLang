@@ -48,6 +48,9 @@ namespace PHPSharp.Binding
             if (from == to)
                 return Identity;
 
+            if (from == TypeSymbol.Error || to == TypeSymbol.Error)
+                return Identity;
+
             if (from == TypeSymbol.Int && to == TypeSymbol.Float)
                 return Explicit;
 

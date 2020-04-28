@@ -20,37 +20,29 @@ using System.Collections.Generic;
 
 namespace PHPSharp.Syntax
 {
-    internal sealed class TypeofExpressionSyntax : ExpressionSyntax
+    public sealed class ExplicitCastExpressionSyntax : ExpressionSyntax
     {
-        public TypeofExpressionSyntax(
-            SyntaxToken typeofKeyword,
-            SyntaxToken leftParenthesis,
-            TypeExpressionSyntax typeExpression,
-            SyntaxToken rightParenthesis)
+        public ExplicitCastExpressionSyntax(SyntaxToken openParenthesisToken, TypeExpressionSyntax typeExpression, SyntaxToken closeParenthesisToken, ExpressionSyntax expression)
         {
-            TypeofKeyword = typeofKeyword;
-            LeftParenthesis = leftParenthesis;
+            OpenParenthesisToken = openParenthesisToken;
             TypeExpression = typeExpression;
-            RightParenthesis = rightParenthesis;
+            CloseParenthesisToken = closeParenthesisToken;
+            Expression = expression;
         }
 
-        #region Properties
+        public override SyntaxKind Kind => SyntaxKind.ExplicitCastExpression;
 
-        public override SyntaxKind Kind => SyntaxKind.TypeofExpression;
-
-        public SyntaxToken TypeofKeyword { get; }
-        public SyntaxToken LeftParenthesis { get; }
+        public SyntaxToken OpenParenthesisToken { get; }
         public TypeExpressionSyntax TypeExpression { get; }
-        public SyntaxToken RightParenthesis { get; }
-
-        #endregion Properties
+        public SyntaxToken CloseParenthesisToken { get; }
+        public ExpressionSyntax Expression { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return TypeofKeyword;
-            yield return LeftParenthesis;
+            yield return OpenParenthesisToken;
             yield return TypeExpression;
-            yield return RightParenthesis;
+            yield return CloseParenthesisToken;
+            yield return Expression;
         }
     }
 }

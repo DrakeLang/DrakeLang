@@ -29,7 +29,7 @@ namespace PHPSharp.Tests.Syntax
         [MemberData(nameof(GetSyntaxKindData))]
         public void SyntaxFact_GetText_RoundTrips(SyntaxKind kind)
         {
-            string? text = SyntaxFacts.GetText(kind);
+            string? text = kind.GetText();
             if (text is null)
                 return;
 

@@ -137,26 +137,22 @@ namespace PHPSharp.Binding
             BoundExpression initializer = BindExpression(syntax.Initializer);
 
             // Don't allow void assignment
-            if (initializer.Type == TypeSymbol.Void)
+            if (initializer.Type == TypeSymbol.Void && syntax.Keyword.Kind == SyntaxKind.VarKeyword)
             {
                 TextSpan span = TextSpan.FromBounds(syntax.Identifier.Span.Start, syntax.Initializer.Span.End);
                 Diagnostics.ReportCannotAssignVoid(span);
             }
 
-            var variableType = syntax.Keyword.Kind switch
+            TypeSymbol? variableType = ResolveType(syntax.Keyword.Kind);
+            if (variableType is null)
+                variableType = initializer.Type;
+
+            var conversion = Conversion.Classify(variableType, initializer.Type);
+            if (conversion == Conversion.Explicit)
             {
-                SyntaxKind.BoolKeyword => TypeSymbol.Boolean,
-                SyntaxKind.IntKeyword => TypeSymbol.Int,
-                SyntaxKind.StringKeyword => TypeSymbol.String,
-                SyntaxKind.FloatKeyword => TypeSymbol.Float,
-                SyntaxKind.VarKeyword => initializer.Type,
-
-                _ => throw new Exception($"Unexpected keyword '{syntax.Keyword.Kind}'."),
-            };
-
-            if (variableType != initializer.Type &&
-                variableType != TypeSymbol.Error &&
-                initializer.Type != TypeSymbol.Error)
+                Diagnostics.ReportCannotImplicitlyConvert(syntax.Initializer.Span, initializer.Type, variableType);
+            }
+            else if (conversion == Conversion.None)
             {
                 Diagnostics.ReportCannotConvert(syntax.Initializer.Span, initializer.Type, variableType);
             }
@@ -212,15 +208,16 @@ namespace PHPSharp.Binding
         {
             return syntax.Kind switch
             {
+                SyntaxKind.LiteralExpression => BindLiteralExpression((LiteralExpressionSyntax)syntax),
+                SyntaxKind.NameExpression => BindNameExpression((NameExpressionSyntax)syntax),
+                SyntaxKind.UnaryExpression => BindUnaryExpression((UnaryExpressionSyntax)syntax),
+                SyntaxKind.BinaryExpression => BindBinaryExpression((BinaryExpressionSyntax)syntax),
                 SyntaxKind.ParenthesizedExpression => BindParenthesizedExpression((ParenthesizedExpressionSyntax)syntax),
                 SyntaxKind.TypeofExpression => BindTypeofExpression((TypeofExpressionSyntax)syntax),
                 SyntaxKind.NameofExpression => BindNameofExpression((NameofExpressionSyntax)syntax),
-                SyntaxKind.LiteralExpression => BindLiteralExpression((LiteralExpressionSyntax)syntax),
-                SyntaxKind.CallExpression => BindCallExpression((CallExpressionSyntax)syntax),
-                SyntaxKind.NameExpression => BindNameExpression((NameExpressionSyntax)syntax),
                 SyntaxKind.AssignmentExpression => BindAssignmentExpression((AssignmentExpressionSyntax)syntax),
-                SyntaxKind.UnaryExpression => BindUnaryExpression((UnaryExpressionSyntax)syntax),
-                SyntaxKind.BinaryExpression => BindBinaryExpression((BinaryExpressionSyntax)syntax),
+                SyntaxKind.CallExpression => BindCallExpression((CallExpressionSyntax)syntax),
+                SyntaxKind.ExplicitCastExpression => BindExplicitCastExpression((ExplicitCastExpressionSyntax)syntax),
 
                 _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
             };
@@ -240,68 +237,10 @@ namespace PHPSharp.Binding
             return expression;
         }
 
-        private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax)
-        {
-            return BindExpression(syntax.Expression);
-        }
-
-        private static BoundExpression BindTypeofExpression(TypeofExpressionSyntax syntax)
-        {
-            return new BoundLiteralExpression(syntax.TypeLiteral.Value ?? string.Empty);
-        }
-
-        private BoundExpression BindNameofExpression(NameofExpressionSyntax syntax)
-        {
-            if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable))
-                return BoundErrorExpression.Instace;
-
-            return new BoundLiteralExpression(variable.Name);
-        }
-
         private static BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)
         {
             object value = syntax.Value ?? 0;
             return new BoundLiteralExpression(value);
-        }
-
-        private BoundExpression BindCallExpression(CallExpressionSyntax syntax)
-        {
-            // Locate method.
-            if (!_scope.TryLookupMethod(syntax.Identifier.Text, out MethodSymbol? method))
-            {
-                Diagnostics.ReportUndefinedMethod(syntax.Identifier.Span, syntax.Identifier.Text);
-                return BoundErrorExpression.Instace;
-            }
-
-            // Validate argument count.
-            if (syntax.Arguments.Count != method.Paramaters.Length)
-            {
-                Diagnostics.ReportWrongArgumentCount(syntax.Span, method.Name, method.Paramaters.Length, syntax.Arguments.Count);
-                return BoundErrorExpression.Instace;
-            }
-
-            // Bind arguments.
-            var boundArguments = ImmutableArray.CreateBuilder<BoundExpression>();
-            foreach (var argument in syntax.Arguments)
-            {
-                var boundArgument = BindExpression(argument);
-                boundArguments.Add(boundArgument);
-            }
-
-            // Validate argument types.
-            for (int i = 0; i < method.Paramaters.Length; i++)
-            {
-                BoundExpression argument = boundArguments[i];
-                ParameterSymbol parameter = method.Paramaters[i];
-
-                if (argument.Type != parameter.Type)
-                {
-                    Diagnostics.ReportWrongArgumentType(syntax.Span, method.Name, parameter.Name, parameter.Type, argument.Type);
-                    return BoundErrorExpression.Instace;
-                }
-            }
-
-            return new BoundCallExpression(method, boundArguments.ToImmutableArray());
         }
 
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
@@ -310,6 +249,60 @@ namespace PHPSharp.Binding
                 return BoundErrorExpression.Instace;
 
             return new BoundVariableExpression(variable);
+        }
+
+        private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax)
+        {
+            BoundExpression boundOperand = BindExpression(syntax.Operand);
+
+            if (boundOperand.Type == TypeSymbol.Error)
+                return BoundErrorExpression.Instace;
+
+            BoundUnaryOperator? boundOp = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, syntax.UnaryType, boundOperand.Type);
+            if (boundOp is null)
+            {
+                Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundOperand.Type);
+                return BoundErrorExpression.Instace;
+            }
+
+            return new BoundUnaryExpression(boundOp, boundOperand);
+        }
+
+        private BoundExpression BindBinaryExpression(BinaryExpressionSyntax syntax)
+        {
+            BoundExpression boundLeft = BindExpression(syntax.Left);
+            BoundExpression boundRight = BindExpression(syntax.Right);
+
+            if (boundLeft.Type == TypeSymbol.Error || boundRight.Type == TypeSymbol.Error)
+                return BoundErrorExpression.Instace;
+
+            BoundBinaryOperator? boundOp = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
+            if (boundOp is null)
+            {
+                Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundLeft.Type, boundRight.Type);
+                return BoundErrorExpression.Instace;
+            }
+
+            return new BoundBinaryExpression(boundLeft, boundOp, boundRight);
+        }
+
+        private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax)
+        {
+            return BindExpression(syntax.Expression);
+        }
+
+        private static BoundExpression BindTypeofExpression(TypeofExpressionSyntax syntax)
+        {
+            TypeSymbol type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? throw new Exception($"Failed to resolve type kind '{syntax.TypeExpression.TypeIdentifier}'.");
+            return new BoundLiteralExpression(type.Name);
+        }
+
+        private BoundExpression BindNameofExpression(NameofExpressionSyntax syntax)
+        {
+            if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable))
+                return BoundErrorExpression.Instace;
+
+            return new BoundLiteralExpression(variable.Name);
         }
 
         private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax)
@@ -368,39 +361,52 @@ namespace PHPSharp.Binding
             }
         }
 
-        private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax)
+        private BoundExpression BindCallExpression(CallExpressionSyntax syntax)
         {
-            BoundExpression boundOperand = BindExpression(syntax.Operand);
-
-            if (boundOperand.Type == TypeSymbol.Error)
-                return BoundErrorExpression.Instace;
-
-            BoundUnaryOperator? boundOp = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, syntax.UnaryType, boundOperand.Type);
-            if (boundOp is null)
+            // Locate method.
+            if (!_scope.TryLookupMethod(syntax.Identifier.Text, out MethodSymbol? method))
             {
-                Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundOperand.Type);
+                Diagnostics.ReportUndefinedMethod(syntax.Identifier.Span, syntax.Identifier.Text);
                 return BoundErrorExpression.Instace;
             }
 
-            return new BoundUnaryExpression(boundOp, boundOperand);
+            // Validate argument count.
+            if (syntax.Arguments.Count != method.Paramaters.Length)
+            {
+                Diagnostics.ReportWrongArgumentCount(syntax.Span, method.Name, method.Paramaters.Length, syntax.Arguments.Count);
+                return BoundErrorExpression.Instace;
+            }
+
+            // Bind arguments.
+            var boundArguments = ImmutableArray.CreateBuilder<BoundExpression>();
+            foreach (var argument in syntax.Arguments)
+            {
+                var boundArgument = BindExpression(argument);
+                boundArguments.Add(boundArgument);
+            }
+
+            // Validate argument types.
+            for (int i = 0; i < method.Paramaters.Length; i++)
+            {
+                BoundExpression argument = boundArguments[i];
+                ParameterSymbol parameter = method.Paramaters[i];
+
+                if (argument.Type != parameter.Type)
+                {
+                    Diagnostics.ReportWrongArgumentType(syntax.Span, method.Name, parameter.Name, parameter.Type, argument.Type);
+                    return BoundErrorExpression.Instace;
+                }
+            }
+
+            return new BoundCallExpression(method, boundArguments.ToImmutableArray());
         }
 
-        private BoundExpression BindBinaryExpression(BinaryExpressionSyntax syntax)
+        private BoundExplicitCastExpression BindExplicitCastExpression(ExplicitCastExpressionSyntax syntax)
         {
-            BoundExpression boundLeft = BindExpression(syntax.Left);
-            BoundExpression boundRight = BindExpression(syntax.Right);
+            TypeSymbol type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? throw new Exception($"Failed to resolve type kind '{syntax.TypeExpression.TypeIdentifier}'.");
+            BoundExpression expression = BindExpression(syntax.Expression);
 
-            if (boundLeft.Type == TypeSymbol.Error || boundRight.Type == TypeSymbol.Error)
-                return BoundErrorExpression.Instace;
-
-            BoundBinaryOperator? boundOp = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
-            if (boundOp is null)
-            {
-                Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundLeft.Type, boundRight.Type);
-                return BoundErrorExpression.Instace;
-            }
-
-            return new BoundBinaryExpression(boundLeft, boundOp, boundRight);
+            return new BoundExplicitCastExpression(type, expression);
         }
 
         #endregion BindExpression
@@ -444,5 +450,20 @@ namespace PHPSharp.Binding
         }
 
         #endregion Helpers
+
+        #region Utilities
+
+        private static TypeSymbol? ResolveType(SyntaxKind typeKeyword) => typeKeyword switch
+        {
+            SyntaxKind.BoolKeyword => TypeSymbol.Boolean,
+            SyntaxKind.IntKeyword => TypeSymbol.Int,
+            SyntaxKind.StringKeyword => TypeSymbol.String,
+            SyntaxKind.FloatKeyword => TypeSymbol.Float,
+            SyntaxKind.VarKeyword => null,
+
+            _ => throw new Exception($"Unexpected keyword '{typeKeyword}'."),
+        };
+
+        #endregion Utilities
     }
 }

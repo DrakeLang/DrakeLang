@@ -21,6 +21,7 @@ namespace PHPSharp.Syntax
     public enum SyntaxKind
     {
         // Tokens
+
         BadToken,
         EndOfFileToken,
         SemicolonToken,
@@ -64,6 +65,7 @@ namespace PHPSharp.Syntax
         LineCommentToken,
 
         // Keywords
+
         BoolKeyword,
         IntKeyword,
         FloatKeyword,
@@ -79,10 +81,12 @@ namespace PHPSharp.Syntax
         NameofKeyword,
 
         // Nodes
+
         CompilationUnit,
         ElseClause,
 
         // Statements
+
         BlockStatement,
         VariableDeclarationStatement,
         IfStatement,
@@ -91,6 +95,7 @@ namespace PHPSharp.Syntax
         ExpressionStatement,
 
         // Expressions
+
         LiteralExpression,
         NameExpression,
         UnaryExpression,
@@ -98,7 +103,9 @@ namespace PHPSharp.Syntax
         ParenthesizedExpression,
         TypeofExpression,
         NameofExpression,
+        TypeExpression,
         AssignmentExpression,
         CallExpression,
+        ExplicitCastExpression,
     }
 }

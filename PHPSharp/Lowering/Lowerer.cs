@@ -231,6 +231,6 @@ namespace PHPSharp.Lowering
             return new BoundBlockStatement(builder.ToImmutableArray());
         }
 
-        #endregion
+        #endregion Helpers
     }
 }
