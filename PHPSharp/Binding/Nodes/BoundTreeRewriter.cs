@@ -38,6 +38,7 @@ namespace PHPSharp.Binding
                 BoundNodeKind.GotoStatement => RewriteGotoStatement((BoundGotoStatement)node),
                 BoundNodeKind.ConditionalGotoStatement => RewriteConditionalGotoStatement((BoundConditionalGotoStatement)node),
                 BoundNodeKind.ExpressionStatement => RewriteExpressionStatement((BoundExpressionStatement)node),
+                BoundNodeKind.NoOpStatement => node,
 
                 _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
             };
@@ -51,22 +52,37 @@ namespace PHPSharp.Binding
                 BoundStatement oldStatement = node.Statements[i];
                 BoundStatement newStatement = RewriteStatement(oldStatement);
 
-                if (builder is null && newStatement != oldStatement)
+                if (builder is null && (newStatement != oldStatement || ignore(oldStatement)))
                 {
                     // There's at least one different element, so we initialize the builder and copy all ignored lines over.
                     builder = ImmutableArray.CreateBuilder<BoundStatement>(node.Statements.Length);
                     for (int j = 0; j < i; j++)
-                        builder.Add(node.Statements[j]);
+                    {
+                        tryAdd(node.Statements[j]);
+                    }
                 }
 
                 if (builder != null)
-                    builder.Add(newStatement);
+                    tryAdd(newStatement);
             }
 
             if (builder is null)
                 return node;
 
-            return new BoundBlockStatement(builder.MoveToImmutable());
+            return new BoundBlockStatement(builder.ToImmutable());
+
+            void tryAdd(BoundStatement statement)
+            {
+                if (!ignore(statement))
+                {
+                    builder.Add(statement);
+                }
+            }
+
+            static bool ignore(BoundStatement statement)
+            {
+                return statement.Kind == BoundNodeKind.NoOpStatement;
+            }
         }
 
         protected virtual BoundStatement RewriteVariableDeclarationStatement(BoundVariableDeclarationStatement node)
@@ -136,6 +152,16 @@ namespace PHPSharp.Binding
         protected virtual BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
         {
             BoundExpression condition = RewriteExpression(node.Condition);
+            if (condition.Kind == BoundNodeKind.LiteralExpression)
+            {
+                BoundLiteralExpression literalCondition = (BoundLiteralExpression)condition;
+
+                if (node.JumpIfFalse.Equals(literalCondition.Value))
+                    return BoundNoOpStatement.Instance;
+                else
+                    return new BoundGotoStatement(node.Label);
+            }
+
             if (condition == node.Condition)
                 return node;
 

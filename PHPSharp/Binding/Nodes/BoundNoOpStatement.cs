@@ -16,32 +16,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+using System.Linq;
+
 namespace PHPSharp.Binding
 {
-    public enum BoundNodeKind
+    internal sealed class BoundNoOpStatement : BoundStatement
     {
-        // Statements
+        public static BoundNoOpStatement Instance { get; } = new BoundNoOpStatement();
 
-        BlockStatement,
-        VariableDeclarationStatement,
-        IfStatement,
-        WhileStatement,
-        ForStatement,
-        LabelStatement,
-        GotoStatement,
-        ConditionalGotoStatement,
-        NoOpStatement,
-        ExpressionStatement,
+        private BoundNoOpStatement()
+        {
+        }
 
-        // Expressions
+        public override BoundNodeKind Kind => BoundNodeKind.NoOpStatement;
 
-        ErrorExpression,
-        LiteralExpression,
-        VariableExpression,
-        AssignmentExpression,
-        UnaryExpression,
-        BinaryExpression,
-        CallExpression,
-        ExplicitCastExpression,
+        public override IEnumerable<BoundNode> GetChildren() => Enumerable.Empty<BoundNode>();
     }
 }

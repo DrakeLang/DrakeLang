@@ -85,6 +85,10 @@ namespace PHPSharp
                             index++;
                         break;
 
+                    case BoundNodeKind.NoOpStatement:
+                        index++;
+                        break;
+
                     default:
                         throw new Exception($"Unexpected node '{s.Kind}'.");
                 }
