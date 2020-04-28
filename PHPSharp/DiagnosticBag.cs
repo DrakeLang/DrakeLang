@@ -122,9 +122,15 @@ namespace PHPSharp
             Report(span, message);
         }
 
-        public void ReportCannotConvert(TextSpan span, TypeSymbol actualType, TypeSymbol expectedType)
+        public void ReportCannotImplicitlyConvert(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
         {
-            string message = $"Cannot convert type '{actualType}' to '{expectedType}'.";
+            string message = $"Cannot implicitly convert type '{fromType}' to '{toType}'. An explicit convertion exists (are you missing a cast?)";
+            Report(span, message);
+        }
+
+        public void ReportCannotConvert(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
+        {
+            string message = $"Cannot convert type '{fromType}' to '{toType}'.";
             Report(span, message);
         }
 

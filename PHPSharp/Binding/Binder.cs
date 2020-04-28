@@ -351,13 +351,21 @@ namespace PHPSharp.Binding
                     return BoundErrorExpression.Instace;
             }
 
-            if (boundExpression.Type != variable.Type)
+            var conversion = Conversion.Classify(boundExpression.Type, variable.Type);
+            if (conversion == Conversion.Identity || conversion == Conversion.Implicit)
+            {
+                return new BoundAssignmentExpression(variable, boundExpression);
+            }
+            else if (conversion == Conversion.Explicit)
+            {
+                Diagnostics.ReportCannotImplicitlyConvert(syntax.Expression.Span, boundExpression.Type, variable.Type);
+                return boundExpression;
+            }
+            else
             {
                 Diagnostics.ReportCannotConvert(syntax.Expression.Span, boundExpression.Type, variable.Type);
                 return boundExpression;
             }
-
-            return new BoundAssignmentExpression(variable, boundExpression);
         }
 
         private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax)
