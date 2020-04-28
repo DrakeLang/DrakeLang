@@ -28,20 +28,20 @@ namespace PHPSharp
     {
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
-        public IEnumerator<Diagnostic> GetEnumerator() => _diagnostics.GetEnumerator();
+        public DiagnosticBag()
+        {
+        }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        #region Methods
 
-        public void AddRange(DiagnosticBag diagnostics)
+        public void AddRange(IEnumerable<Diagnostic> diagnostics)
         {
             _diagnostics.AddRange(diagnostics);
         }
 
-        private void Report(TextSpan span, string message)
-        {
-            Diagnostic diagnostic = new Diagnostic(span, message);
-            _diagnostics.Add(diagnostic);
-        }
+        #endregion Methods
+
+        #region Report
 
         public void ReportInvalidValue(TextSpan span, string? text, TypeSymbol type)
         {
@@ -157,5 +157,25 @@ namespace PHPSharp
             string message = $"Expected variable declaration or assignment, got <{kind}> instead.";
             Report(span, message);
         }
+
+        #endregion Report
+
+        #region IEnumerable
+
+        public IEnumerator<Diagnostic> GetEnumerator() => _diagnostics.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        #endregion IEnumerable
+
+        #region Helpers
+
+        private void Report(TextSpan span, string message)
+        {
+            Diagnostic diagnostic = new Diagnostic(span, message);
+            _diagnostics.Add(diagnostic);
+        }
+
+        #endregion Helpers
     }
 }
