@@ -38,6 +38,7 @@ namespace PHPSharp.Binding
                 BoundNodeKind.GotoStatement => RewriteGotoStatement((BoundGotoStatement)node),
                 BoundNodeKind.ConditionalGotoStatement => RewriteConditionalGotoStatement((BoundConditionalGotoStatement)node),
                 BoundNodeKind.ExpressionStatement => RewriteExpressionStatement((BoundExpressionStatement)node),
+                BoundNodeKind.NoOpStatement => node,
 
                 _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
             };
@@ -51,22 +52,37 @@ namespace PHPSharp.Binding
                 BoundStatement oldStatement = node.Statements[i];
                 BoundStatement newStatement = RewriteStatement(oldStatement);
 
-                if (builder is null && newStatement != oldStatement)
+                if (builder is null && (newStatement != oldStatement || ignore(oldStatement)))
                 {
                     // There's at least one different element, so we initialize the builder and copy all ignored lines over.
                     builder = ImmutableArray.CreateBuilder<BoundStatement>(node.Statements.Length);
                     for (int j = 0; j < i; j++)
-                        builder.Add(node.Statements[j]);
+                    {
+                        tryAdd(node.Statements[j]);
+                    }
                 }
 
                 if (builder != null)
-                    builder.Add(newStatement);
+                    tryAdd(newStatement);
             }
 
             if (builder is null)
                 return node;
 
-            return new BoundBlockStatement(builder.MoveToImmutable());
+            return new BoundBlockStatement(builder.ToImmutable());
+
+            void tryAdd(BoundStatement statement)
+            {
+                if (!ignore(statement))
+                {
+                    builder.Add(statement);
+                }
+            }
+
+            static bool ignore(BoundStatement statement)
+            {
+                return statement.Kind == BoundNodeKind.NoOpStatement;
+            }
         }
 
         protected virtual BoundStatement RewriteVariableDeclarationStatement(BoundVariableDeclarationStatement node)
@@ -136,6 +152,16 @@ namespace PHPSharp.Binding
         protected virtual BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
         {
             BoundExpression condition = RewriteExpression(node.Condition);
+            if (condition.Kind == BoundNodeKind.LiteralExpression)
+            {
+                BoundLiteralExpression literalCondition = (BoundLiteralExpression)condition;
+
+                if (node.JumpIfFalse.Equals(literalCondition.Value))
+                    return BoundNoOpStatement.Instance;
+                else
+                    return new BoundGotoStatement(node.Label);
+            }
+
             if (condition == node.Condition)
                 return node;
 
@@ -166,6 +192,7 @@ namespace PHPSharp.Binding
                 BoundNodeKind.UnaryExpression => RewriteUnaryExpression((BoundUnaryExpression)node),
                 BoundNodeKind.BinaryExpression => RewriteBinaryExpression((BoundBinaryExpression)node),
                 BoundNodeKind.CallExpression => RewriteCallExpression((BoundCallExpression)node),
+                BoundNodeKind.ExplicitCastExpression => RewriteExplicitCaseExpression((BoundExplicitCastExpression)node),
 
                 _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
             };
@@ -193,6 +220,17 @@ namespace PHPSharp.Binding
         protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node)
         {
             BoundExpression operand = RewriteExpression(node.Operand);
+            if (operand.Kind == BoundNodeKind.LiteralExpression)
+            {
+                BoundLiteralExpression literalOperand = (BoundLiteralExpression)node.Operand;
+
+                var value = LiteralEvaluator.EvaluateUnaryExpression(node.Op, literalOperand.Value);
+                if (value == literalOperand.Value)
+                    return literalOperand;
+
+                return new BoundLiteralExpression(value);
+            }
+
             if (operand == node.Operand)
                 return node;
 
@@ -203,6 +241,20 @@ namespace PHPSharp.Binding
         {
             BoundExpression left = RewriteExpression(node.Left);
             BoundExpression right = RewriteExpression(node.Right);
+
+            if (left.Kind == BoundNodeKind.LiteralExpression && right.Kind == BoundNodeKind.LiteralExpression)
+            {
+                BoundLiteralExpression literalLeft = (BoundLiteralExpression)left;
+                BoundLiteralExpression literalRight = (BoundLiteralExpression)right;
+
+                var value = LiteralEvaluator.EvaluateBinaryExpression(node.Op, literalLeft.Value, literalRight.Value);
+                if (value == literalLeft.Value)
+                    return literalLeft;
+                else if (value == literalRight.Value)
+                    return literalRight;
+
+                return new BoundLiteralExpression(value);
+            }
 
             if (left == node.Left && right == node.Right)
                 return node;
@@ -234,6 +286,23 @@ namespace PHPSharp.Binding
                 return node;
 
             return new BoundCallExpression(node.Method, builder.MoveToImmutable());
+        }
+
+        protected virtual BoundExpression RewriteExplicitCaseExpression(BoundExplicitCastExpression node)
+        {
+            BoundExpression expression = RewriteExpression(node.Expression);
+            if (expression.Kind == BoundNodeKind.LiteralExpression)
+            {
+                BoundLiteralExpression literalExpression = (BoundLiteralExpression)expression;
+                var value = LiteralEvaluator.EvaluateExplicitCastExpression(node.Type, literalExpression.Value);
+
+                return new BoundLiteralExpression(value);
+            }
+
+            if (expression == node.Expression)
+                return node;
+
+            return new BoundExplicitCastExpression(node.Type, expression);
         }
 
         #endregion RewriteExpression

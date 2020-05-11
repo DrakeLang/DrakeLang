@@ -83,9 +83,119 @@ namespace PHPSharp.Syntax
             }
         }
 
-        public static SyntaxKind GetKeywordKind(string word)
+        /// <summary>
+        /// Returns a value indicating if the given syntax kind is an assignment operator (=, +=, |=).
+        /// </summary>
+        public static bool IsAssignmentOperator(this SyntaxKind kind)
         {
-            return word switch
+            switch (kind)
+            {
+                case SyntaxKind.EqualsToken:
+                case SyntaxKind.PlusEqualsToken:
+                case SyntaxKind.MinusEqualsToken:
+                case SyntaxKind.StarEqualsToken:
+                case SyntaxKind.SlashEqualsToken:
+                case SyntaxKind.AmpersandEqualsToken:
+                case SyntaxKind.PipeEqualsToken:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns a value indicating if the given syntax kind is an unary operator (+, -, ++, --, !).
+        /// </summary>
+        public static bool IsUnaryOperator(this SyntaxKind kind)
+        {
+            switch (kind)
+            {
+                case SyntaxKind.PlusToken:
+                case SyntaxKind.PlusPlusToken:
+                case SyntaxKind.MinusToken:
+                case SyntaxKind.MinusMinusToken:
+                case SyntaxKind.BangToken:
+                case SyntaxKind.TildeToken:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        public static bool IsTypeKeyword(this SyntaxKind kind)
+        {
+            switch (kind)
+            {
+                case SyntaxKind.BoolKeyword:
+                case SyntaxKind.IntKeyword:
+                case SyntaxKind.FloatKeyword:
+                case SyntaxKind.StringKeyword:
+                case SyntaxKind.VarKeyword:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        public static string? GetText(this SyntaxKind kind) => kind switch
+        {
+            SyntaxKind.PlusToken => "+",
+            SyntaxKind.PlusPlusToken => "++",
+            SyntaxKind.PlusEqualsToken => "+=",
+            SyntaxKind.MinusToken => "-",
+            SyntaxKind.MinusMinusToken => "--",
+            SyntaxKind.MinusEqualsToken => "-=",
+            SyntaxKind.StarToken => "*",
+            SyntaxKind.StarEqualsToken => "*=",
+            SyntaxKind.SlashToken => "/",
+            SyntaxKind.SlashEqualsToken => "/=",
+            SyntaxKind.PercentToken => "%",
+            SyntaxKind.BangToken => "!",
+            SyntaxKind.BangEqualsToken => "!=",
+            SyntaxKind.EqualsToken => "=",
+            SyntaxKind.TildeToken => "~",
+            SyntaxKind.HatToken => "^",
+            SyntaxKind.AmpersandToken => "&",
+            SyntaxKind.AmpersandAmpersandToken => "&&",
+            SyntaxKind.AmpersandEqualsToken => "&=",
+            SyntaxKind.PipeToken => "|",
+            SyntaxKind.PipePipeToken => "||",
+            SyntaxKind.PipeEqualsToken => "|=",
+            SyntaxKind.EqualsEqualsToken => "==",
+            SyntaxKind.LessToken => "<",
+            SyntaxKind.LessOrEqualsToken => "<=",
+            SyntaxKind.GreaterToken => ">",
+            SyntaxKind.GreaterOrEqualsToken => ">=",
+            SyntaxKind.OpenParenthesisToken => "(",
+            SyntaxKind.CloseParenthesisToken => ")",
+            SyntaxKind.OpenBraceToken => "{",
+            SyntaxKind.CloseBraceToken => "}",
+            SyntaxKind.CommaToken => ",",
+            SyntaxKind.SemicolonToken => ";",
+
+            SyntaxKind.BoolKeyword => "bool",
+            SyntaxKind.IntKeyword => "int",
+            SyntaxKind.FloatKeyword => "float",
+            SyntaxKind.StringKeyword => "string",
+            SyntaxKind.VarKeyword => "var",
+            SyntaxKind.TrueKeyword => "true",
+            SyntaxKind.FalseKeyword => "false",
+            SyntaxKind.IfKeyword => "if",
+            SyntaxKind.ElseKeyword => "else",
+            SyntaxKind.WhileKeyword => "while",
+            SyntaxKind.ForKeyword => "for",
+            SyntaxKind.TypeofKeyword => "typeof",
+            SyntaxKind.NameofKeyword => "nameof",
+
+            _ => null,
+        };
+
+        public static bool TryGetKeywordKind(string word, out SyntaxKind keywordKind)
+        {
+            keywordKind = word switch
             {
                 "bool" => SyntaxKind.BoolKeyword,
                 "int" => SyntaxKind.IntKeyword,
@@ -95,6 +205,7 @@ namespace PHPSharp.Syntax
 
                 "true" => SyntaxKind.TrueKeyword,
                 "false" => SyntaxKind.FalseKeyword,
+
                 "if" => SyntaxKind.IfKeyword,
                 "else" => SyntaxKind.ElseKeyword,
                 "while" => SyntaxKind.WhileKeyword,
@@ -103,59 +214,9 @@ namespace PHPSharp.Syntax
                 "typeof" => SyntaxKind.TypeofKeyword,
                 "nameof" => SyntaxKind.NameofKeyword,
 
-                _ => SyntaxKind.IdentifierToken,
+                _ => SyntaxKind.BadToken,
             };
-        }
-
-        /// <summary>
-        /// Returns a value indicating if the given syntax kind is an assignment operator (=, +=, |=).
-        /// </summary>
-        public static bool GetKindIsAssignmentOperator(SyntaxKind kind)
-        {
-            return kind switch
-            {
-                SyntaxKind.PlusEqualsToken => true,
-                SyntaxKind.MinusEqualsToken => true,
-                SyntaxKind.StarEqualsToken => true,
-                SyntaxKind.SlashEqualsToken => true,
-                SyntaxKind.EqualsToken => true,
-                SyntaxKind.AmpersandEqualsToken => true,
-                SyntaxKind.PipeEqualsToken => true,
-
-                _ => false,
-            };
-        }
-
-        /// <summary>
-        /// Returns a value indicating if the given syntax kind is an unary operator (+, -, ++, --, !).
-        /// </summary>
-        public static bool GetKindIsUnaryOperator(SyntaxKind kind)
-        {
-            return kind switch
-            {
-                SyntaxKind.PlusToken => true,
-                SyntaxKind.PlusPlusToken => true,
-                SyntaxKind.MinusToken => true,
-                SyntaxKind.MinusMinusToken => true,
-                SyntaxKind.BangToken => true,
-                SyntaxKind.TildeToken => true,
-
-                _ => false,
-            };
-        }
-
-        public static bool GetKindIsTypeKeyword(SyntaxKind kind)
-        {
-            return kind switch
-            {
-                SyntaxKind.BoolKeyword => true,
-                SyntaxKind.IntKeyword => true,
-                SyntaxKind.FloatKeyword => true,
-                SyntaxKind.StringKeyword => true,
-                SyntaxKind.VarKeyword => true,
-
-                _ => false,
-            };
+            return keywordKind != SyntaxKind.BadToken;
         }
 
         public static IEnumerable<SyntaxKind> GetUnaryOperatorKinds()
@@ -163,7 +224,7 @@ namespace PHPSharp.Syntax
             SyntaxKind[] kinds = (SyntaxKind[])Enum.GetValues(typeof(SyntaxKind));
             foreach (SyntaxKind kind in kinds)
             {
-                if (GetUnaryOperatorPrecedence(kind) > 0)
+                if (kind.GetUnaryOperatorPrecedence() > 0)
                     yield return kind;
             }
         }
@@ -173,65 +234,9 @@ namespace PHPSharp.Syntax
             SyntaxKind[] kinds = (SyntaxKind[])Enum.GetValues(typeof(SyntaxKind));
             foreach (SyntaxKind kind in kinds)
             {
-                if (GetBinaryOperatorPrecedence(kind) > 0)
+                if (kind.GetBinaryOperatorPrecedence() > 0)
                     yield return kind;
             }
-        }
-
-        public static string? GetText(SyntaxKind kind)
-        {
-            return kind switch
-            {
-                SyntaxKind.PlusToken => "+",
-                SyntaxKind.PlusPlusToken => "++",
-                SyntaxKind.PlusEqualsToken => "+=",
-                SyntaxKind.MinusToken => "-",
-                SyntaxKind.MinusMinusToken => "--",
-                SyntaxKind.MinusEqualsToken => "-=",
-                SyntaxKind.StarToken => "*",
-                SyntaxKind.StarEqualsToken => "*=",
-                SyntaxKind.SlashToken => "/",
-                SyntaxKind.SlashEqualsToken => "/=",
-                SyntaxKind.PercentToken => "%",
-                SyntaxKind.BangToken => "!",
-                SyntaxKind.BangEqualsToken => "!=",
-                SyntaxKind.EqualsToken => "=",
-                SyntaxKind.TildeToken => "~",
-                SyntaxKind.HatToken => "^",
-                SyntaxKind.AmpersandToken => "&",
-                SyntaxKind.AmpersandAmpersandToken => "&&",
-                SyntaxKind.AmpersandEqualsToken => "&=",
-                SyntaxKind.PipeToken => "|",
-                SyntaxKind.PipePipeToken => "||",
-                SyntaxKind.PipeEqualsToken => "|=",
-                SyntaxKind.EqualsEqualsToken => "==",
-                SyntaxKind.LessToken => "<",
-                SyntaxKind.LessOrEqualsToken => "<=",
-                SyntaxKind.GreaterToken => ">",
-                SyntaxKind.GreaterOrEqualsToken => ">=",
-                SyntaxKind.OpenParenthesisToken => "(",
-                SyntaxKind.CloseParenthesisToken => ")",
-                SyntaxKind.OpenBraceToken => "{",
-                SyntaxKind.CloseBraceToken => "}",
-                SyntaxKind.CommaToken => ",",
-                SyntaxKind.SemicolonToken => ";",
-
-                SyntaxKind.BoolKeyword => "bool",
-                SyntaxKind.IntKeyword => "int",
-                SyntaxKind.FloatKeyword => "float",
-                SyntaxKind.StringKeyword => "string",
-                SyntaxKind.VarKeyword => "var",
-                SyntaxKind.TrueKeyword => "true",
-                SyntaxKind.FalseKeyword => "false",
-                SyntaxKind.IfKeyword => "if",
-                SyntaxKind.ElseKeyword => "else",
-                SyntaxKind.WhileKeyword => "while",
-                SyntaxKind.ForKeyword => "for",
-                SyntaxKind.TypeofKeyword => "typeof",
-                SyntaxKind.NameofKeyword => "nameof",
-
-                _ => null,
-            };
         }
     }
 }

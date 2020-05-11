@@ -18,7 +18,6 @@
 
 using PHPSharp.Text;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 
 namespace PHPSharp.Syntax
@@ -28,12 +27,10 @@ namespace PHPSharp.Syntax
         private SyntaxTree(SourceText text)
         {
             Parser parser = new Parser(text);
-            CompilationUnitSyntax root = parser.ParseCompilationUnit();
-            ImmutableArray<Diagnostic> diagnostics = parser.Diagnostics.ToImmutableArray();
 
             Text = text;
-            Diagnostics = diagnostics;
-            Root = root;
+            Root = parser.ParseCompilationUnit();
+            Diagnostics = parser.GetDiagnostics();
         }
 
         #region Properties

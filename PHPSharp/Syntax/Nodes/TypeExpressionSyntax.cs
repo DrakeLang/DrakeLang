@@ -16,35 +16,23 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using PHPSharp.Syntax;
-using System;
 using System.Collections.Generic;
-using Xunit;
 
-namespace PHPSharp.Tests.Syntax
+namespace PHPSharp.Syntax
 {
-    public class SyntaxFactsTests
+    public sealed class TypeExpressionSyntax : ExpressionSyntax
     {
-        [Theory]
-        [MemberData(nameof(GetSyntaxKindData))]
-        public void SyntaxFact_GetText_RoundTrips(SyntaxKind kind)
+        public TypeExpressionSyntax(SyntaxToken typeIdentifier)
         {
-            string? text = kind.GetText();
-            if (text is null)
-                return;
-
-            IEnumerable<SyntaxToken> tokens = SyntaxTree.ParseTokens(text);
-            SyntaxToken token = Assert.Single(tokens);
-
-            Assert.Equal(kind, token.Kind);
-            Assert.Equal(text, token.Text);
+            TypeIdentifier = typeIdentifier;
         }
 
-        public static IEnumerable<object[]> GetSyntaxKindData()
+        public override SyntaxKind Kind => SyntaxKind.TypeExpression;
+        public SyntaxToken TypeIdentifier { get; }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
         {
-            SyntaxKind[] kinds = (SyntaxKind[])Enum.GetValues(typeof(SyntaxKind));
-            foreach (SyntaxKind kind in kinds)
-                yield return new object[] { kind };
+            yield return TypeIdentifier;
         }
     }
 }

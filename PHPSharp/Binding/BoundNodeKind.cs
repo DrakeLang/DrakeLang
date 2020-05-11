@@ -21,6 +21,7 @@ namespace PHPSharp.Binding
     public enum BoundNodeKind
     {
         // Statements
+
         BlockStatement,
         VariableDeclarationStatement,
         IfStatement,
@@ -29,9 +30,11 @@ namespace PHPSharp.Binding
         LabelStatement,
         GotoStatement,
         ConditionalGotoStatement,
+        NoOpStatement,
         ExpressionStatement,
 
         // Expressions
+
         ErrorExpression,
         LiteralExpression,
         VariableExpression,
@@ -39,5 +42,6 @@ namespace PHPSharp.Binding
         UnaryExpression,
         BinaryExpression,
         CallExpression,
+        ExplicitCastExpression,
     }
 }

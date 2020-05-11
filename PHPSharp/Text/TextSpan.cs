@@ -70,24 +70,11 @@ namespace PHPSharp.Text
                    Length == other.Length;
         }
 
-        public override int GetHashCode()
-        {
-            int hash = 7;
-            hash = (hash * 11) + Start.GetHashCode();
-            hash = (hash * 11) + Length.GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(Start, Length);
 
-            return hash;
-        }
+        public static bool operator ==(TextSpan left, TextSpan right) => left.Equals(right);
 
-        public static bool operator ==(TextSpan left, TextSpan right)
-        {
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(TextSpan left, TextSpan right)
-        {
-            return !(left == right);
-        }
+        public static bool operator !=(TextSpan left, TextSpan right) => !(left == right);
 
         #endregion Operators
     }

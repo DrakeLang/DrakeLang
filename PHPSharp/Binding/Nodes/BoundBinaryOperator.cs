@@ -18,6 +18,7 @@
 
 using PHPSharp.Symbols;
 using PHPSharp.Syntax;
+using System.Linq;
 
 namespace PHPSharp.Binding
 {
@@ -56,24 +57,12 @@ namespace PHPSharp.Binding
 
         public static BoundBinaryOperator? Bind(SyntaxKind syntaxKind, TypeSymbol leftType, TypeSymbol rightType)
         {
-            foreach (BoundBinaryOperator op in _operators)
-            {
-                if (op.SyntaxKind == syntaxKind && op.LeftType == leftType && op.RightType == rightType)
-                    return op;
-            }
-
-            return null;
+            return _operators.SingleOrDefault(op => op.SyntaxKind == syntaxKind && op.LeftType == leftType && op.RightType == rightType);
         }
 
         public static BoundBinaryOperator? Bind(BoundBinaryOperatorKind operatorKind, TypeSymbol leftType, TypeSymbol rightType)
         {
-            foreach (BoundBinaryOperator op in _operators)
-            {
-                if (op.Kind == operatorKind && op.LeftType == leftType && op.RightType == rightType)
-                    return op;
-            }
-
-            return null;
+            return _operators.SingleOrDefault(op => op.Kind == operatorKind && op.LeftType == leftType && op.RightType == rightType);
         }
 
         #endregion Public statics
@@ -126,8 +115,8 @@ namespace PHPSharp.Binding
             // String
             new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, TypeSymbol.String),
             new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, TypeSymbol.String, TypeSymbol.Boolean, TypeSymbol.String),
-            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, TypeSymbol.String, TypeSymbol.Int, TypeSymbol.String),
             new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, TypeSymbol.Boolean, TypeSymbol.String, TypeSymbol.String),
+            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, TypeSymbol.String, TypeSymbol.Int, TypeSymbol.String),
             new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, TypeSymbol.Int, TypeSymbol.String, TypeSymbol.String),
 
             new BoundBinaryOperator(SyntaxKind.EqualsEqualsToken, BoundBinaryOperatorKind.Equals, TypeSymbol.String, TypeSymbol.Boolean),

@@ -26,6 +26,8 @@ namespace PHPSharp.Syntax
 {
     internal class Parser
     {
+        private readonly DiagnosticBag _diagnostics = new DiagnosticBag();
+
         private readonly ImmutableArray<SyntaxToken> _tokens;
         private int _position;
 
@@ -50,14 +52,8 @@ namespace PHPSharp.Syntax
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
             _tokens = tokens.ToImmutableArray();
-            Diagnostics.AddRange(lexer.Diagnostics);
+            _diagnostics.AddRange(lexer.GetDiagnostics());
         }
-
-        #region Properties
-
-        public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
-
-        #endregion Properties
 
         #region Private properties
 
@@ -76,13 +72,15 @@ namespace PHPSharp.Syntax
             return new CompilationUnitSyntax(statement, endOfFileToken);
         }
 
+        public ImmutableArray<Diagnostic> GetDiagnostics() => _diagnostics.ToImmutableArray();
+
         #endregion Methods
 
         #region ParseStatement
 
         private StatementSyntax ParseStatement(bool requireSemicolon = true)
         {
-            if (SyntaxFacts.GetKindIsTypeKeyword(Current.Kind))
+            if (Current.Kind.IsTypeKeyword())
                 return ParseVariableDeclarationStatement(requireSemicolon);
 
             return Current.Kind switch
@@ -143,7 +141,7 @@ namespace PHPSharp.Syntax
             StatementSyntax statement = ParseStatement();
 
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
-                Diagnostics.ReportCannotDeclareConditional(statement.Span);
+                _diagnostics.ReportCannotDeclareConditional(statement.Span);
 
             ElseClauseSyntax? elseClause = ParseElseClause();
 
@@ -159,7 +157,7 @@ namespace PHPSharp.Syntax
             StatementSyntax statement = ParseStatement();
 
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
-                Diagnostics.ReportCannotDeclareConditional(statement.Span);
+                _diagnostics.ReportCannotDeclareConditional(statement.Span);
 
             return new ElseClauseSyntax(keyword, statement);
         }
@@ -171,7 +169,7 @@ namespace PHPSharp.Syntax
             StatementSyntax statement = ParseStatement();
 
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
-                Diagnostics.ReportCannotDeclareConditional(statement.Span);
+                _diagnostics.ReportCannotDeclareConditional(statement.Span);
 
             return new WhileStatementSyntax(keyword, condition, statement);
         }
@@ -187,7 +185,7 @@ namespace PHPSharp.Syntax
             if (initStatement.Kind != SyntaxKind.VariableDeclarationStatement &&
                 (initStatement.Kind != SyntaxKind.ExpressionStatement || ((ExpressionStatementSyntax)initStatement).Expression.Kind != SyntaxKind.AssignmentExpression))
             {
-                Diagnostics.ReportDeclarationOrAssignmentOnly(initStatement.Span, initStatement.Kind);
+                _diagnostics.ReportDeclarationOrAssignmentOnly(initStatement.Span, initStatement.Kind);
             }
 
             ExpressionSyntax condition = ParseExpression();
@@ -199,7 +197,7 @@ namespace PHPSharp.Syntax
 
             StatementSyntax statement = ParseStatement();
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
-                Diagnostics.ReportCannotDeclareConditional(statement.Span);
+                _diagnostics.ReportCannotDeclareConditional(statement.Span);
 
             return new ForStatementSyntax(
                 keyword,
@@ -226,7 +224,7 @@ namespace PHPSharp.Syntax
         private ExpressionSyntax ParseExpression(int parentPrecedence = 0)
         {
             ExpressionSyntax left;
-            if (Current.Kind == SyntaxKind.IdentifierToken && SyntaxFacts.GetKindIsAssignmentOperator(LookAhead.Kind))
+            if (Current.Kind == SyntaxKind.IdentifierToken && LookAhead.Kind.IsAssignmentOperator())
             {
                 left = ParseAssignmentExpression();
             }
@@ -246,13 +244,12 @@ namespace PHPSharp.Syntax
             while (true)
             {
                 int precedence = Current.Kind.GetBinaryOperatorPrecedence();
-                if (precedence != 0 && precedence > parentPrecedence)
-                {
-                    SyntaxToken operatorToken = NextToken();
-                    ExpressionSyntax right = ParseExpression(precedence);
-                    left = new BinaryExpressionSyntax(left, operatorToken, right);
-                }
-                else break;
+                if (precedence == 0 || precedence <= parentPrecedence)
+                    break;
+
+                SyntaxToken operatorToken = NextToken();
+                ExpressionSyntax right = ParseExpression(precedence);
+                left = new BinaryExpressionSyntax(left, operatorToken, right);
             }
 
             return left;
@@ -263,7 +260,7 @@ namespace PHPSharp.Syntax
             if (Current.Kind != SyntaxKind.IdentifierToken)
                 return false;
 
-            if (!SyntaxFacts.GetKindIsUnaryOperator(LookAhead.Kind))
+            if (!LookAhead.Kind.IsUnaryOperator())
                 return false;
 
             return LookAhead.Kind == SyntaxKind.PlusPlusToken || LookAhead.Kind == SyntaxKind.MinusMinusToken;
@@ -309,6 +306,7 @@ namespace PHPSharp.Syntax
         {
             return Current.Kind switch
             {
+                SyntaxKind.OpenParenthesisToken when LookAhead.Kind.IsTypeKeyword() => ParseExplicitCastExpression(),
                 SyntaxKind.OpenParenthesisToken => ParseParenthesizedExpression(),
 
                 SyntaxKind.TypeofKeyword => ParseTypeofExpression(),
@@ -321,8 +319,19 @@ namespace PHPSharp.Syntax
                 SyntaxKind.FloatToken => ParseFloatLiteral(),
                 SyntaxKind.StringToken => ParseStringLiteral(),
 
-                _ => ParseNameOrCallExpression(),
+                SyntaxKind.IdentifierToken when LookAhead.Kind == SyntaxKind.OpenParenthesisToken => ParseCallExpression(),
+                _ => ParseNameExpression(),
             };
+        }
+
+        private ExplicitCastExpressionSyntax ParseExplicitCastExpression()
+        {
+            SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            TypeExpressionSyntax typeExpression = ParseTypeExpression();
+            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+            ExpressionSyntax expression = ParseExpression();
+
+            return new ExplicitCastExpressionSyntax(leftParenthesis, typeExpression, rightParenthesis, expression);
         }
 
         private ParenthesizedExpressionSyntax ParseParenthesizedExpression()
@@ -338,7 +347,7 @@ namespace PHPSharp.Syntax
         {
             SyntaxToken typeofKeyword = MatchToken(SyntaxKind.TypeofKeyword);
             SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
-            LiteralExpressionSyntax typeLiteral = ParseTypeLiteral();
+            TypeExpressionSyntax typeLiteral = ParseTypeExpression();
             SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 
             return new TypeofExpressionSyntax(typeofKeyword, leftParenthesis, typeLiteral, rightParenthesis);
@@ -354,19 +363,19 @@ namespace PHPSharp.Syntax
             return new NameofExpressionSyntax(nameofKeyword, leftParenthesis, identifierToken, rightParenthesis);
         }
 
-        private LiteralExpressionSyntax ParseTypeLiteral()
+        private TypeExpressionSyntax ParseTypeExpression()
         {
-            if (!SyntaxFacts.GetKindIsTypeKeyword(Current.Kind))
+            if (!Current.Kind.IsTypeKeyword())
             {
-                Diagnostics.ReportTypeExpected(Current.Span, Current.Kind);
+                _diagnostics.ReportTypeExpected(Current.Span, Current.Kind);
             }
             else if (Current.Kind == SyntaxKind.VarKeyword)
             {
-                Diagnostics.ReportUnexpectedVarKeyword(Current.Span);
+                _diagnostics.ReportUnexpectedVarKeyword(Current.Span);
             }
 
             SyntaxToken typeToken = NextToken();
-            return new LiteralExpressionSyntax(typeToken, typeToken.Text);
+            return new TypeExpressionSyntax(typeToken);
         }
 
         private LiteralExpressionSyntax ParseBooleanLiteral(bool isTrue)
@@ -380,7 +389,7 @@ namespace PHPSharp.Syntax
         {
             SyntaxToken integerToken = MatchToken(SyntaxKind.IntegerToken);
             if (!int.TryParse(integerToken.Text, out int value))
-                Diagnostics.ReportInvalidValue(integerToken.Span, integerToken.Text, TypeSymbol.Int);
+                _diagnostics.ReportInvalidValue(integerToken.Span, integerToken.Text, TypeSymbol.Int);
 
             return new LiteralExpressionSyntax(integerToken, value);
         }
@@ -392,7 +401,7 @@ namespace PHPSharp.Syntax
             // Remove eventual 'f' character.
             string? floatString = floatToken.Text?.Replace("f", "", ignoreCase: false, CultureInfo.InvariantCulture);
             if (!double.TryParse(floatString, out double value))
-                Diagnostics.ReportInvalidValue(floatToken.Span, floatToken.Text, TypeSymbol.Float);
+                _diagnostics.ReportInvalidValue(floatToken.Span, floatToken.Text, TypeSymbol.Float);
 
             return new LiteralExpressionSyntax(floatToken, value);
         }
@@ -401,14 +410,6 @@ namespace PHPSharp.Syntax
         {
             SyntaxToken stringToken = MatchToken(SyntaxKind.StringToken);
             return new LiteralExpressionSyntax(stringToken);
-        }
-
-        private ExpressionSyntax ParseNameOrCallExpression()
-        {
-            if (LookAhead.Kind == SyntaxKind.OpenParenthesisToken)
-                return ParseCallExpression();
-            else
-                return ParseNameExpression();
         }
 
         private CallExpressionSyntax ParseCallExpression()
@@ -457,7 +458,7 @@ namespace PHPSharp.Syntax
         {
             int index = _position + offset;
             if (index >= _tokens.Length)
-                return _tokens[_tokens.Length - 1];
+                return _tokens[^1];
 
             return _tokens[index];
         }
@@ -475,7 +476,7 @@ namespace PHPSharp.Syntax
             if (Current.Kind == kind)
                 return NextToken();
 
-            Diagnostics.ReportUnexpectedToken(Current.Span, Current.Kind, kind);
+            _diagnostics.ReportUnexpectedToken(Current.Span, Current.Kind, kind);
             return new SyntaxToken(kind, Current.Position, null, null);
         }
 

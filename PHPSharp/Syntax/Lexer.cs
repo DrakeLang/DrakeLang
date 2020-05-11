@@ -17,12 +17,14 @@
 //------------------------------------------------------------------------------
 
 using PHPSharp.Text;
+using System.Collections.Immutable;
 using System.Text;
 
 namespace PHPSharp.Syntax
 {
     internal sealed class Lexer
     {
+        private readonly DiagnosticBag _diagnostics = new DiagnosticBag();
         private readonly SourceText _text;
 
         private int _position;
@@ -34,12 +36,6 @@ namespace PHPSharp.Syntax
         {
             _text = text;
         }
-
-        #region Public properties
-
-        public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
-
-        #endregion Public properties
 
         #region Private properties
 
@@ -98,14 +94,14 @@ namespace PHPSharp.Syntax
                             ReadWhitespace();
                         else
                         {
-                            Diagnostics.ReportBadCharacter(_position, Current);
+                            _diagnostics.ReportBadCharacter(_position, Current);
                             Next();
                         }
                         break;
                 }
             }
 
-            string? text = SyntaxFacts.GetText(_kind);
+            string? text = _kind.GetText();
             if (text is null)
             {
                 int length = _position - _start;
@@ -114,6 +110,12 @@ namespace PHPSharp.Syntax
 
             return new SyntaxToken(_kind, _start, text, _value);
         }
+
+        public ImmutableArray<Diagnostic> GetDiagnostics() => _diagnostics.ToImmutableArray();
+
+        #endregion Methods
+
+        #region Private methods
 
         private bool TryLookupTokenKind(out SyntaxKind syntaxKind)
         {
@@ -314,24 +316,6 @@ namespace PHPSharp.Syntax
             }
         }
 
-        #endregion Methods
-
-        #region Private methods
-
-        private char Peek(int offset)
-        {
-            int index = _position + offset;
-            if (index >= _text.Length)
-                return '\0';
-
-            return _text[index];
-        }
-
-        private void Next()
-        {
-            _position++;
-        }
-
         private void ReadString()
         {
             // Skip quote start.
@@ -349,7 +333,7 @@ namespace PHPSharp.Syntax
                     case '\r':
                     case '\n':
                         TextSpan span = new TextSpan(_start, 1);
-                        Diagnostics.ReportUnterminatedString(span);
+                        _diagnostics.ReportUnterminatedString(span);
                         done = true;
                         break;
 
@@ -394,7 +378,7 @@ namespace PHPSharp.Syntax
 
         private void ReadNumberToken()
         {
-            // Keep reading digits as long as their available,
+            // Keep reading digits as long as they're available,
             // as well as a single decimal separator *if* the following char is a digit as well.
             bool isFloat = false;
             while (char.IsDigit(Current) || (!isFloat && Current == '.' && char.IsDigit(LookAhead)))
@@ -428,9 +412,30 @@ namespace PHPSharp.Syntax
             int length = _position - _start;
             string word = _text.ToString(_start, length);
 
-            _kind = SyntaxFacts.GetKeywordKind(word);
+            if (!SyntaxFacts.TryGetKeywordKind(word, out _kind))
+            {
+                _kind = SyntaxKind.IdentifierToken;
+            }
         }
 
         #endregion Private methods
+
+        #region Helpers
+
+        private char Peek(int offset)
+        {
+            int index = _position + offset;
+            if (index >= _text.Length)
+                return '\0';
+
+            return _text[index];
+        }
+
+        private void Next()
+        {
+            _position++;
+        }
+
+        #endregion Helpers
     }
 }

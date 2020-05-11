@@ -28,11 +28,11 @@ namespace PHPSharp.Tests.Syntax
         [MemberData(nameof(GetBinaryOperatorPairsData))]
         public void Parser_BinaryExpression_HonorsPrecedences(SyntaxKind op1, SyntaxKind op2)
         {
-            int op1Precedence = SyntaxFacts.GetBinaryOperatorPrecedence(op1);
-            int op2Precedence = SyntaxFacts.GetBinaryOperatorPrecedence(op2);
+            int op1Precedence = op1.GetBinaryOperatorPrecedence();
+            int op2Precedence = op2.GetBinaryOperatorPrecedence();
 
-            string? op1Text = SyntaxFacts.GetText(op1);
-            string? op2Text = SyntaxFacts.GetText(op2);
+            string? op1Text = op1.GetText();
+            string? op2Text = op2.GetText();
             string text = $"a {op1Text} b {op2Text} c";
 
             ExpressionSyntax expression = ParseExpression(text);
@@ -73,11 +73,11 @@ namespace PHPSharp.Tests.Syntax
         [MemberData(nameof(GetUnaryOperatorPairsData))]
         public void Parser_UnaryExpression_HonorsPrecedences(SyntaxKind unaryKind, SyntaxKind binaryKind)
         {
-            int unaryPrecedence = SyntaxFacts.GetUnaryOperatorPrecedence(unaryKind);
-            int binaryPrecedence = SyntaxFacts.GetBinaryOperatorPrecedence(binaryKind);
+            int unaryPrecedence = unaryKind.GetUnaryOperatorPrecedence();
+            int binaryPrecedence = binaryKind.GetBinaryOperatorPrecedence();
 
-            string? unaryText = SyntaxFacts.GetText(unaryKind);
-            string? binaryText = SyntaxFacts.GetText(binaryKind);
+            string? unaryText = unaryKind.GetText();
+            string? binaryText = binaryKind.GetText();
             string text = $"{unaryText} a {binaryText} b";
 
             ExpressionSyntax expression = ParseExpression(text);

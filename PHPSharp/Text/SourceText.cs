@@ -30,6 +30,11 @@ namespace PHPSharp.Text
             Lines = ParseLines(this, text);
         }
 
+        public static SourceText From(string text)
+        {
+            return new SourceText(text);
+        }
+
         #region Properties
 
         public ImmutableArray<TextLine> Lines { get; }
@@ -82,9 +87,9 @@ namespace PHPSharp.Text
 
         #endregion Methods
 
-        #region Private methods
+        #region Static methods
 
-        private ImmutableArray<TextLine> ParseLines(SourceText sourceText, string text)
+        private static ImmutableArray<TextLine> ParseLines(SourceText sourceText, string text)
         {
             ImmutableArray<TextLine>.Builder result = ImmutableArray.CreateBuilder<TextLine>();
 
@@ -113,10 +118,6 @@ namespace PHPSharp.Text
             return result.ToImmutable();
         }
 
-        #endregion Private methods
-
-        #region Static methods
-
         private static void AddLine(ImmutableArray<TextLine>.Builder result, SourceText sourceText, int position, int lineStart, int lineBreakWidth)
         {
             int lineLength = position - lineStart;
@@ -141,14 +142,5 @@ namespace PHPSharp.Text
         }
 
         #endregion Static methods
-
-        #region Static constructor
-
-        public static SourceText From(string text)
-        {
-            return new SourceText(text);
-        }
-
-        #endregion Static constructor
     }
 }

@@ -25,12 +25,12 @@ namespace PHPSharp.Syntax
         public TypeofExpressionSyntax(
             SyntaxToken typeofKeyword,
             SyntaxToken leftParenthesis,
-            LiteralExpressionSyntax typeLiteral,
+            TypeExpressionSyntax typeExpression,
             SyntaxToken rightParenthesis)
         {
             TypeofKeyword = typeofKeyword;
             LeftParenthesis = leftParenthesis;
-            TypeLiteral = typeLiteral;
+            TypeExpression = typeExpression;
             RightParenthesis = rightParenthesis;
         }
 
@@ -40,7 +40,7 @@ namespace PHPSharp.Syntax
 
         public SyntaxToken TypeofKeyword { get; }
         public SyntaxToken LeftParenthesis { get; }
-        public LiteralExpressionSyntax TypeLiteral { get; }
+        public TypeExpressionSyntax TypeExpression { get; }
         public SyntaxToken RightParenthesis { get; }
 
         #endregion Properties
@@ -49,7 +49,7 @@ namespace PHPSharp.Syntax
         {
             yield return TypeofKeyword;
             yield return LeftParenthesis;
-            yield return TypeLiteral;
+            yield return TypeExpression;
             yield return RightParenthesis;
         }
     }

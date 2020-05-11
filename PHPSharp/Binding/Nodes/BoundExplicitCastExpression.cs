@@ -16,35 +16,27 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using PHPSharp.Syntax;
-using System;
+using PHPSharp.Symbols;
 using System.Collections.Generic;
-using Xunit;
 
-namespace PHPSharp.Tests.Syntax
+namespace PHPSharp.Binding
 {
-    public class SyntaxFactsTests
+    internal sealed class BoundExplicitCastExpression : BoundExpression
     {
-        [Theory]
-        [MemberData(nameof(GetSyntaxKindData))]
-        public void SyntaxFact_GetText_RoundTrips(SyntaxKind kind)
+        public BoundExplicitCastExpression(TypeSymbol type, BoundExpression expression)
         {
-            string? text = kind.GetText();
-            if (text is null)
-                return;
-
-            IEnumerable<SyntaxToken> tokens = SyntaxTree.ParseTokens(text);
-            SyntaxToken token = Assert.Single(tokens);
-
-            Assert.Equal(kind, token.Kind);
-            Assert.Equal(text, token.Text);
+            Type = type;
+            Expression = expression;
         }
 
-        public static IEnumerable<object[]> GetSyntaxKindData()
+        public override TypeSymbol Type { get; }
+        public BoundExpression Expression { get; }
+
+        public override BoundNodeKind Kind => BoundNodeKind.ExplicitCastExpression;
+
+        public override IEnumerable<BoundNode> GetChildren()
         {
-            SyntaxKind[] kinds = (SyntaxKind[])Enum.GetValues(typeof(SyntaxKind));
-            foreach (SyntaxKind kind in kinds)
-                yield return new object[] { kind };
+            yield return Expression;
         }
     }
 }

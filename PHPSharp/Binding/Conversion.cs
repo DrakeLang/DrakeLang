@@ -46,10 +46,13 @@ namespace PHPSharp.Binding
         public static Conversion Classify(TypeSymbol from, TypeSymbol to)
         {
             if (from == to)
-                return Implicit;
+                return Identity;
+
+            if (from == TypeSymbol.Error || to == TypeSymbol.Error)
+                return Identity;
 
             if (from == TypeSymbol.Int && to == TypeSymbol.Float)
-                return Implicit;
+                return Explicit;
 
             if (from == TypeSymbol.Float && to == TypeSymbol.Int)
                 return Explicit;

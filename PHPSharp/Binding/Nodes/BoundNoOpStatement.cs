@@ -16,35 +16,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using PHPSharp.Syntax;
-using System;
 using System.Collections.Generic;
-using Xunit;
+using System.Linq;
 
-namespace PHPSharp.Tests.Syntax
+namespace PHPSharp.Binding
 {
-    public class SyntaxFactsTests
+    internal sealed class BoundNoOpStatement : BoundStatement
     {
-        [Theory]
-        [MemberData(nameof(GetSyntaxKindData))]
-        public void SyntaxFact_GetText_RoundTrips(SyntaxKind kind)
+        public static BoundNoOpStatement Instance { get; } = new BoundNoOpStatement();
+
+        private BoundNoOpStatement()
         {
-            string? text = kind.GetText();
-            if (text is null)
-                return;
-
-            IEnumerable<SyntaxToken> tokens = SyntaxTree.ParseTokens(text);
-            SyntaxToken token = Assert.Single(tokens);
-
-            Assert.Equal(kind, token.Kind);
-            Assert.Equal(text, token.Text);
         }
 
-        public static IEnumerable<object[]> GetSyntaxKindData()
-        {
-            SyntaxKind[] kinds = (SyntaxKind[])Enum.GetValues(typeof(SyntaxKind));
-            foreach (SyntaxKind kind in kinds)
-                yield return new object[] { kind };
-        }
+        public override BoundNodeKind Kind => BoundNodeKind.NoOpStatement;
+
+        public override IEnumerable<BoundNode> GetChildren() => Enumerable.Empty<BoundNode>();
     }
 }

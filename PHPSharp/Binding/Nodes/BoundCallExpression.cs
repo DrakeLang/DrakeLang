@@ -22,15 +22,6 @@ using System.Collections.Immutable;
 
 namespace PHPSharp.Binding
 {
-    internal abstract class BoundExpression : BoundNode
-    {
-        protected BoundExpression()
-        {
-        }
-
-        public abstract TypeSymbol Type { get; }
-    }
-
     internal sealed class BoundCallExpression : BoundExpression
     {
         public BoundCallExpression(MethodSymbol method, ImmutableArray<BoundExpression> arguments)
