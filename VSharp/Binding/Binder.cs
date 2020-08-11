@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using VSharp.Symbols;
 using VSharp.Syntax;
 using VSharp.Text;
@@ -90,6 +91,12 @@ namespace VSharp.Binding
 
         private BoundBlockStatement BindStatements(ImmutableArray<StatementSyntax> statements)
         {
+            // Declare all methods in scope first.
+            foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.MethodDeclarationStatement))
+            {
+                DeclareMethod((MethodDeclarationStatementSyntax)statement);
+            }
+
             var builder = ImmutableArray.CreateBuilder<BoundStatement>();
             foreach (var statement in statements)
             {
@@ -116,6 +123,7 @@ namespace VSharp.Binding
             {
                 SyntaxKind.BlockStatement => BindBlockStatement((BlockStatementSyntax)syntax),
                 SyntaxKind.VariableDeclarationStatement => BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax),
+                SyntaxKind.MethodDeclarationStatement => BindMethodDeclarationStatement((MethodDeclarationStatementSyntax)syntax),
                 SyntaxKind.IfStatement => BindIfStatement((IfStatementSyntax)syntax),
                 SyntaxKind.WhileStatement => BindWhileStatement((WhileStatementSyntax)syntax),
                 SyntaxKind.ForStatement => BindForStatement((ForStatementSyntax)syntax),
@@ -172,6 +180,11 @@ namespace VSharp.Binding
                 Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
 
             return new BoundVariableDeclarationStatement(variable, initializer);
+        }
+
+        private BoundStatement BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax)
+        {
+            return new BoundMethodDeclarationStatement();
         }
 
         private BoundStatement BindIfStatement(IfStatementSyntax syntax)
@@ -457,6 +470,17 @@ namespace VSharp.Binding
             }
 
             return true;
+        }
+
+        private void DeclareMethod(MethodDeclarationStatementSyntax syntax)
+        {
+            string name = syntax.Identifier.Text ?? "?";
+            bool declare = syntax.Identifier.Text != null;
+
+            var method = new MethodSymbol(name, ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void);
+
+            if (declare && !_scope.TryDeclareMethod(method))
+                Diagnostics.ReportMethodAlreadyDeclared(syntax.Identifier.Span, name);
         }
 
         #endregion Helpers

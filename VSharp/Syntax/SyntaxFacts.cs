@@ -197,6 +197,7 @@ namespace VSharp.Syntax
         {
             keywordKind = word switch
             {
+                "def" => SyntaxKind.DefKeyword,
                 "bool" => SyntaxKind.BoolKeyword,
                 "int" => SyntaxKind.IntKeyword,
                 "float" => SyntaxKind.FloatKeyword,

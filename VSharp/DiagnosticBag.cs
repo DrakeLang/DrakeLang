@@ -16,11 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Collections;
+using System.Collections.Generic;
 using VSharp.Symbols;
 using VSharp.Syntax;
 using VSharp.Text;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace VSharp
 {
@@ -119,6 +119,12 @@ namespace VSharp
         public void ReportVariableAlreadyDeclared(TextSpan span, string? name)
         {
             string message = $"Variable '{name}' is already declared.";
+            Report(span, message);
+        }
+
+        public void ReportMethodAlreadyDeclared(TextSpan span, string? name)
+        {
+            string message = $"A method with the name '{name}' is already declared in this scope.";
             Report(span, message);
         }
 

@@ -73,6 +73,7 @@ namespace VSharp.Syntax
         VarKeyword,
         TrueKeyword,
         FalseKeyword,
+        DefKeyword,
         IfKeyword,
         ElseKeyword,
         WhileKeyword,
@@ -89,6 +90,7 @@ namespace VSharp.Syntax
 
         BlockStatement,
         VariableDeclarationStatement,
+        MethodDeclarationStatement,
         IfStatement,
         WhileStatement,
         ForStatement,

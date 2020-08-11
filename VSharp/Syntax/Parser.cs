@@ -99,6 +99,7 @@ namespace VSharp.Syntax
             return Current.Kind switch
             {
                 SyntaxKind.OpenBraceToken => ParseBlockStatement(),
+                SyntaxKind.DefKeyword => ParseMethodDeclarationStatement(),
                 SyntaxKind.IfKeyword => ParseIfStatement(),
                 SyntaxKind.WhileKeyword => ParseWhileStatement(),
                 SyntaxKind.ForKeyword => ParseForStatement(),
@@ -220,6 +221,17 @@ namespace VSharp.Syntax
                 updateStatement,
                 rightParenthesis,
                 statement);
+        }
+
+        private MethodDeclarationStatementSyntax ParseMethodDeclarationStatement()
+        {
+            var defKeyword = MatchToken(SyntaxKind.DefKeyword);
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+            var declaration = ParseBlockStatement();
+
+            return new MethodDeclarationStatementSyntax(defKeyword, identifier, leftParenthesis, rightParenthesis, declaration);
         }
 
         private ExpressionStatementSyntax ParseExpressionStatement(bool requireSemicolon)
@@ -442,6 +454,8 @@ namespace VSharp.Syntax
             while (Current.Kind != SyntaxKind.CloseParenthesisToken &&
                    Current.Kind != SyntaxKind.EndOfFileToken)
             {
+                SyntaxToken currentToken = Current;
+
                 ExpressionSyntax expression = ParseExpression();
                 builder.Add(expression);
 
@@ -452,6 +466,12 @@ namespace VSharp.Syntax
                     var comma = MatchToken(SyntaxKind.CommaToken);
                     builder.Add(comma);
                 }
+
+                // If no tokens were consumed by the parse call,
+                // we should escape the loop. Parse errors will
+                // have already been reported.
+                if (currentToken == Current)
+                    break;
             }
 
             return new SeparatedSyntaxCollection<ExpressionSyntax>(builder.ToImmutable());
