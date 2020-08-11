@@ -199,16 +199,13 @@ namespace VSharp.Binding
             PushScope();
             try
             {
-                var parameterBuilder = ImmutableArray.CreateBuilder<VariableSymbol>(method.Parameters.Length);
                 foreach (var parameter in method.Parameters)
                 {
-                    var variable = new VariableSymbol(parameter.Name, isReadOnly: true, parameter.Type);
-                    parameterBuilder.Add(variable);
-                    _scope.TryDeclareVariable(variable);
+                    _scope.TryDeclareVariable(parameter);
                 }
 
                 var boundDeclaration = BindBlockStatement(syntax.Declaration);
-                return new BoundMethodDeclarationStatement(method, parameterBuilder.MoveToImmutable(), boundDeclaration);
+                return new BoundMethodDeclarationStatement(method, boundDeclaration);
             }
             finally
             {

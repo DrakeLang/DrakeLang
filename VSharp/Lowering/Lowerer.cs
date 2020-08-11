@@ -46,7 +46,7 @@ namespace VSharp.Lowering
         protected override BoundMethodDeclarationStatement RewriteMethodDeclarationStatement(BoundMethodDeclarationStatement node)
         {
             var declaration = Lower_Internal(node.Declaration);
-            return new BoundMethodDeclarationStatement(node.Method, node.Parameters, declaration);
+            return new BoundMethodDeclarationStatement(node.Method, declaration);
         }
 
         protected override BoundStatement RewriteIfStatement(BoundIfStatement node)

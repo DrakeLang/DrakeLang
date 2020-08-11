@@ -216,9 +216,9 @@ namespace VSharp
                 else if (_methods.TryGetValue(node.Method, out var method))
                 {
                     var stackFrame = new Dictionary<VariableSymbol, object>();
-                    for (int i = 0; i < method.Parameters.Length; i++)
+                    for (int i = 0; i < node.Method.Parameters.Length; i++)
                     {
-                        stackFrame[method.Parameters[i]] = EvaluateExpression(node.Arguments[i]);
+                        stackFrame[node.Method.Parameters[i]] = EvaluateExpression(node.Arguments[i]);
                     }
 
                     new Evaluator(_methods).Evaluate(method.Declaration, stackFrame);
