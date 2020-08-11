@@ -183,6 +183,7 @@ namespace VSharp.Syntax
             SyntaxKind.VarKeyword => "var",
             SyntaxKind.TrueKeyword => "true",
             SyntaxKind.FalseKeyword => "false",
+            SyntaxKind.DefKeyword => "def",
             SyntaxKind.IfKeyword => "if",
             SyntaxKind.ElseKeyword => "else",
             SyntaxKind.WhileKeyword => "while",

@@ -31,6 +31,7 @@ namespace VSharp.Binding
             {
                 BoundNodeKind.BlockStatement => RewriteBlockStatement((BoundBlockStatement)node),
                 BoundNodeKind.VariableDeclarationStatement => RewriteVariableDeclarationStatement((BoundVariableDeclarationStatement)node),
+                BoundNodeKind.MethodDeclarationStatement => RewriteMethodDeclarationStatement((BoundMethodDeclarationStatement)node),
                 BoundNodeKind.IfStatement => RewriteIfStatement((BoundIfStatement)node),
                 BoundNodeKind.WhileStatement => RewriteWhileStatement((BoundWhileStatement)node),
                 BoundNodeKind.ForStatement => RewriteForStatement((BoundForStatement)node),
@@ -46,36 +47,60 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteBlockStatement(BoundBlockStatement node)
         {
-            ImmutableArray<BoundStatement>.Builder? builder = null;
+            // Rewrite method declarations.
+            ImmutableArray<BoundMethodDeclarationStatement>.Builder? methodDeclarationBuilder = null;
+            for (int i = 0; i < node.MethodDeclarations.Length; i++)
+            {
+                var oldDeclaration = node.MethodDeclarations[i];
+                var newDeclaration = RewriteMethodDeclarationStatement(oldDeclaration);
+
+                if (methodDeclarationBuilder is null && newDeclaration != oldDeclaration)
+                {
+                    // There's at least one different element, so we initialize the builder and copy all ignored lines over.
+                    methodDeclarationBuilder = ImmutableArray.CreateBuilder<BoundMethodDeclarationStatement>(node.MethodDeclarations.Length);
+                    for (int j = 0; j < i; j++)
+                    {
+                        methodDeclarationBuilder.Add(node.MethodDeclarations[i]);
+                    }
+                }
+
+                if (methodDeclarationBuilder != null)
+                    methodDeclarationBuilder.Add(newDeclaration);
+            }
+
+            // Rewrite statements.
+            ImmutableArray<BoundStatement>.Builder? statementBuilder = null;
             for (int i = 0; i < node.Statements.Length; i++)
             {
                 BoundStatement oldStatement = node.Statements[i];
                 BoundStatement newStatement = RewriteStatement(oldStatement);
 
-                if (builder is null && (newStatement != oldStatement || ignore(oldStatement)))
+                if (statementBuilder is null && (newStatement != oldStatement || ignore(oldStatement)))
                 {
                     // There's at least one different element, so we initialize the builder and copy all ignored lines over.
-                    builder = ImmutableArray.CreateBuilder<BoundStatement>(node.Statements.Length);
+                    statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>(node.Statements.Length);
                     for (int j = 0; j < i; j++)
                     {
                         tryAdd(node.Statements[j]);
                     }
                 }
 
-                if (builder != null)
+                if (statementBuilder != null)
                     tryAdd(newStatement);
             }
 
-            if (builder is null)
+            if (methodDeclarationBuilder is null && statementBuilder is null)
                 return node;
 
-            return new BoundBlockStatement(builder.ToImmutable());
+            var statements = statementBuilder?.ToImmutable() ?? node.Statements;
+            var methodDeclarations = methodDeclarationBuilder?.MoveToImmutable() ?? node.MethodDeclarations;
+            return new BoundBlockStatement(statements, methodDeclarations);
 
             void tryAdd(BoundStatement statement)
             {
                 if (!ignore(statement))
                 {
-                    builder.Add(statement);
+                    statementBuilder.Add(statement);
                 }
             }
 
@@ -92,6 +117,20 @@ namespace VSharp.Binding
                 return node;
 
             return new BoundVariableDeclarationStatement(node.Variable, initializer);
+        }
+
+        protected virtual BoundMethodDeclarationStatement RewriteMethodDeclarationStatement(BoundMethodDeclarationStatement node)
+        {
+            var declaration = RewriteBlockStatement(node.Declaration);
+            if (declaration is BoundBlockStatement blockStatement)
+            {
+                if (declaration == node.Declaration)
+                    return node;
+                else
+                    return new BoundMethodDeclarationStatement(node.Method, blockStatement);
+            }
+
+            return new BoundMethodDeclarationStatement(node.Method, new BoundBlockStatement(ImmutableArray.Create(declaration)));
         }
 
         protected virtual BoundStatement RewriteIfStatement(BoundIfStatement node)

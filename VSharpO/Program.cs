@@ -49,18 +49,27 @@ namespace VSharpO
                 Environment.Exit(0);
             };
 
-            Parser.Default.ParseArguments<Options>(args)
-                .WithParsed(o =>
+#pragma warning disable CA1031 // Do not catch general exception types
+            try
+            {
+                Parser.Default.ParseArguments<Options>(args)
+            .WithParsed(o =>
+            {
+                if (!File.Exists(o.Source))
                 {
-                    if (!File.Exists(o.Source))
-                    {
-                        ConsoleExt.WriteLine($"Source '{o.Source}' does not exist.", ConsoleColor.Red);
-                        return;
-                    }
+                    ConsoleExt.WriteLine($"Source '{o.Source}' does not exist.", ConsoleColor.Red);
+                    return;
+                }
 
-                    var code = File.ReadAllText(o.Source);
-                    Parse(code, o);
-                });
+                var code = File.ReadAllText(o.Source);
+                Parse(code, o);
+            });
+            }
+            catch (Exception ex)
+            {
+                ConsoleExt.WriteLine($"Unhandled exception. " + ex, ConsoleColor.DarkRed);
+            }
+#pragma warning restore CA1031 // Do not catch general exception types
         }
 
         /// <summary>

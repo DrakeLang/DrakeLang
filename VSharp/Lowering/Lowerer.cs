@@ -16,10 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Binding;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using VSharp.Binding;
 
 namespace VSharp.Lowering
 {
@@ -31,13 +31,23 @@ namespace VSharp.Lowering
 
         public static BoundBlockStatement Lower(BoundStatement statement)
         {
-            Lowerer lowerer = new Lowerer();
-            BoundStatement result = lowerer.RewriteStatement(statement);
+            var lowerer = new Lowerer();
+            return lowerer.Lower_Internal(statement);
+        }
 
+        private BoundBlockStatement Lower_Internal(BoundStatement statement)
+        {
+            var result = RewriteStatement(statement);
             return Flatten(result);
         }
 
         #region RewriteStatement
+
+        protected override BoundMethodDeclarationStatement RewriteMethodDeclarationStatement(BoundMethodDeclarationStatement node)
+        {
+            var declaration = Lower_Internal(node.Declaration);
+            return new BoundMethodDeclarationStatement(node.Method, declaration);
+        }
 
         protected override BoundStatement RewriteIfStatement(BoundIfStatement node)
         {
@@ -209,26 +219,45 @@ namespace VSharp.Lowering
 
         private static BoundBlockStatement Flatten(BoundStatement statement)
         {
-            ImmutableArray<BoundStatement>.Builder builder = ImmutableArray.CreateBuilder<BoundStatement>();
+            if (!(statement is BoundBlockStatement))
+                return new BoundBlockStatement(ImmutableArray.Create(statement));
 
-            Stack<BoundStatement> stack = new Stack<BoundStatement>();
+            var methodDeclarationBuilder = ImmutableArray.CreateBuilder<BoundMethodDeclarationStatement>();
+            var statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>();
 
-            stack.Push(statement);
-            while (stack.Count > 0)
+            var statementStack = new Stack<BoundStatement>();
+            statementStack.Push(statement);
+
+            // Remove all block statements.
+            while (statementStack.Count > 0)
             {
-                BoundStatement current = stack.Pop();
+                var current = statementStack.Pop();
                 if (current is BoundBlockStatement block)
                 {
+                    methodDeclarationBuilder.AddRange(block.MethodDeclarations);
                     foreach (var s in block.Statements.Reverse())
-                        stack.Push(s);
+                        statementStack.Push(s);
                 }
                 else
                 {
-                    builder.Add(current);
+                    statementBuilder.Add(current);
                 }
             }
 
-            return new BoundBlockStatement(builder.ToImmutableArray());
+            // Remove all nested method declarations.
+
+            var methodDeclarationStack = new Stack<BoundMethodDeclarationStatement>(methodDeclarationBuilder);
+            while (methodDeclarationStack.Count > 0)
+            {
+                var current = methodDeclarationStack.Pop();
+                foreach (var childDeclaration in current.Declaration.MethodDeclarations)
+                {
+                    methodDeclarationStack.Push(childDeclaration);
+                    methodDeclarationBuilder.Add(childDeclaration);
+                }
+            }
+
+            return new BoundBlockStatement(statementBuilder.ToImmutable(), methodDeclarationBuilder.ToImmutable());
         }
 
         #endregion Helpers

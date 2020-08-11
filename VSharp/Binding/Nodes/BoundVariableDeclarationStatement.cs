@@ -16,8 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Symbols;
 using System.Collections.Generic;
+using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
@@ -41,6 +41,24 @@ namespace VSharp.Binding
         public override IEnumerable<BoundNode> GetChildren()
         {
             yield return Initializer;
+        }
+    }
+
+    internal sealed class BoundMethodDeclarationStatement : BoundStatement
+    {
+        public BoundMethodDeclarationStatement(MethodSymbol method, BoundBlockStatement declaration)
+        {
+            Method = method;
+            Declaration = declaration;
+        }
+
+        public override BoundNodeKind Kind => BoundNodeKind.MethodDeclarationStatement;
+        public MethodSymbol Method { get; }
+        public BoundBlockStatement Declaration { get; }
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            yield return Declaration;
         }
     }
 }

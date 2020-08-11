@@ -24,6 +24,7 @@ namespace VSharp.Binding
 
         BlockStatement,
         VariableDeclarationStatement,
+        MethodDeclarationStatement,
         IfStatement,
         WhileStatement,
         ForStatement,
