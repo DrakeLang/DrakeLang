@@ -212,14 +212,20 @@ namespace VSharp
                 {
                     string message = (string)EvaluateExpression(node.Arguments[0]);
                     Console.WriteLine(message);
-                    return 0; // cannot return null due to nullable reference types being enabled.
                 }
                 else if (_methods.TryGetValue(node.Method, out var method))
                 {
-                    new Evaluator(_methods).Evaluate(method.Declaration, new Dictionary<VariableSymbol, object>());
-                    return 0; // cannot return null due to nullable reference types being enabled.
+                    var stackFrame = new Dictionary<VariableSymbol, object>();
+                    for (int i = 0; i < method.Parameters.Length; i++)
+                    {
+                        stackFrame[method.Parameters[i]] = EvaluateExpression(node.Arguments[i]);
+                    }
+
+                    new Evaluator(_methods).Evaluate(method.Declaration, stackFrame);
                 }
                 else throw new Exception($"Unexpected method '{node.Method}'.");
+
+                return 0; // cannot return null due to nullable reference types being enabled.
             }
 
             public object EvaluateExplicitCastExpression(BoundExplicitCastExpression node)

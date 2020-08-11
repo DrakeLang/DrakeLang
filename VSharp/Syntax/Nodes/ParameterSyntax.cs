@@ -17,30 +17,26 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using VSharp.Symbols;
 
-namespace VSharp.Binding
+namespace VSharp.Syntax
 {
-    internal sealed class BoundVariableDeclarationStatement : BoundStatement
+    public sealed class ParameterSyntax : SyntaxNode
     {
-        public BoundVariableDeclarationStatement(VariableSymbol variable, BoundExpression initializer)
+        public ParameterSyntax(TypeExpressionSyntax typeToken, SyntaxToken identifier)
         {
-            Variable = variable;
-            Initializer = initializer;
+            TypeToken = typeToken;
+            Identifier = identifier;
         }
 
-        #region Properties
+        public override SyntaxKind Kind => SyntaxKind.Parameter;
 
-        public override BoundNodeKind Kind => BoundNodeKind.VariableDeclarationStatement;
+        public TypeExpressionSyntax TypeToken { get; }
+        public SyntaxToken Identifier { get; }
 
-        public VariableSymbol Variable { get; }
-        public BoundExpression Initializer { get; }
-
-        #endregion Properties
-
-        public override IEnumerable<BoundNode> GetChildren()
+        public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return Initializer;
+            yield return TypeToken;
+            yield return Identifier;
         }
     }
 }

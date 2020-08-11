@@ -85,6 +85,7 @@ namespace VSharp.Syntax
 
         CompilationUnit,
         ElseClause,
+        Parameter,
 
         // Statements
 

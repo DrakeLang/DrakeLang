@@ -127,10 +127,10 @@ namespace VSharp.Binding
                 if (declaration == node.Declaration)
                     return node;
                 else
-                    return new BoundMethodDeclarationStatement(node.Method, blockStatement);
+                    return new BoundMethodDeclarationStatement(node.Method, node.Parameters, blockStatement);
             }
 
-            return new BoundMethodDeclarationStatement(node.Method, new BoundBlockStatement(ImmutableArray.Create(declaration)));
+            return new BoundMethodDeclarationStatement(node.Method, node.Parameters, new BoundBlockStatement(ImmutableArray.Create(declaration)));
         }
 
         protected virtual BoundStatement RewriteIfStatement(BoundIfStatement node)

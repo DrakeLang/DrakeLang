@@ -17,30 +17,28 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
-    internal sealed class BoundVariableDeclarationStatement : BoundStatement
+    internal sealed class BoundMethodDeclarationStatement : BoundStatement
     {
-        public BoundVariableDeclarationStatement(VariableSymbol variable, BoundExpression initializer)
+        public BoundMethodDeclarationStatement(MethodSymbol method, ImmutableArray<VariableSymbol> parameters, BoundBlockStatement declaration)
         {
-            Variable = variable;
-            Initializer = initializer;
+            Method = method;
+            Parameters = parameters;
+            Declaration = declaration;
         }
 
-        #region Properties
-
-        public override BoundNodeKind Kind => BoundNodeKind.VariableDeclarationStatement;
-
-        public VariableSymbol Variable { get; }
-        public BoundExpression Initializer { get; }
-
-        #endregion Properties
+        public override BoundNodeKind Kind => BoundNodeKind.MethodDeclarationStatement;
+        public MethodSymbol Method { get; }
+        public ImmutableArray<VariableSymbol> Parameters { get; }
+        public BoundBlockStatement Declaration { get; }
 
         public override IEnumerable<BoundNode> GetChildren()
         {
-            yield return Initializer;
+            yield return Declaration;
         }
     }
 }

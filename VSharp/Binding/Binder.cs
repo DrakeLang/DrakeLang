@@ -197,8 +197,24 @@ namespace VSharp.Binding
             if (!_scope.TryLookupMethod(syntax.Identifier.Text, out var method))
                 throw new Exception($"Failed to resolve symbol for method '{syntax.Identifier.Text}'.");
 
-            var boundDeclaration = BindBlockStatement(syntax.Declaration);
-            return new BoundMethodDeclarationStatement(method, boundDeclaration);
+            PushScope();
+            try
+            {
+                var parameterBuilder = ImmutableArray.CreateBuilder<VariableSymbol>(method.Paramaters.Length);
+                foreach (var parameter in method.Paramaters)
+                {
+                    var variable = new VariableSymbol(parameter.Name, isReadOnly: true, parameter.Type);
+                    parameterBuilder.Add(variable);
+                    _scope.TryDeclareVariable(variable);
+                }
+
+                var boundDeclaration = BindBlockStatement(syntax.Declaration);
+                return new BoundMethodDeclarationStatement(method, parameterBuilder.MoveToImmutable(), boundDeclaration);
+            }
+            finally
+            {
+                PopScope();
+            }
         }
 
         private BoundStatement BindIfStatement(IfStatementSyntax syntax)
@@ -490,11 +506,39 @@ namespace VSharp.Binding
         {
             string name = syntax.Identifier.Text ?? "?";
             bool declare = syntax.Identifier.Text != null;
+            if (!declare)
+                return;
 
-            var method = new MethodSymbol(name, ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void);
+            var parameters = BindParameters(syntax.Parameters);
+            var method = new MethodSymbol(name, parameters, TypeSymbol.Void);
 
-            if (declare && !_scope.TryDeclareMethod(method))
+            if (!_scope.TryDeclareMethod(method))
                 Diagnostics.ReportMethodAlreadyDeclared(syntax.Identifier.Span, name);
+        }
+
+        private ImmutableArray<ParameterSymbol> BindParameters(SeparatedSyntaxCollection<ParameterSyntax> parameters)
+        {
+            var builder = ImmutableArray.CreateBuilder<ParameterSymbol>(parameters.Count);
+            var parameterNames = new HashSet<string>();
+
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                var parameter = BindParameter(parameters[i]);
+                if (!parameterNames.Add(parameter.Name))
+                    Diagnostics.ReportDuplicateParameterName(parameters[i].Identifier.Span, parameter.Name);
+
+                builder.Add(parameter);
+            }
+
+            return builder.MoveToImmutable();
+        }
+
+        private static ParameterSymbol BindParameter(ParameterSyntax parameter)
+        {
+            var name = parameter.Identifier.Text ?? "?";
+            var type = ResolveType(parameter.TypeToken.TypeIdentifier.Kind) ?? TypeSymbol.Error;
+
+            return new ParameterSymbol(name, type);
         }
 
         #endregion Helpers

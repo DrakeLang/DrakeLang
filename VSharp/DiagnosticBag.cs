@@ -122,6 +122,12 @@ namespace VSharp
             Report(span, message);
         }
 
+        internal void ReportDuplicateParameterName(TextSpan span, string name)
+        {
+            string message = $"Duplicate parameter name '{name}'.";
+            Report(span, message);
+        }
+
         public void ReportMethodAlreadyDeclared(TextSpan span, string? name)
         {
             string message = $"A method with the name '{name}' is already declared in this scope.";

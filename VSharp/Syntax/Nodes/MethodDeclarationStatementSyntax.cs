@@ -23,15 +23,18 @@ namespace VSharp.Syntax
     /**
      * Syntax:
      * def methodName() {}
+     * def methodName(type param1) {}
+     * def methodName(type param2, type param2) {}
      */
 
     public sealed class MethodDeclarationStatementSyntax : StatementSyntax
     {
-        public MethodDeclarationStatementSyntax(SyntaxToken defKeyword, SyntaxToken identifier, SyntaxToken leftParenthesis, SyntaxToken rightParenthesis, BlockStatementSyntax declaration)
+        public MethodDeclarationStatementSyntax(SyntaxToken defKeyword, SyntaxToken identifier, SyntaxToken leftParenthesis, SeparatedSyntaxCollection<ParameterSyntax> parameters, SyntaxToken rightParenthesis, BlockStatementSyntax declaration)
         {
             DefKeyword = defKeyword;
             Identifier = identifier;
             LeftParenthesis = leftParenthesis;
+            Parameters = parameters;
             RightParenthesis = rightParenthesis;
             Declaration = declaration;
         }
@@ -41,6 +44,7 @@ namespace VSharp.Syntax
         public SyntaxToken DefKeyword { get; }
         public SyntaxToken Identifier { get; }
         public SyntaxToken LeftParenthesis { get; }
+        public SeparatedSyntaxCollection<ParameterSyntax> Parameters { get; }
         public SyntaxToken RightParenthesis { get; }
         public BlockStatementSyntax Declaration { get; }
 
@@ -49,6 +53,10 @@ namespace VSharp.Syntax
             yield return DefKeyword;
             yield return Identifier;
             yield return LeftParenthesis;
+            foreach (var parameter in Parameters)
+            {
+                yield return parameter;
+            }
             yield return RightParenthesis;
             yield return Declaration;
         }

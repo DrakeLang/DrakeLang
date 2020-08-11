@@ -228,10 +228,49 @@ namespace VSharp.Syntax
             var defKeyword = MatchToken(SyntaxKind.DefKeyword);
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
             var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            var parameters = ParseParameterList();
             var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
             var declaration = ParseBlockStatement();
 
-            return new MethodDeclarationStatementSyntax(defKeyword, identifier, leftParenthesis, rightParenthesis, declaration);
+            return new MethodDeclarationStatementSyntax(defKeyword, identifier, leftParenthesis, parameters, rightParenthesis, declaration);
+        }
+
+        private SeparatedSyntaxCollection<ParameterSyntax> ParseParameterList()
+        {
+            var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
+
+            while (Current.Kind != SyntaxKind.CloseParenthesisToken &&
+                   Current.Kind != SyntaxKind.EndOfFileToken)
+            {
+                var currentToken = Current;
+
+                var parameter = ParseParameter();
+                builder.Add(parameter);
+
+                // Don't expect comma after final argument.
+                if (Current.Kind != SyntaxKind.CloseParenthesisToken &&
+                    Current.Kind != SyntaxKind.EndOfFileToken)
+                {
+                    var comma = MatchToken(SyntaxKind.CommaToken);
+                    builder.Add(comma);
+                }
+
+                // If no tokens were consumed by the parse call,
+                // we should escape the loop. Parse errors will
+                // have already been reported.
+                if (currentToken == Current)
+                    break;
+            }
+
+            return new SeparatedSyntaxCollection<ParameterSyntax>(builder.ToImmutable());
+        }
+
+        private ParameterSyntax ParseParameter()
+        {
+            var type = ParseTypeExpression();
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+
+            return new ParameterSyntax(type, identifier);
         }
 
         private ExpressionStatementSyntax ParseExpressionStatement(bool requireSemicolon)
