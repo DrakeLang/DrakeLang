@@ -303,7 +303,7 @@ namespace VSharp.Binding
 
         private static BoundExpression BindTypeofExpression(TypeofExpressionSyntax syntax)
         {
-            TypeSymbol type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? throw new Exception($"Failed to resolve type kind '{syntax.TypeExpression.TypeIdentifier}'.");
+            var type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? TypeSymbol.Error;
             return new BoundLiteralExpression(type.Name);
         }
 
@@ -413,8 +413,8 @@ namespace VSharp.Binding
 
         private BoundExplicitCastExpression BindExplicitCastExpression(ExplicitCastExpressionSyntax syntax)
         {
-            TypeSymbol type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? throw new Exception($"Failed to resolve type kind '{syntax.TypeExpression.TypeIdentifier}'.");
-            BoundExpression expression = BindExpression(syntax.Expression);
+            var type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? TypeSymbol.Error;
+            var expression = BindExpression(syntax.Expression);
 
             return new BoundExplicitCastExpression(type, expression);
         }
