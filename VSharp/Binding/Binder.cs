@@ -401,7 +401,7 @@ namespace VSharp.Binding
                 BoundExpression argument = boundArguments[i];
                 ParameterSymbol parameter = method.Paramaters[i];
 
-                if (argument.Type != parameter.Type)
+                if (argument.Type != parameter.Type && !argument.Type.IsError() && !parameter.Type.IsError())
                 {
                     Diagnostics.ReportWrongArgumentType(syntax.Span, method.Name, parameter.Name, parameter.Type, argument.Type);
                     return BoundErrorExpression.Instace;
