@@ -16,10 +16,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+using VSharp.Binding;
+using VSharp.Symbols;
+
 namespace VSharp
 {
-    public interface IEvaluator
+    internal interface IEvaluator
     {
-        public object? Evaluate();
+        void Evaluate(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables);
     }
 }

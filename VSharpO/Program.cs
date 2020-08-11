@@ -28,7 +28,7 @@ using VSharp.Text;
 
 namespace VSharpO
 {
-    internal class Options
+    public class Options
     {
         [Option('t', "tree", Default = false, HelpText = "Show the syntax tree")]
         public bool ShowTree { get; set; }
@@ -77,7 +77,7 @@ namespace VSharpO
             EvaluationResult result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
             if (result.Diagnostics.Length == 0)
             {
-                PrintResult(result.Value);
+                ConsoleExt.WriteLine("Program executed successfully", ConsoleColor.Green);
             }
             else
             {
@@ -117,15 +117,6 @@ namespace VSharpO
         }
 
         #region Console helpers
-
-        private static void PrintResult(object? result)
-        {
-            Console.ForegroundColor = ConsoleColor.Magenta;
-
-            Console.WriteLine(result);
-
-            Console.ResetColor();
-        }
 
         private static void PrintTreeToConsole(SyntaxTree tree)
         {

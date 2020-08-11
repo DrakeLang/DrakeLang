@@ -25,26 +25,19 @@ namespace VSharp
 {
     internal sealed class Evaluator : IEvaluator
     {
-        private readonly BoundBlockStatement _root;
-        private readonly Dictionary<VariableSymbol, object> _variables;
-
-        private object? _lastValue;
-
-        public Evaluator(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables)
+        public Evaluator()
         {
-            _root = root;
-            _variables = variables;
         }
 
         #region IEvaluator
 
-        public object? Evaluate()
+        public void Evaluate(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables)
         {
             // Create label-index mapping for goto statements.
             Dictionary<LabelSymbol, int> labelToIndex = new Dictionary<LabelSymbol, int>();
-            for (int i = 0; i < _root.Statements.Length; i++)
+            for (int i = 0; i < root.Statements.Length; i++)
             {
-                if (_root.Statements[i] is BoundLabelStatement l)
+                if (root.Statements[i] is BoundLabelStatement l)
                 {
                     labelToIndex.Add(l.Label, i + 1);
                 }
@@ -52,18 +45,18 @@ namespace VSharp
 
             // Evaluate program.
             int index = 0;
-            while (index < _root.Statements.Length)
+            while (index < root.Statements.Length)
             {
-                BoundStatement s = _root.Statements[index];
+                BoundStatement s = root.Statements[index];
                 switch (s.Kind)
                 {
                     case BoundNodeKind.VariableDeclarationStatement:
-                        EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)s);
+                        EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)s, variables);
                         index++;
                         break;
 
                     case BoundNodeKind.ExpressionStatement:
-                        EvaluateExpressionStatement((BoundExpressionStatement)s);
+                        EvaluateExpressionStatement((BoundExpressionStatement)s, variables);
                         index++;
                         break;
 
@@ -79,7 +72,7 @@ namespace VSharp
 
                     case BoundNodeKind.ConditionalGotoStatement:
                         BoundConditionalGotoStatement conGotoStatement = (BoundConditionalGotoStatement)s;
-                        if (EvaluateConditionalGotoStatement(conGotoStatement))
+                        if (EvaluateConditionalGotoStatement(conGotoStatement, variables))
                             index = labelToIndex[conGotoStatement.Label];
                         else
                             index++;
@@ -93,30 +86,26 @@ namespace VSharp
                         throw new Exception($"Unexpected node '{s.Kind}'.");
                 }
             }
-
-            return _lastValue;
         }
 
         #endregion IEvaluator
 
         #region EvaluateStatement
 
-        private void EvaluateVariableDeclarationStatement(BoundVariableDeclarationStatement node)
+        private static void EvaluateVariableDeclarationStatement(BoundVariableDeclarationStatement node, Dictionary<VariableSymbol, object> variables)
         {
-            object value = EvaluateExpression(node.Initializer);
-            _variables[node.Variable] = value;
-
-            _lastValue = value;
+            object value = EvaluateExpression(node.Initializer, variables);
+            variables[node.Variable] = value;
         }
 
-        private void EvaluateExpressionStatement(BoundExpressionStatement node)
+        private static void EvaluateExpressionStatement(BoundExpressionStatement node, Dictionary<VariableSymbol, object> variables)
         {
-            _lastValue = EvaluateExpression(node.Expression);
+            EvaluateExpression(node.Expression, variables);
         }
 
-        private bool EvaluateConditionalGotoStatement(BoundConditionalGotoStatement s)
+        private static bool EvaluateConditionalGotoStatement(BoundConditionalGotoStatement s, Dictionary<VariableSymbol, object> variables)
         {
-            bool condition = (bool)EvaluateExpression(s.Condition);
+            bool condition = (bool)EvaluateExpression(s.Condition, variables);
 
             return condition ^ s.JumpIfFalse;
         }
@@ -125,15 +114,15 @@ namespace VSharp
 
         #region EvaluateExpression
 
-        private object EvaluateExpression(BoundExpression node) => node.Kind switch
+        private static object EvaluateExpression(BoundExpression node, Dictionary<VariableSymbol, object> variables) => node.Kind switch
         {
             BoundNodeKind.LiteralExpression => EvaluateLiteralExpression((BoundLiteralExpression)node),
-            BoundNodeKind.VariableExpression => EvaluateVariableExpression((BoundVariableExpression)node),
-            BoundNodeKind.AssignmentExpression => EvaluateAssignmentExpression((BoundAssignmentExpression)node),
-            BoundNodeKind.UnaryExpression => EvaluateUnaryExpression((BoundUnaryExpression)node),
-            BoundNodeKind.BinaryExpression => EvaluateBinaryExpression((BoundBinaryExpression)node),
-            BoundNodeKind.CallExpression => EvaluateCallExpression((BoundCallExpression)node),
-            BoundNodeKind.ExplicitCastExpression => EvaluateExplicitCastExpression((BoundExplicitCastExpression)node),
+            BoundNodeKind.VariableExpression => EvaluateVariableExpression((BoundVariableExpression)node, variables),
+            BoundNodeKind.AssignmentExpression => EvaluateAssignmentExpression((BoundAssignmentExpression)node, variables),
+            BoundNodeKind.UnaryExpression => EvaluateUnaryExpression((BoundUnaryExpression)node, variables),
+            BoundNodeKind.BinaryExpression => EvaluateBinaryExpression((BoundBinaryExpression)node, variables),
+            BoundNodeKind.CallExpression => EvaluateCallExpression((BoundCallExpression)node, variables),
+            BoundNodeKind.ExplicitCastExpression => EvaluateExplicitCastExpression((BoundExplicitCastExpression)node, variables),
 
             _ => throw new Exception($"Unexpected node '{node.Kind}'."),
         };
@@ -143,20 +132,20 @@ namespace VSharp
             return node.Value;
         }
 
-        private object EvaluateVariableExpression(BoundVariableExpression node)
+        private static object EvaluateVariableExpression(BoundVariableExpression node, Dictionary<VariableSymbol, object> variables)
         {
-            return _variables[node.Variable];
+            return variables[node.Variable];
         }
 
-        private object EvaluateAssignmentExpression(BoundAssignmentExpression node)
+        private static object EvaluateAssignmentExpression(BoundAssignmentExpression node, Dictionary<VariableSymbol, object> variables)
         {
-            object value = EvaluateExpression(node.Expression);
-            _variables[node.Variable] = value;
+            object value = EvaluateExpression(node.Expression, variables);
+            variables[node.Variable] = value;
 
             return value;
         }
 
-        private object EvaluateUnaryExpression(BoundUnaryExpression node)
+        private static object EvaluateUnaryExpression(BoundUnaryExpression node, Dictionary<VariableSymbol, object> variables)
         {
             // Pre- and post increment/decrement.
             if (node.Op.Kind == BoundUnaryOperatorKind.PreDecrement || node.Op.Kind == BoundUnaryOperatorKind.PreIncrement)
@@ -164,43 +153,43 @@ namespace VSharp
                 BoundVariableExpression variableExpression = (BoundVariableExpression)node.Operand;
 
                 if (node.Type == TypeSymbol.Int)
-                    _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
+                    variables[variableExpression.Variable] = (int)variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
                 else
-                    _variables[variableExpression.Variable] = (double)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
+                    variables[variableExpression.Variable] = (double)variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
 
-                return _variables[variableExpression.Variable];
+                return variables[variableExpression.Variable];
             }
             else if (node.Op.Kind == BoundUnaryOperatorKind.PostDecrement || node.Op.Kind == BoundUnaryOperatorKind.PostIncrement)
             {
                 BoundVariableExpression variableExpression = (BoundVariableExpression)node.Operand;
 
-                object value = _variables[variableExpression.Variable];
+                object value = variables[variableExpression.Variable];
                 if (node.Type == TypeSymbol.Int)
                 {
-                    _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PostIncrement ? 1 : -1);
+                    variables[variableExpression.Variable] = (int)variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PostIncrement ? 1 : -1);
                 }
                 else
                 {
-                    _variables[variableExpression.Variable] = (double)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PostIncrement ? 1 : -1);
+                    variables[variableExpression.Variable] = (double)variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PostIncrement ? 1 : -1);
                 }
 
                 return value;
             }
 
             // Other unary operations.
-            object operand = EvaluateExpression(node.Operand);
+            object operand = EvaluateExpression(node.Operand, variables);
             return LiteralEvaluator.EvaluateUnaryExpression(node.Op, operand);
         }
 
-        private object EvaluateBinaryExpression(BoundBinaryExpression node)
+        private static object EvaluateBinaryExpression(BoundBinaryExpression node, Dictionary<VariableSymbol, object> variables)
         {
-            object left = EvaluateExpression(node.Left);
-            object right = EvaluateExpression(node.Right);
+            object left = EvaluateExpression(node.Left, variables);
+            object right = EvaluateExpression(node.Right, variables);
 
             return LiteralEvaluator.EvaluateBinaryExpression(node.Op, left, right);
         }
 
-        private object EvaluateCallExpression(BoundCallExpression node)
+        private static object EvaluateCallExpression(BoundCallExpression node, Dictionary<VariableSymbol, object> variables)
         {
             if (node.Method == BuiltinMethods.Input)
             {
@@ -208,16 +197,16 @@ namespace VSharp
             }
             else if (node.Method == BuiltinMethods.Print)
             {
-                string message = (string)EvaluateExpression(node.Arguments[0]);
+                string message = (string)EvaluateExpression(node.Arguments[0], variables);
                 Console.WriteLine(message);
                 return 0; // cannot return null due to nullable reference types being enabled.
             }
             else throw new Exception($"Unexpected method '{node.Method}'.");
         }
 
-        private object EvaluateExplicitCastExpression(BoundExplicitCastExpression node)
+        private static object EvaluateExplicitCastExpression(BoundExplicitCastExpression node, Dictionary<VariableSymbol, object> variables)
         {
-            var value = EvaluateExpression(node.Expression);
+            var value = EvaluateExpression(node.Expression, variables);
             return LiteralEvaluator.EvaluateExplicitCastExpression(node.Type, value);
         }
 

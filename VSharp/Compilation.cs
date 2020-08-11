@@ -73,14 +73,13 @@ namespace VSharp
         {
             IEnumerable<Diagnostic> diagnostics = SyntaxTree.Diagnostics.Concat(GlobalScope.Diagnostics);
             if (diagnostics.Any())
-                return new EvaluationResult(diagnostics.ToImmutableArray(), null);
+                return new EvaluationResult(diagnostics.ToImmutableArray());
 
             BoundBlockStatement statement = GetStatement();
-            IEvaluator evaluator = new Evaluator(statement, variables);
+            IEvaluator evaluator = new Evaluator();
 
-            object? result = evaluator.Evaluate();
-
-            return new EvaluationResult(ImmutableArray<Diagnostic>.Empty, result);
+            evaluator.Evaluate(statement, variables);
+            return new EvaluationResult(ImmutableArray<Diagnostic>.Empty);
         }
 
         public void PrintProgram(TextWriter writer)
