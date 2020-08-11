@@ -161,7 +161,7 @@ namespace VSharp
             }
             else if (type == TypeSymbol.Int)
             {
-                return Convert.ToInt16(value, CultureInfo.InvariantCulture);
+                return Convert.ToInt32(value, CultureInfo.InvariantCulture);
             }
             else if (type == TypeSymbol.String)
             {
