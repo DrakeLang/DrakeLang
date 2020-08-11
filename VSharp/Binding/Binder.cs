@@ -238,8 +238,8 @@ namespace VSharp.Binding
             BoundExpression expression = BindExpression(syntax);
 
             if (expression.Type != targetType &&
-                expression.Type != TypeSymbol.Error &&
-                targetType != TypeSymbol.Error)
+                !expression.Type.IsError() &&
+                !targetType.IsError())
             {
                 Diagnostics.ReportCannotConvert(syntax.Span, expression.Type, targetType);
             }
@@ -265,7 +265,7 @@ namespace VSharp.Binding
         {
             BoundExpression boundOperand = BindExpression(syntax.Operand);
 
-            if (boundOperand.Type == TypeSymbol.Error)
+            if (boundOperand.Type.IsError())
                 return BoundErrorExpression.Instace;
 
             BoundUnaryOperator? boundOp = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, syntax.UnaryType, boundOperand.Type);
@@ -283,7 +283,7 @@ namespace VSharp.Binding
             BoundExpression boundLeft = BindExpression(syntax.Left);
             BoundExpression boundRight = BindExpression(syntax.Right);
 
-            if (boundLeft.Type == TypeSymbol.Error || boundRight.Type == TypeSymbol.Error)
+            if (boundLeft.Type.IsError() || boundRight.Type.IsError())
                 return BoundErrorExpression.Instace;
 
             BoundBinaryOperator? boundOp = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
@@ -317,14 +317,14 @@ namespace VSharp.Binding
 
         private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax)
         {
-            if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable) || variable.Type == TypeSymbol.Error)
+            if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable) || variable.Type.IsError())
                 return BoundErrorExpression.Instace;
 
             if (variable.IsReadOnly)
                 Diagnostics.ReportCannotAssignReadOnly(syntax.EqualsToken.Span, variable.Name);
 
             BoundExpression boundExpression = BindExpression(syntax.Expression);
-            if (boundExpression.Type == TypeSymbol.Error)
+            if (boundExpression.Type.IsError())
                 return BoundErrorExpression.Instace;
 
             if (syntax.EqualsToken.Kind != SyntaxKind.EqualsToken)
@@ -350,7 +350,7 @@ namespace VSharp.Binding
                 }
 
                 boundExpression = new BoundBinaryExpression(boundVariable, boundOp, boundExpression);
-                if (boundExpression.Type == TypeSymbol.Error)
+                if (boundExpression.Type.IsError())
                     return BoundErrorExpression.Instace;
             }
 
