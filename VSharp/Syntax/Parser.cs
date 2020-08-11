@@ -33,9 +33,9 @@ namespace VSharp.Syntax
 
         public Parser(SourceText text)
         {
-            List<SyntaxToken> tokens = new List<SyntaxToken>();
+            var tokens = new List<SyntaxToken>();
 
-            Lexer lexer = new Lexer(text);
+            var lexer = new Lexer(text);
             SyntaxToken token;
             do
             {
@@ -110,16 +110,15 @@ namespace VSharp.Syntax
 
         private BlockStatementSyntax ParseBlockStatement()
         {
-            ImmutableArray<StatementSyntax>.Builder statements = ImmutableArray.CreateBuilder<StatementSyntax>();
-
-            SyntaxToken openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
+            var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
+            var openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
 
             while (Current.Kind != SyntaxKind.CloseBraceToken &&
                    Current.Kind != SyntaxKind.EndOfFileToken)
             {
-                SyntaxToken currentToken = Current;
+                var currentToken = Current;
 
-                StatementSyntax statement = ParseStatement();
+                var statement = ParseStatement();
                 statements.Add(statement);
 
                 // If no tokens were consumed by the parse call,
@@ -129,17 +128,17 @@ namespace VSharp.Syntax
                     break;
             }
 
-            SyntaxToken closeBraceToken = MatchToken(SyntaxKind.CloseBraceToken);
+            var closeBraceToken = MatchToken(SyntaxKind.CloseBraceToken);
 
             return new BlockStatementSyntax(openBraceToken, statements.ToImmutable(), closeBraceToken);
         }
 
         private VariableDeclarationStatementSyntax ParseVariableDeclarationStatement(bool requireSemicolon)
         {
-            SyntaxToken keyword = NextToken();
-            SyntaxToken identifier = MatchToken(SyntaxKind.IdentifierToken);
-            SyntaxToken equals = MatchToken(SyntaxKind.EqualsToken);
-            ExpressionSyntax initializer = ParseExpression();
+            var keyword = NextToken();
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var equals = MatchToken(SyntaxKind.EqualsToken);
+            var initializer = ParseExpression();
 
             SyntaxToken? semicolonToken = null;
             if (requireSemicolon)
@@ -150,14 +149,14 @@ namespace VSharp.Syntax
 
         private IfStatementSyntax ParseIfStatement()
         {
-            SyntaxToken keyword = MatchToken(SyntaxKind.IfKeyword);
-            ParenthesizedExpressionSyntax condition = ParseParenthesizedExpression();
-            StatementSyntax statement = ParseStatement();
+            var keyword = MatchToken(SyntaxKind.IfKeyword);
+            var condition = ParseParenthesizedExpression();
+            var statement = ParseStatement();
 
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
                 _diagnostics.ReportCannotDeclareConditional(statement.Span);
 
-            ElseClauseSyntax? elseClause = ParseElseClause();
+            var elseClause = ParseElseClause();
 
             return new IfStatementSyntax(keyword, condition, statement, elseClause);
         }
@@ -167,8 +166,8 @@ namespace VSharp.Syntax
             if (Current.Kind != SyntaxKind.ElseKeyword)
                 return null;
 
-            SyntaxToken keyword = NextToken();
-            StatementSyntax statement = ParseStatement();
+            var keyword = NextToken();
+            var statement = ParseStatement();
 
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
                 _diagnostics.ReportCannotDeclareConditional(statement.Span);
@@ -178,9 +177,9 @@ namespace VSharp.Syntax
 
         private WhileStatementSyntax ParseWhileStatement()
         {
-            SyntaxToken keyword = MatchToken(SyntaxKind.WhileKeyword);
-            ParenthesizedExpressionSyntax condition = ParseParenthesizedExpression();
-            StatementSyntax statement = ParseStatement();
+            var keyword = MatchToken(SyntaxKind.WhileKeyword);
+            var condition = ParseParenthesizedExpression();
+            var statement = ParseStatement();
 
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
                 _diagnostics.ReportCannotDeclareConditional(statement.Span);
@@ -190,26 +189,26 @@ namespace VSharp.Syntax
 
         private ForStatementSyntax ParseForStatement()
         {
-            SyntaxToken keyword = MatchToken(SyntaxKind.ForKeyword);
+            var keyword = MatchToken(SyntaxKind.ForKeyword);
 
-            SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
 
-            StatementSyntax initStatement = ParseStatement(requireSemicolon: false);
-            SyntaxToken initSemicolon = MatchToken(SyntaxKind.SemicolonToken);
+            var initStatement = ParseStatement(requireSemicolon: false);
+            var initSemicolon = MatchToken(SyntaxKind.SemicolonToken);
             if (initStatement.Kind != SyntaxKind.VariableDeclarationStatement &&
                 (initStatement.Kind != SyntaxKind.ExpressionStatement || ((ExpressionStatementSyntax)initStatement).Expression.Kind != SyntaxKind.AssignmentExpression))
             {
                 _diagnostics.ReportDeclarationOrAssignmentOnly(initStatement.Span, initStatement.Kind);
             }
 
-            ExpressionSyntax condition = ParseExpression();
-            SyntaxToken conditionSemicolon = MatchToken(SyntaxKind.SemicolonToken);
+            var condition = ParseExpression();
+            var conditionSemicolon = MatchToken(SyntaxKind.SemicolonToken);
 
-            StatementSyntax updateStatement = ParseStatement(requireSemicolon: false);
+            var updateStatement = ParseStatement(requireSemicolon: false);
 
-            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+            var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 
-            StatementSyntax statement = ParseStatement();
+            var statement = ParseStatement();
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
                 _diagnostics.ReportCannotDeclareConditional(statement.Span);
 
@@ -275,9 +274,9 @@ namespace VSharp.Syntax
 
         private ExpressionStatementSyntax ParseExpressionStatement(bool requireSemicolon)
         {
-            ExpressionSyntax expression = ParseExpression();
+            var expression = ParseExpression();
 
-            SyntaxToken? semicolonToken = requireSemicolon ? MatchToken(SyntaxKind.SemicolonToken) : null;
+            var semicolonToken = requireSemicolon ? MatchToken(SyntaxKind.SemicolonToken) : null;
             return new ExpressionStatementSyntax(expression, semicolonToken);
         }
 
@@ -338,24 +337,24 @@ namespace VSharp.Syntax
 
         private AssignmentExpressionSyntax ParseAssignmentExpression()
         {
-            SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
-            SyntaxToken operatorToken = NextToken();
-            ExpressionSyntax right = ParseExpression();
+            var identifierToken = MatchToken(SyntaxKind.IdentifierToken);
+            var operatorToken = NextToken();
+            var right = ParseExpression();
 
             return new AssignmentExpressionSyntax(identifierToken, operatorToken, right);
         }
 
         private UnaryExpressionSyntax ParsePostIncrementOrDecrement()
         {
-            NameExpressionSyntax identifierToken = ParseNameExpression();
-            SyntaxToken operatorToken = NextToken();
+            var identifierToken = ParseNameExpression();
+            var operatorToken = NextToken();
 
             return new UnaryExpressionSyntax(operatorToken, identifierToken, UnaryType.Post);
         }
 
         private UnaryExpressionSyntax ParsePreUnaryExpression(int unaryOperatorPrecedence)
         {
-            SyntaxToken operatorToken = NextToken();
+            var operatorToken = NextToken();
 
             ExpressionSyntax operand;
             if (operatorToken.Kind == SyntaxKind.MinusMinusToken || operatorToken.Kind == SyntaxKind.PlusPlusToken)
@@ -390,39 +389,39 @@ namespace VSharp.Syntax
 
         private ExplicitCastExpressionSyntax ParseExplicitCastExpression()
         {
-            SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
-            TypeExpressionSyntax typeExpression = ParseTypeExpression();
-            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
-            ExpressionSyntax expression = ParseExpression();
+            var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            var typeExpression = ParseTypeExpression();
+            var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+            var expression = ParseExpression();
 
             return new ExplicitCastExpressionSyntax(leftParenthesis, typeExpression, rightParenthesis, expression);
         }
 
         private ParenthesizedExpressionSyntax ParseParenthesizedExpression()
         {
-            SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
-            ExpressionSyntax expression = ParseExpression();
-            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+            var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            var expression = ParseExpression();
+            var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 
             return new ParenthesizedExpressionSyntax(leftParenthesis, expression, rightParenthesis);
         }
 
         private TypeofExpressionSyntax ParseTypeofExpression()
         {
-            SyntaxToken typeofKeyword = MatchToken(SyntaxKind.TypeofKeyword);
-            SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
-            TypeExpressionSyntax typeLiteral = ParseTypeExpression();
-            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+            var typeofKeyword = MatchToken(SyntaxKind.TypeofKeyword);
+            var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            var typeLiteral = ParseTypeExpression();
+            var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 
             return new TypeofExpressionSyntax(typeofKeyword, leftParenthesis, typeLiteral, rightParenthesis);
         }
 
         private NameofExpressionSyntax ParseNameofExpression()
         {
-            SyntaxToken nameofKeyword = MatchToken(SyntaxKind.NameofKeyword);
-            SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
-            SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
-            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+            var nameofKeyword = MatchToken(SyntaxKind.NameofKeyword);
+            var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            var identifierToken = MatchToken(SyntaxKind.IdentifierToken);
+            var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 
             return new NameofExpressionSyntax(nameofKeyword, leftParenthesis, identifierToken, rightParenthesis);
         }
@@ -438,20 +437,20 @@ namespace VSharp.Syntax
                 _diagnostics.ReportUnexpectedVarKeyword(Current.Span);
             }
 
-            SyntaxToken typeToken = NextToken();
+            var typeToken = NextToken();
             return new TypeExpressionSyntax(typeToken);
         }
 
         private LiteralExpressionSyntax ParseBooleanLiteral(bool isTrue)
         {
-            SyntaxToken keywordToken = MatchToken(isTrue ? SyntaxKind.TrueKeyword : SyntaxKind.FalseKeyword);
+            var keywordToken = MatchToken(isTrue ? SyntaxKind.TrueKeyword : SyntaxKind.FalseKeyword);
 
             return new LiteralExpressionSyntax(keywordToken, isTrue);
         }
 
         private LiteralExpressionSyntax ParseIntegerLiteral()
         {
-            SyntaxToken integerToken = MatchToken(SyntaxKind.IntegerToken);
+            var integerToken = MatchToken(SyntaxKind.IntegerToken);
             if (!int.TryParse(integerToken.Text, out int value))
                 _diagnostics.ReportInvalidValue(integerToken.Span, integerToken.Text, TypeSymbol.Int);
 
@@ -460,7 +459,7 @@ namespace VSharp.Syntax
 
         private LiteralExpressionSyntax ParseFloatLiteral()
         {
-            SyntaxToken floatToken = MatchToken(SyntaxKind.FloatToken);
+            var floatToken = MatchToken(SyntaxKind.FloatToken);
 
             // Remove eventual 'f' character.
             string? floatString = floatToken.Text?.Replace("f", "", ignoreCase: false, CultureInfo.InvariantCulture);
@@ -472,30 +471,30 @@ namespace VSharp.Syntax
 
         private LiteralExpressionSyntax ParseStringLiteral()
         {
-            SyntaxToken stringToken = MatchToken(SyntaxKind.StringToken);
+            var stringToken = MatchToken(SyntaxKind.StringToken);
             return new LiteralExpressionSyntax(stringToken);
         }
 
         private CallExpressionSyntax ParseCallExpression()
         {
-            SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
-            SyntaxToken leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
-            SeparatedSyntaxCollection<ExpressionSyntax> arguments = ParseArguments();
-            SyntaxToken rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+            var identifierToken = MatchToken(SyntaxKind.IdentifierToken);
+            var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+            var arguments = ParseArguments();
+            var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 
             return new CallExpressionSyntax(identifierToken, leftParenthesis, arguments, rightParenthesis);
         }
 
         private SeparatedSyntaxCollection<ExpressionSyntax> ParseArguments()
         {
-            ImmutableArray<SyntaxNode>.Builder builder = ImmutableArray.CreateBuilder<SyntaxNode>();
+            var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
 
             while (Current.Kind != SyntaxKind.CloseParenthesisToken &&
                    Current.Kind != SyntaxKind.EndOfFileToken)
             {
-                SyntaxToken currentToken = Current;
+                var currentToken = Current;
 
-                ExpressionSyntax expression = ParseExpression();
+                var expression = ParseExpression();
                 builder.Add(expression);
 
                 // Don't expect comma after final argument.
@@ -518,7 +517,7 @@ namespace VSharp.Syntax
 
         private NameExpressionSyntax ParseNameExpression()
         {
-            SyntaxToken identifierToken = MatchToken(SyntaxKind.IdentifierToken);
+            var identifierToken = MatchToken(SyntaxKind.IdentifierToken);
             return new NameExpressionSyntax(identifierToken);
         }
 
@@ -537,7 +536,7 @@ namespace VSharp.Syntax
 
         private SyntaxToken NextToken()
         {
-            SyntaxToken current = Current;
+            var current = Current;
             _position++;
 
             return current;

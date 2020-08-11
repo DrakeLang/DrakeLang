@@ -91,7 +91,7 @@ namespace VSharp.Text
 
         private static ImmutableArray<TextLine> ParseLines(SourceText sourceText, string text)
         {
-            ImmutableArray<TextLine>.Builder result = ImmutableArray.CreateBuilder<TextLine>();
+            var result = ImmutableArray.CreateBuilder<TextLine>();
 
             int position = 0;
             int lineStart = 0;
@@ -122,7 +122,7 @@ namespace VSharp.Text
         {
             int lineLength = position - lineStart;
             int lineLengthIncludingLineBreak = lineLength + lineBreakWidth;
-            TextLine line = new TextLine(sourceText, lineStart, lineLength, lineLengthIncludingLineBreak);
+            var line = new TextLine(sourceText, lineStart, lineLength, lineLengthIncludingLineBreak);
 
             result.Add(line);
         }

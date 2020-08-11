@@ -54,7 +54,7 @@ namespace VSharp.Syntax
 
         public static SyntaxTree Parse(string text)
         {
-            SourceText sourceText = SourceText.From(text);
+            var sourceText = SourceText.From(text);
             return Parse(sourceText);
         }
 
@@ -65,16 +65,16 @@ namespace VSharp.Syntax
 
         public static IEnumerable<SyntaxToken> ParseTokens(string text)
         {
-            SourceText sourceText = SourceText.From(text);
+            var sourceText = SourceText.From(text);
             return ParseTokens(sourceText);
         }
 
         public static IEnumerable<SyntaxToken> ParseTokens(SourceText text)
         {
-            Lexer lexer = new Lexer(text);
+            var lexer = new Lexer(text);
             while (true)
             {
-                SyntaxToken token = lexer.Lex();
+                var token = lexer.Lex();
                 if (token.Kind == SyntaxKind.EndOfFileToken)
                     break;
 

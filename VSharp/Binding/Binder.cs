@@ -40,17 +40,17 @@ namespace VSharp.Binding
 
         public static BoundGlobalScope BindGlobalScope(BoundGlobalScope? previous, CompilationUnitSyntax syntax)
         {
-            BoundScope parentScope = CreateParentScopes(previous);
+            var parentScope = CreateParentScopes(previous);
 
-            Binder binder = new Binder(parentScope);
-            BoundStatement statement = binder.BindStatements(syntax.Statements);
+            var binder = new Binder(parentScope);
 
-            ImmutableArray<Diagnostic> diagnostics = previous is null ?
+            var statements = binder.BindStatements(syntax.Statements);
+            var diagnostics = previous is null ?
                 binder.Diagnostics.ToImmutableArray() :
                 previous.Diagnostics.AddRange(binder.Diagnostics);
 
-            ImmutableArray<VariableSymbol> variables = binder._scope.GetDeclaredVariables();
-            return new BoundGlobalScope(previous, diagnostics, variables, statement);
+            var variables = binder._scope.GetDeclaredVariables();
+            return new BoundGlobalScope(previous, diagnostics, variables, statements);
         }
 
         private static BoundScope CreateParentScopes(BoundGlobalScope? previous)
@@ -58,18 +58,18 @@ namespace VSharp.Binding
             if (previous is null)
                 return CreateRootScope();
 
-            Stack<BoundGlobalScope> stack = new Stack<BoundGlobalScope>();
+            var stack = new Stack<BoundGlobalScope>();
             while (previous != null)
             {
                 stack.Push(previous);
                 previous = previous.Previous;
             }
 
-            BoundScope parent = CreateRootScope();
+            var parent = CreateRootScope();
             while (stack.Count > 0)
             {
                 previous = stack.Pop();
-                BoundScope scope = new BoundScope(parent);
+                var scope = new BoundScope(parent);
                 foreach (var v in previous.Variables)
                     scope.TryDeclareVariable(v);
 
@@ -80,8 +80,7 @@ namespace VSharp.Binding
 
             static BoundScope CreateRootScope()
             {
-                BoundScope root = new BoundScope();
-
+                var root = new BoundScope();
                 foreach (var method in BuiltinMethods.GetAll())
                     root.TryDeclareMethod(method);
 
@@ -162,7 +161,7 @@ namespace VSharp.Binding
             bool declare = syntax.Identifier.Text != null;
             bool isReadOnly = false; // TODO: introduce readonly values and compile-time constants.
 
-            BoundExpression initializer = BindExpression(syntax.Initializer);
+            var initializer = BindExpression(syntax.Initializer);
 
             // Don't allow void assignment
             if (initializer.Type == TypeSymbol.Void && syntax.Keyword.Kind == SyntaxKind.VarKeyword)
@@ -171,7 +170,7 @@ namespace VSharp.Binding
                 Diagnostics.ReportCannotAssignVoid(span);
             }
 
-            TypeSymbol? variableType = ResolveType(syntax.Keyword.Kind);
+            var variableType = ResolveType(syntax.Keyword.Kind);
             if (variableType is null)
                 variableType = initializer.Type;
 
@@ -185,7 +184,7 @@ namespace VSharp.Binding
                 Diagnostics.ReportCannotConvert(syntax.Initializer.Span, initializer.Type, variableType);
             }
 
-            VariableSymbol variable = new VariableSymbol(name, isReadOnly, variableType);
+            var variable = new VariableSymbol(name, isReadOnly, variableType);
             if (declare && !_scope.TryDeclareVariable(variable))
                 Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
 
@@ -219,17 +218,17 @@ namespace VSharp.Binding
 
         private BoundStatement BindIfStatement(IfStatementSyntax syntax)
         {
-            BoundExpression condition = BindExpression(syntax.Condition.Expression, TypeSymbol.Boolean);
-            BoundStatement thenStatement = BindStatement(syntax.ThenStatement);
-            BoundStatement? elseStatement = syntax.ElseClause is null ? null : BindStatement(syntax.ElseClause.ElseStatement);
+            var condition = BindExpression(syntax.Condition.Expression, TypeSymbol.Boolean);
+            var thenStatement = BindStatement(syntax.ThenStatement);
+            var elseStatement = syntax.ElseClause is null ? null : BindStatement(syntax.ElseClause.ElseStatement);
 
             return new BoundIfStatement(condition, thenStatement, elseStatement);
         }
 
         private BoundStatement BindWhileStatement(WhileStatementSyntax syntax)
         {
-            BoundExpression condition = BindExpression(syntax.Condition.Expression, TypeSymbol.Boolean);
-            BoundStatement body = BindStatement(syntax.Body);
+            var condition = BindExpression(syntax.Condition.Expression, TypeSymbol.Boolean);
+            var body = BindStatement(syntax.Body);
 
             return new BoundWhileStatement(condition, body);
         }
@@ -238,10 +237,10 @@ namespace VSharp.Binding
         {
             PushScope();
 
-            BoundStatement initStatement = BindStatement(syntax.InitializationStatement);
-            BoundExpression condition = BindExpression(syntax.Condition, TypeSymbol.Boolean);
-            BoundStatement updateStatement = BindStatement(syntax.UpdateStatement);
-            BoundStatement body = BindStatement(syntax.Body);
+            var initStatement = BindStatement(syntax.InitializationStatement);
+            var condition = BindExpression(syntax.Condition, TypeSymbol.Boolean);
+            var updateStatement = BindStatement(syntax.UpdateStatement);
+            var body = BindStatement(syntax.Body);
 
             PopScope();
             return new BoundForStatement(initStatement, condition, updateStatement, body);
@@ -249,7 +248,7 @@ namespace VSharp.Binding
 
         private BoundStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
         {
-            BoundExpression expression = BindExpression(syntax.Expression);
+            var expression = BindExpression(syntax.Expression);
             return new BoundExpressionStatement(expression);
         }
 
@@ -278,7 +277,7 @@ namespace VSharp.Binding
 
         private BoundExpression BindExpression(ExpressionSyntax syntax, TypeSymbol targetType)
         {
-            BoundExpression expression = BindExpression(syntax);
+            var expression = BindExpression(syntax);
 
             if (expression.Type != targetType &&
                 !expression.Type.IsError() &&
@@ -292,7 +291,7 @@ namespace VSharp.Binding
 
         private static BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax)
         {
-            object value = syntax.Value ?? 0;
+            var value = syntax.Value ?? 0;
             return new BoundLiteralExpression(value);
         }
 
@@ -306,12 +305,12 @@ namespace VSharp.Binding
 
         private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax)
         {
-            BoundExpression boundOperand = BindExpression(syntax.Operand);
+            var boundOperand = BindExpression(syntax.Operand);
 
             if (boundOperand.Type.IsError())
                 return BoundErrorExpression.Instace;
 
-            BoundUnaryOperator? boundOp = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, syntax.UnaryType, boundOperand.Type);
+            var boundOp = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, syntax.UnaryType, boundOperand.Type);
             if (boundOp is null)
             {
                 Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundOperand.Type);
@@ -323,13 +322,13 @@ namespace VSharp.Binding
 
         private BoundExpression BindBinaryExpression(BinaryExpressionSyntax syntax)
         {
-            BoundExpression boundLeft = BindExpression(syntax.Left);
-            BoundExpression boundRight = BindExpression(syntax.Right);
+            var boundLeft = BindExpression(syntax.Left);
+            var boundRight = BindExpression(syntax.Right);
 
             if (boundLeft.Type.IsError() || boundRight.Type.IsError())
                 return BoundErrorExpression.Instace;
 
-            BoundBinaryOperator? boundOp = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
+            var boundOp = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
             if (boundOp is null)
             {
                 Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundLeft.Type, boundRight.Type);
@@ -366,13 +365,13 @@ namespace VSharp.Binding
             if (variable.IsReadOnly)
                 Diagnostics.ReportCannotAssignReadOnly(syntax.EqualsToken.Span, variable.Name);
 
-            BoundExpression boundExpression = BindExpression(syntax.Expression);
+            var boundExpression = BindExpression(syntax.Expression);
             if (boundExpression.Type.IsError())
                 return BoundErrorExpression.Instace;
 
             if (syntax.EqualsToken.Kind != SyntaxKind.EqualsToken)
             {
-                BoundVariableExpression boundVariable = new BoundVariableExpression(variable);
+                var boundVariable = new BoundVariableExpression(variable);
                 var operatorKind = syntax.EqualsToken.Kind switch
                 {
                     SyntaxKind.PlusEqualsToken => BoundBinaryOperatorKind.Addition,
@@ -385,7 +384,7 @@ namespace VSharp.Binding
                     _ => throw new Exception($"Unexpected assignment kind {syntax.EqualsToken.Kind}"),
                 };
 
-                BoundBinaryOperator? boundOp = BoundBinaryOperator.Bind(operatorKind, variable.Type, boundExpression.Type);
+                var boundOp = BoundBinaryOperator.Bind(operatorKind, variable.Type, boundExpression.Type);
                 if (boundOp is null)
                 {
                     Diagnostics.ReportUndefinedBinaryOperator(syntax.EqualsToken.Span, syntax.EqualsToken.Text, variable.Type, boundExpression.Type);
@@ -441,8 +440,8 @@ namespace VSharp.Binding
             // Validate argument types.
             for (int i = 0; i < method.Paramaters.Length; i++)
             {
-                BoundExpression argument = boundArguments[i];
-                ParameterSymbol parameter = method.Paramaters[i];
+                var argument = boundArguments[i];
+                var parameter = method.Paramaters[i];
 
                 if (argument.Type != parameter.Type && !argument.Type.IsError() && !parameter.Type.IsError())
                 {

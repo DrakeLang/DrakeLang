@@ -55,7 +55,7 @@ namespace VSharp
             int index = 0;
             while (index < root.Statements.Length)
             {
-                BoundStatement s = root.Statements[index];
+                var s = root.Statements[index];
                 switch (s.Kind)
                 {
                     case BoundNodeKind.VariableDeclarationStatement:
@@ -69,12 +69,12 @@ namespace VSharp
                         break;
 
                     case BoundNodeKind.GotoStatement:
-                        BoundGotoStatement gotoStatement = (BoundGotoStatement)s;
+                        var gotoStatement = (BoundGotoStatement)s;
                         index = labelToIndex[gotoStatement.Label];
                         break;
 
                     case BoundNodeKind.ConditionalGotoStatement:
-                        BoundConditionalGotoStatement conGotoStatement = (BoundConditionalGotoStatement)s;
+                        var conGotoStatement = (BoundConditionalGotoStatement)s;
                         if (evaluator.EvaluateConditionalGotoStatement(conGotoStatement))
                             index = labelToIndex[conGotoStatement.Label];
                         else
@@ -140,7 +140,7 @@ namespace VSharp
                 _ => throw new Exception($"Unexpected node '{node.Kind}'."),
             };
 
-            public object EvaluateLiteralExpression(BoundLiteralExpression node)
+            public static object EvaluateLiteralExpression(BoundLiteralExpression node)
             {
                 return node.Value;
             }
@@ -163,7 +163,7 @@ namespace VSharp
                 // Pre- and post increment/decrement.
                 if (node.Op.Kind == BoundUnaryOperatorKind.PreDecrement || node.Op.Kind == BoundUnaryOperatorKind.PreIncrement)
                 {
-                    BoundVariableExpression variableExpression = (BoundVariableExpression)node.Operand;
+                    var variableExpression = (BoundVariableExpression)node.Operand;
 
                     if (node.Type == TypeSymbol.Int)
                         _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
@@ -174,7 +174,7 @@ namespace VSharp
                 }
                 else if (node.Op.Kind == BoundUnaryOperatorKind.PostDecrement || node.Op.Kind == BoundUnaryOperatorKind.PostIncrement)
                 {
-                    BoundVariableExpression variableExpression = (BoundVariableExpression)node.Operand;
+                    var variableExpression = (BoundVariableExpression)node.Operand;
 
                     object value = _variables[variableExpression.Variable];
                     if (node.Type == TypeSymbol.Int)

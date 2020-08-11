@@ -68,10 +68,10 @@ namespace VSharp.Lowering
                  *
                  */
 
-                LabelSymbol endLabel = GenerateLabel(LabelCategory.End);
-                BoundLabelStatement endLabelStatement = new BoundLabelStatement(endLabel);
+                var endLabel = GenerateLabel(LabelCategory.End);
+                var endLabelStatement = new BoundLabelStatement(endLabel);
 
-                BoundConditionalGotoStatement conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfFalse: true);
+                var conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfFalse: true);
 
                 result = new BoundBlockStatement(ImmutableArray.Create(
                     conditionalGotoEnd,
@@ -100,14 +100,14 @@ namespace VSharp.Lowering
                  *
                  */
 
-                LabelSymbol elseLabel = GenerateLabel(LabelCategory.Else);
-                LabelSymbol endLabel = GenerateLabel(LabelCategory.End);
+                var elseLabel = GenerateLabel(LabelCategory.Else);
+                var endLabel = GenerateLabel(LabelCategory.End);
 
-                BoundLabelStatement elseLabelStatement = new BoundLabelStatement(elseLabel);
-                BoundLabelStatement endLabelStatement = new BoundLabelStatement(endLabel);
+                var elseLabelStatement = new BoundLabelStatement(elseLabel);
+                var endLabelStatement = new BoundLabelStatement(endLabel);
 
-                BoundConditionalGotoStatement conditionalGotoElse = new BoundConditionalGotoStatement(elseLabel, node.Condition, jumpIfFalse: true);
-                BoundGotoStatement gotoEnd = new BoundGotoStatement(endLabel);
+                var conditionalGotoElse = new BoundConditionalGotoStatement(elseLabel, node.Condition, jumpIfFalse: true);
+                var gotoEnd = new BoundGotoStatement(endLabel);
 
                 result = new BoundBlockStatement(ImmutableArray.Create(
                     conditionalGotoElse,
@@ -138,16 +138,16 @@ namespace VSharp.Lowering
              *
              */
 
-            LabelSymbol checkLabel = GenerateLabel(LabelCategory.Check);
-            LabelSymbol endLabel = GenerateLabel(LabelCategory.End);
+            var checkLabel = GenerateLabel(LabelCategory.Check);
+            var endLabel = GenerateLabel(LabelCategory.End);
 
-            BoundLabelStatement checkLabelStatement = new BoundLabelStatement(checkLabel);
-            BoundLabelStatement endLabelStatement = new BoundLabelStatement(endLabel);
+            var checkLabelStatement = new BoundLabelStatement(checkLabel);
+            var endLabelStatement = new BoundLabelStatement(endLabel);
 
-            BoundGotoStatement gotoCheck = new BoundGotoStatement(checkLabel);
-            BoundConditionalGotoStatement conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfFalse: true);
+            var gotoCheck = new BoundGotoStatement(checkLabel);
+            var conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfFalse: true);
 
-            BoundBlockStatement result = new BoundBlockStatement(ImmutableArray.Create(
+            var result = new BoundBlockStatement(ImmutableArray.Create(
                 checkLabelStatement,
                 conditionalGotoEnd,
                 node.Body,
@@ -177,11 +177,11 @@ namespace VSharp.Lowering
              */
 
             // Create the inner while statement (condition, body, update).
-            BoundBlockStatement whileBlock = new BoundBlockStatement(ImmutableArray.Create(node.Body, node.UpdateStatement));
-            BoundWhileStatement whileStatement = new BoundWhileStatement(node.Condition, whileBlock);
+            var whileBlock = new BoundBlockStatement(ImmutableArray.Create(node.Body, node.UpdateStatement));
+            var whileStatement = new BoundWhileStatement(node.Condition, whileBlock);
 
             // Create the outer block statement (init, while).
-            BoundBlockStatement result = new BoundBlockStatement(ImmutableArray.Create(node.InitializationStatement, whileStatement));
+            var result = new BoundBlockStatement(ImmutableArray.Create(node.InitializationStatement, whileStatement));
 
             return RewriteStatement(result);
         }

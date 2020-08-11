@@ -72,8 +72,8 @@ namespace VSharp.Binding
             ImmutableArray<BoundStatement>.Builder? statementBuilder = null;
             for (int i = 0; i < node.Statements.Length; i++)
             {
-                BoundStatement oldStatement = node.Statements[i];
-                BoundStatement newStatement = RewriteStatement(oldStatement);
+                var oldStatement = node.Statements[i];
+                var newStatement = RewriteStatement(oldStatement);
 
                 if (statementBuilder is null && (newStatement != oldStatement || ignore(oldStatement)))
                 {
@@ -112,7 +112,7 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteVariableDeclarationStatement(BoundVariableDeclarationStatement node)
         {
-            BoundExpression initializer = RewriteExpression(node.Initializer);
+            var initializer = RewriteExpression(node.Initializer);
             if (initializer == node.Initializer)
                 return node;
 
@@ -135,9 +135,9 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteIfStatement(BoundIfStatement node)
         {
-            BoundExpression condition = RewriteExpression(node.Condition);
-            BoundStatement thenStatement = RewriteStatement(node.ThenStatement);
-            BoundStatement? elseStatement = (node.ElseStatement == null) ? null : RewriteStatement(node.ElseStatement);
+            var condition = RewriteExpression(node.Condition);
+            var thenStatement = RewriteStatement(node.ThenStatement);
+            var elseStatement = (node.ElseStatement == null) ? null : RewriteStatement(node.ElseStatement);
 
             if (condition == node.Condition &&
                 thenStatement == node.ThenStatement &&
@@ -151,8 +151,8 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteWhileStatement(BoundWhileStatement node)
         {
-            BoundExpression condition = RewriteExpression(node.Condition);
-            BoundStatement body = RewriteStatement(node.Body);
+            var condition = RewriteExpression(node.Condition);
+            var body = RewriteStatement(node.Body);
 
             if (condition == node.Condition && body == node.Body)
                 return node;
@@ -162,10 +162,10 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteForStatement(BoundForStatement node)
         {
-            BoundStatement initializationStatement = RewriteStatement(node.InitializationStatement);
-            BoundExpression condition = RewriteExpression(node.Condition);
-            BoundStatement updateStatement = RewriteStatement(node.UpdateStatement);
-            BoundStatement body = RewriteStatement(node.Body);
+            var initializationStatement = RewriteStatement(node.InitializationStatement);
+            var condition = RewriteExpression(node.Condition);
+            var updateStatement = RewriteStatement(node.UpdateStatement);
+            var body = RewriteStatement(node.Body);
 
             if (initializationStatement == node.InitializationStatement &&
                 condition == node.Condition &&
@@ -190,10 +190,10 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
         {
-            BoundExpression condition = RewriteExpression(node.Condition);
+            var condition = RewriteExpression(node.Condition);
             if (condition.Kind == BoundNodeKind.LiteralExpression)
             {
-                BoundLiteralExpression literalCondition = (BoundLiteralExpression)condition;
+                var literalCondition = (BoundLiteralExpression)condition;
 
                 if (node.JumpIfFalse.Equals(literalCondition.Value))
                     return BoundNoOpStatement.Instance;
@@ -209,7 +209,7 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
         {
-            BoundExpression expression = RewriteExpression(node.Expression);
+            var expression = RewriteExpression(node.Expression);
             if (expression == node.Expression)
                 return node;
 
@@ -249,7 +249,7 @@ namespace VSharp.Binding
 
         protected virtual BoundExpression RewriteAssignmentExpression(BoundAssignmentExpression node)
         {
-            BoundExpression expression = RewriteExpression(node.Expression);
+            var expression = RewriteExpression(node.Expression);
             if (expression == node.Expression)
                 return node;
 
@@ -258,7 +258,7 @@ namespace VSharp.Binding
 
         protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node)
         {
-            BoundExpression operand = RewriteExpression(node.Operand);
+            var operand = RewriteExpression(node.Operand);
             if (operand.Kind == BoundNodeKind.LiteralExpression)
             {
                 BoundLiteralExpression literalOperand = (BoundLiteralExpression)node.Operand;
@@ -278,13 +278,13 @@ namespace VSharp.Binding
 
         protected virtual BoundExpression RewriteBinaryExpression(BoundBinaryExpression node)
         {
-            BoundExpression left = RewriteExpression(node.Left);
-            BoundExpression right = RewriteExpression(node.Right);
+            var left = RewriteExpression(node.Left);
+            var right = RewriteExpression(node.Right);
 
             if (left.Kind == BoundNodeKind.LiteralExpression && right.Kind == BoundNodeKind.LiteralExpression)
             {
-                BoundLiteralExpression literalLeft = (BoundLiteralExpression)left;
-                BoundLiteralExpression literalRight = (BoundLiteralExpression)right;
+                var literalLeft = (BoundLiteralExpression)left;
+                var literalRight = (BoundLiteralExpression)right;
 
                 var value = LiteralEvaluator.EvaluateBinaryExpression(node.Op, literalLeft.Value, literalRight.Value);
                 if (value == literalLeft.Value)
@@ -306,8 +306,8 @@ namespace VSharp.Binding
             ImmutableArray<BoundExpression>.Builder? builder = null;
             for (int i = 0; i < node.Arguments.Length; i++)
             {
-                BoundExpression oldArgument = node.Arguments[i];
-                BoundExpression newArgument = RewriteExpression(oldArgument);
+                var oldArgument = node.Arguments[i];
+                var newArgument = RewriteExpression(oldArgument);
 
                 if (builder is null && newArgument != oldArgument)
                 {
@@ -329,10 +329,10 @@ namespace VSharp.Binding
 
         protected virtual BoundExpression RewriteExplicitCaseExpression(BoundExplicitCastExpression node)
         {
-            BoundExpression expression = RewriteExpression(node.Expression);
+            var expression = RewriteExpression(node.Expression);
             if (expression.Kind == BoundNodeKind.LiteralExpression)
             {
-                BoundLiteralExpression literalExpression = (BoundLiteralExpression)expression;
+                var literalExpression = (BoundLiteralExpression)expression;
                 var value = LiteralEvaluator.EvaluateExplicitCastExpression(node.Type, literalExpression.Value);
 
                 return new BoundLiteralExpression(value);

@@ -321,7 +321,7 @@ namespace VSharp.Syntax
             // Skip quote start.
             _position++;
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             bool done = false;
             bool escape = false;

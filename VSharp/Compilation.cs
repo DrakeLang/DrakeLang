@@ -54,7 +54,7 @@ namespace VSharp
             {
                 if (_globalScope is null)
                 {
-                    BoundGlobalScope globalScope = Binder.BindGlobalScope(Previous?.GlobalScope, SyntaxTree.Root);
+                    var globalScope = Binder.BindGlobalScope(Previous?.GlobalScope, SyntaxTree.Root);
                     Interlocked.CompareExchange(ref _globalScope, globalScope, null);
                 }
 
@@ -71,12 +71,12 @@ namespace VSharp
 
         public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
         {
-            IEnumerable<Diagnostic> diagnostics = SyntaxTree.Diagnostics.Concat(GlobalScope.Diagnostics);
+            var diagnostics = SyntaxTree.Diagnostics.Concat(GlobalScope.Diagnostics);
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics.ToImmutableArray());
 
-            BoundBlockStatement statement = GetStatement();
-            IEvaluator evaluator = new Evaluator();
+            var statement = GetStatement();
+            var evaluator = new Evaluator();
 
             evaluator.Evaluate(statement, variables);
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty);
@@ -84,7 +84,7 @@ namespace VSharp
 
         public void PrintProgram(TextWriter writer)
         {
-            BoundBlockStatement statement = GetStatement();
+            var statement = GetStatement();
             statement.WriteTo(writer);
         }
 
