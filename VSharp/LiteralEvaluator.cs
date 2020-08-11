@@ -16,9 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System;
+using System.Globalization;
 using VSharp.Binding;
 using VSharp.Symbols;
-using System;
 
 namespace VSharp
 {
@@ -152,19 +153,19 @@ namespace VSharp
         {
             if (type == TypeSymbol.Boolean)
             {
-                return Convert.ToBoolean(value);
+                return Convert.ToBoolean(value, CultureInfo.InvariantCulture);
             }
             else if (type == TypeSymbol.Float)
             {
-                return Convert.ToDouble(value);
+                return Convert.ToDouble(value, CultureInfo.InvariantCulture);
             }
             else if (type == TypeSymbol.Int)
             {
-                return Convert.ToInt16(value);
+                return Convert.ToInt16(value, CultureInfo.InvariantCulture);
             }
             else if (type == TypeSymbol.String)
             {
-                return Convert.ToString(value) ?? string.Empty;
+                return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
             }
             else throw new Exception($"Unexpected type '{type}'.");
         }
