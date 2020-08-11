@@ -69,8 +69,16 @@ namespace VSharp.Syntax
             var statementsBuilder = ImmutableArray.CreateBuilder<StatementSyntax>();
             while (Current.Kind != SyntaxKind.EndOfFileToken)
             {
+                var currentToken = Current;
+
                 var statement = ParseStatement();
                 statementsBuilder.Add(statement);
+
+                // If no tokens were consumed by the parse call,
+                // we should escape the loop. Parse errors will
+                // have already been reported.
+                if (currentToken == Current)
+                    break;
             }
             SyntaxToken endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
 
