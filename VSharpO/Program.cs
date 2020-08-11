@@ -16,102 +16,68 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp;
-using VSharp.Symbols;
-using VSharp.Syntax;
-using VSharp.Text;
+using CommandLine;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using VSharp;
+using VSharp.Symbols;
+using VSharp.Syntax;
+using VSharp.Text;
 
 namespace VSharpO
 {
+    internal class Options
+    {
+        [Option('t', "tree", Default = false, HelpText = "Show the syntax tree")]
+        public bool ShowTree { get; set; }
+
+        [Option('p', "program", Default = false, HelpText = "Show the program")]
+        public bool ShowProgram { get; set; }
+
+        [Option('s', "source", HelpText = "The path to the source to compile", Required = true)]
+        public string Source { get; set; } = string.Empty;
+    }
+
     internal static class Program
     {
-        private const string ProgramPath = "Program.ps";
-
-        private static bool _shutDownInitiated;
-
-        private static bool _showTree = false;
-        private static bool _showProgram = false;
-
-        private static Compilation? _currentState;
-        private readonly static Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
-
-        private static void Main()
+        private static void Main(string[] args)
         {
-            _showProgram = true;
-
-            var code = File.ReadAllText(ProgramPath);
-            Parse(code);
-
             Console.CancelKeyPress += delegate
             {
                 Environment.Exit(0);
             };
 
-            while (true)
-            {
-                Console.ReadKey(intercept: true);
-            }
-        }
+            Parser.Default.ParseArguments<Options>(args)
+                .WithParsed(o =>
+                {
+                    if (!File.Exists(o.Source))
+                    {
+                        ConsoleExt.WriteLine($"Source '{o.Source}' does not exist.", ConsoleColor.Red);
+                        return;
+                    }
 
-        private static bool TryEvaluateSharpOCommand(string input)
-        {
-            if (!input.StartsWith('#'))
-                return false;
-
-            switch (input.Substring(1))
-            {
-                case "tree":
-                    _showTree ^= true;
-                    Console.WriteLine(_showTree ? "Parse tree visible" : "Parse tree hidden");
-                    break;
-
-                case "program":
-                    _showProgram ^= true;
-                    Console.WriteLine(_showProgram ? "Program visible" : "Program hidden");
-                    break;
-
-                case "cls":
-                case "clear":
-                    Console.Clear();
-                    break;
-
-                case "reset":
-                    _currentState = null;
-                    _variables.Clear();
-                    break;
-
-                case "exit":
-                    _shutDownInitiated = true;
-                    break;
-
-                default:
-                    Console.WriteLine("Invalid command.");
-                    break;
-            }
-
-            return true;
+                    var code = File.ReadAllText(o.Source);
+                    Parse(code, o);
+                });
         }
 
         /// <summary>
         /// Parses the given code.
         /// </summary>
-        private static void Parse(string code)
+        private static void Parse(string code, Options options)
         {
             SyntaxTree syntaxTree = SyntaxTree.Parse(code);
-            Compilation compilation = _currentState?.ContinueWith(syntaxTree) ?? new Compilation(syntaxTree);
+            Compilation compilation = new Compilation(syntaxTree);
 
-            if (_showTree) PrintTreeToConsole(syntaxTree);
-            if (_showProgram) PrintProgramToConsole(compilation);
+            if (options.ShowTree) PrintTreeToConsole(syntaxTree);
+            if (options.ShowProgram) PrintProgramToConsole(compilation);
 
-            EvaluationResult result = compilation.Evaluate(_variables);
+            EvaluationResult result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
             if (result.Diagnostics.Length == 0)
             {
                 PrintResult(result.Value);
-                _currentState = compilation;
             }
             else
             {
@@ -151,21 +117,6 @@ namespace VSharpO
         }
 
         #region Console helpers
-
-        private static string ReadInput(bool firstLine)
-        {
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-
-            if (firstLine)
-                Console.Write("> ");
-            else
-                Console.Write("| ");
-
-            string input = Console.ReadLine();
-            Console.ResetColor();
-
-            return input;
-        }
 
         private static void PrintResult(object? result)
         {
