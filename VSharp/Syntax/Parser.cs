@@ -16,11 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Symbols;
-using VSharp.Text;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
+using VSharp.Symbols;
+using VSharp.Text;
 
 namespace VSharp.Syntax
 {
@@ -66,10 +66,15 @@ namespace VSharp.Syntax
 
         public CompilationUnitSyntax ParseCompilationUnit()
         {
-            StatementSyntax statement = ParseStatement();
+            var statementsBuilder = ImmutableArray.CreateBuilder<StatementSyntax>();
+            while (Current.Kind != SyntaxKind.EndOfFileToken)
+            {
+                var statement = ParseStatement();
+                statementsBuilder.Add(statement);
+            }
             SyntaxToken endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
 
-            return new CompilationUnitSyntax(statement, endOfFileToken);
+            return new CompilationUnitSyntax(statementsBuilder.ToImmutable(), endOfFileToken);
         }
 
         public ImmutableArray<Diagnostic> GetDiagnostics() => _diagnostics.ToImmutableArray();

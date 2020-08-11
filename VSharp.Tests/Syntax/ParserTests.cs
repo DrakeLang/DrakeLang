@@ -16,8 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Syntax;
 using System.Collections.Generic;
+using VSharp.Syntax;
 using Xunit;
 
 namespace VSharp.Tests.Syntax
@@ -110,11 +110,20 @@ namespace VSharp.Tests.Syntax
             }
         }
 
+        [Fact]
+        public void Parser_Allows_Top_Level_Program()
+        {
+            var syntaxTree = SyntaxTree.Parse(@"
+var a = 5;
+var b = a * a;
+");
+            Assert.Empty(syntaxTree.Diagnostics);
+        }
+
         private static ExpressionSyntax ParseExpression(string text)
         {
-            SyntaxTree syntaxTree = SyntaxTree.Parse(text);
-            CompilationUnitSyntax root = syntaxTree.Root;
-            StatementSyntax statement = root.Statement;
+            var syntaxTree = SyntaxTree.Parse(text);
+            var statement = Assert.Single(syntaxTree.Root.Statements);
 
             return Assert.IsType<ExpressionStatementSyntax>(statement).Expression;
         }

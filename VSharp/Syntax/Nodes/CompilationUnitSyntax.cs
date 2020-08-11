@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace VSharp.Syntax
 {
@@ -25,20 +26,23 @@ namespace VSharp.Syntax
     /// </summary>
     public sealed class CompilationUnitSyntax : SyntaxNode
     {
-        public CompilationUnitSyntax(StatementSyntax statement, SyntaxToken endOfFileToken)
+        public CompilationUnitSyntax(ImmutableArray<StatementSyntax> statements, SyntaxToken endOfFileToken)
         {
-            Statement = statement;
+            Statements = statements;
             EndOfFileToken = endOfFileToken;
         }
 
-        public StatementSyntax Statement { get; }
+        public ImmutableArray<StatementSyntax> Statements { get; }
         public SyntaxToken EndOfFileToken { get; }
 
         public override SyntaxKind Kind => SyntaxKind.CompilationUnit;
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return Statement;
+            foreach (var statement in Statements)
+            {
+                yield return statement;
+            }
             yield return EndOfFileToken;
         }
     }

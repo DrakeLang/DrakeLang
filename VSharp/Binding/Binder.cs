@@ -16,13 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Symbols;
-using VSharp.Syntax;
-using VSharp.Text;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using VSharp.Symbols;
+using VSharp.Syntax;
+using VSharp.Text;
 
 namespace VSharp.Binding
 {
@@ -42,7 +42,7 @@ namespace VSharp.Binding
             BoundScope parentScope = CreateParentScopes(previous);
 
             Binder binder = new Binder(parentScope);
-            BoundStatement statement = binder.BindStatement(syntax.Statement);
+            BoundStatement statement = binder.BindStatements(syntax.Statements);
 
             ImmutableArray<Diagnostic> diagnostics = previous is null ?
                 binder.Diagnostics.ToImmutableArray() :
@@ -88,6 +88,18 @@ namespace VSharp.Binding
             }
         }
 
+        private BoundBlockStatement BindStatements(ImmutableArray<StatementSyntax> statements)
+        {
+            var builder = ImmutableArray.CreateBuilder<BoundStatement>();
+            foreach (var statement in statements)
+            {
+                var boundStatement = BindStatement(statement);
+                builder.Add(boundStatement);
+            }
+
+            return new BoundBlockStatement(builder.ToImmutable());
+        }
+
         #endregion Constructors
 
         #region Properties
@@ -115,17 +127,15 @@ namespace VSharp.Binding
 
         private BoundStatement BindBlockStatement(BlockStatementSyntax syntax)
         {
-            ImmutableArray<BoundStatement>.Builder statements = ImmutableArray.CreateBuilder<BoundStatement>();
             PushScope();
-
-            foreach (StatementSyntax statementSyntax in syntax.Statements)
+            try
             {
-                var statement = BindStatement(statementSyntax);
-                statements.Add(statement);
+                return BindStatements(syntax.Statements);
             }
-
-            PopScope();
-            return new BoundBlockStatement(statements.ToImmutable());
+            finally
+            {
+                PopScope();
+            }
         }
 
         private BoundStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
