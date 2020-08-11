@@ -24,14 +24,14 @@ namespace VSharp.Symbols
     {
         public MethodSymbol(string name, ImmutableArray<ParameterSymbol> paramaters, TypeSymbol returnType) : base(name)
         {
-            Paramaters = paramaters;
+            Parameters = paramaters;
             ReturnType = returnType;
         }
 
         #region Properties
 
         public override SymbolKind Kind => SymbolKind.Function;
-        public ImmutableArray<ParameterSymbol> Paramaters { get; }
+        public ImmutableArray<ParameterSymbol> Parameters { get; }
         public TypeSymbol ReturnType { get; }
 
         #endregion Properties

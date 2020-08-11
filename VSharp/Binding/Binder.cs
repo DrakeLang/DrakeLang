@@ -199,8 +199,8 @@ namespace VSharp.Binding
             PushScope();
             try
             {
-                var parameterBuilder = ImmutableArray.CreateBuilder<VariableSymbol>(method.Paramaters.Length);
-                foreach (var parameter in method.Paramaters)
+                var parameterBuilder = ImmutableArray.CreateBuilder<VariableSymbol>(method.Parameters.Length);
+                foreach (var parameter in method.Parameters)
                 {
                     var variable = new VariableSymbol(parameter.Name, isReadOnly: true, parameter.Type);
                     parameterBuilder.Add(variable);
@@ -423,9 +423,9 @@ namespace VSharp.Binding
             }
 
             // Validate argument count.
-            if (syntax.Arguments.Count != method.Paramaters.Length)
+            if (syntax.Arguments.Count != method.Parameters.Length)
             {
-                Diagnostics.ReportWrongArgumentCount(syntax.Span, method.Name, method.Paramaters.Length, syntax.Arguments.Count);
+                Diagnostics.ReportWrongArgumentCount(syntax.Span, method.Name, method.Parameters.Length, syntax.Arguments.Count);
                 return BoundErrorExpression.Instace;
             }
 
@@ -438,10 +438,10 @@ namespace VSharp.Binding
             }
 
             // Validate argument types.
-            for (int i = 0; i < method.Paramaters.Length; i++)
+            for (int i = 0; i < method.Parameters.Length; i++)
             {
                 var argument = boundArguments[i];
-                var parameter = method.Paramaters[i];
+                var parameter = method.Parameters[i];
 
                 if (argument.Type != parameter.Type && !argument.Type.IsError() && !parameter.Type.IsError())
                 {
