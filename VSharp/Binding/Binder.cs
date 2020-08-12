@@ -547,9 +547,8 @@ namespace VSharp.Binding
             SyntaxKind.IntKeyword => TypeSymbol.Int,
             SyntaxKind.StringKeyword => TypeSymbol.String,
             SyntaxKind.FloatKeyword => TypeSymbol.Float,
-            SyntaxKind.VarKeyword => null,
 
-            _ => throw new Exception($"Unexpected keyword '{typeKeyword}'."),
+            _ => null,
         };
 
         #endregion Utilities
