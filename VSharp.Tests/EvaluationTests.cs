@@ -52,7 +52,7 @@ namespace VSharp.Tests
             ";
 
             string diagnostics = @"
-                Variable 'x' is already declared.
+                A variable with the name 'x' is already declared.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -66,7 +66,7 @@ namespace VSharp.Tests
             ";
 
             string diagnostics = @"
-                Variable 'x' does not exist.
+                Symbol 'x' does not exist.
             ";
 
             AssertDiagnostics(text, diagnostics);

@@ -74,15 +74,16 @@ namespace VSharp.Binding
             {
                 return node switch
                 {
-                    BoundVariableDeclarationStatement v => v.Kind + " Type=" + v.Variable.Type + " Variable=" + v.Variable,
+                    BoundMethodDeclarationStatement m => m.Kind + " " + m.Method.ToString(showParamName: true),
+                    BoundVariableDeclarationStatement v => v.Kind + " Variable=" + v.Variable,
                     BoundLabelStatement l => l.Kind + " " + l.Label,
                     BoundGotoStatement g => g.Kind + " " + g.Label,
                     BoundConditionalGotoStatement g => g.Kind + " " + g.Label.Name + (g.JumpIfFalse ? " on false" : " on true"),
 
-                    BoundVariableExpression v => v.Kind + " Type=" + v.Type + " Variable=" + v.Variable,
-                    BoundCallExpression c => c.Kind + " Type=" + c.Type + " Method=" + c.Method,
+                    BoundVariableExpression v => v.Kind + " " + v.Variable,
+                    BoundCallExpression c => c.Kind + " " + c.Method.ToString(showParamName: false),
                     BoundLiteralExpression l => l.Kind + " Type=" + l.Type + " Value=" + l.Value,
-                    BoundAssignmentExpression a => a.Kind + " Type=" + a.Type + " Variable=" + a.Variable,
+                    BoundAssignmentExpression a => a.Kind + " Variable=" + a.Variable,
                     BoundBinaryExpression b => b.Op.Kind + "Expression Type=" + b.Type,
                     BoundUnaryExpression u => u.Op.Kind + "Expression Type=" + u.Type,
 

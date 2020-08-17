@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
@@ -103,6 +104,8 @@ namespace VSharp.Syntax
                 SyntaxKind.IfKeyword => ParseIfStatement(),
                 SyntaxKind.WhileKeyword => ParseWhileStatement(),
                 SyntaxKind.ForKeyword => ParseForStatement(),
+                SyntaxKind.GoToKeyword => ParseGoToStatement(),
+                SyntaxKind.IdentifierToken when LookAhead.Kind == SyntaxKind.ColonToken => ParseLabelDeclarationStatement(),
 
                 _ => ParseExpressionStatement(requireSemicolon),
             };
@@ -220,6 +223,23 @@ namespace VSharp.Syntax
                 updateStatement,
                 rightParenthesis,
                 statement);
+        }
+
+        private GoToStatementSyntax ParseGoToStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.GoToKeyword);
+            var label = MatchToken(SyntaxKind.IdentifierToken);
+            var semicolon = MatchToken(SyntaxKind.SemicolonToken);
+
+            return new GoToStatementSyntax(keyword, label, semicolon);
+        }
+
+        private LabelStatementSyntax ParseLabelDeclarationStatement()
+        {
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var colonToken = MatchToken(SyntaxKind.ColonToken);
+
+            return new LabelStatementSyntax(identifier, colonToken);
         }
 
         private MethodDeclarationStatementSyntax ParseMethodDeclarationStatement()

@@ -174,6 +174,7 @@ namespace VSharp.Syntax
             SyntaxKind.OpenBraceToken => "{",
             SyntaxKind.CloseBraceToken => "}",
             SyntaxKind.CommaToken => ",",
+            SyntaxKind.ColonToken => ":",
             SyntaxKind.SemicolonToken => ";",
 
             SyntaxKind.BoolKeyword => "bool",
@@ -187,6 +188,7 @@ namespace VSharp.Syntax
             SyntaxKind.IfKeyword => "if",
             SyntaxKind.ElseKeyword => "else",
             SyntaxKind.WhileKeyword => "while",
+            SyntaxKind.GoToKeyword => "goto",
             SyntaxKind.ForKeyword => "for",
             SyntaxKind.TypeofKeyword => "typeof",
             SyntaxKind.NameofKeyword => "nameof",

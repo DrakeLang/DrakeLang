@@ -92,15 +92,9 @@ namespace VSharp
             Report(span, message);
         }
 
-        public void ReportUndefinedName(TextSpan span, string? name)
+        public void ReportUndefinedSymbol(TextSpan span, string? name)
         {
-            string message = $"Variable '{name}' does not exist.";
-            Report(span, message);
-        }
-
-        public void ReportUndefinedMethod(TextSpan span, string? name)
-        {
-            string message = $"Method '{name}' does not exist.";
+            string message = $"Symbol '{name}' does not exist.";
             Report(span, message);
         }
 
@@ -118,7 +112,13 @@ namespace VSharp
 
         public void ReportVariableAlreadyDeclared(TextSpan span, string? name)
         {
-            string message = $"Variable '{name}' is already declared.";
+            string message = $"A variable with the name '{name}' is already declared.";
+            Report(span, message);
+        }   
+        
+        public void ReportLabelAlreadyDeclared(TextSpan span, string? name)
+        {
+            string message = $"A label with the name '{name}' is already declared.";
             Report(span, message);
         }
 

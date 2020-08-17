@@ -90,7 +90,7 @@ namespace VSharp.Binding
 
         private BoundBlockStatement BindStatements(ImmutableArray<StatementSyntax> statements)
         {
-            // Declare all methods in scope first.
+            // Declare and bind methods.
             int methodDeclarations = 0;
             foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.MethodDeclarationStatement))
             {
@@ -99,19 +99,28 @@ namespace VSharp.Binding
             }
 
             var methodDeclarationBuilder = ImmutableArray.CreateBuilder<BoundMethodDeclarationStatement>(methodDeclarations);
+            foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.MethodDeclarationStatement))
+            {
+                var methodDeclaration = BindMethodDeclarationStatement((MethodDeclarationStatementSyntax)statement);
+                if (!(methodDeclaration is null))
+                    methodDeclarationBuilder.Add(methodDeclaration);
+            }
+
+            // Bind labels.
+            foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.LabelStatement))
+            {
+                DeclareLabel((LabelStatementSyntax)statement);
+            }
+
+            // Bind remaining statements.
             var statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>();
             foreach (var statement in statements)
             {
                 if (statement.Kind == SyntaxKind.MethodDeclarationStatement)
-                {
-                    var methodDeclaration = BindMethodDeclarationStatement((MethodDeclarationStatementSyntax)statement);
-                    methodDeclarationBuilder.Add(methodDeclaration);
-                }
-                else
-                {
-                    var boundStatement = BindStatement(statement);
-                    statementBuilder.Add(boundStatement);
-                }
+                    continue;
+
+                var boundStatement = BindStatement(statement);
+                statementBuilder.Add(boundStatement);
             }
 
             return new BoundBlockStatement(statementBuilder.ToImmutable(), methodDeclarationBuilder.MoveToImmutable());
@@ -136,6 +145,8 @@ namespace VSharp.Binding
                 SyntaxKind.IfStatement => BindIfStatement((IfStatementSyntax)syntax),
                 SyntaxKind.WhileStatement => BindWhileStatement((WhileStatementSyntax)syntax),
                 SyntaxKind.ForStatement => BindForStatement((ForStatementSyntax)syntax),
+                SyntaxKind.GoToStatement => BindGoToStatement((GoToStatementSyntax)syntax),
+                SyntaxKind.LabelStatement => BindLabelStatement((LabelStatementSyntax)syntax),
                 SyntaxKind.ExpressionStatement => BindExpressionStatement((ExpressionStatementSyntax)syntax),
 
                 _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
@@ -191,10 +202,10 @@ namespace VSharp.Binding
             return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
-        private BoundMethodDeclarationStatement BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax)
+        private BoundMethodDeclarationStatement? BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax)
         {
             if (!_scope.TryLookupMethod(syntax.Identifier.Text, out var method))
-                throw new Exception($"Failed to resolve symbol for method '{syntax.Identifier.Text}'.");
+                return null;
 
             PushScope();
             try
@@ -241,6 +252,22 @@ namespace VSharp.Binding
 
             PopScope();
             return new BoundForStatement(initStatement, condition, updateStatement, body);
+        }
+
+        private BoundStatement BindGoToStatement(GoToStatementSyntax syntax)
+        {
+            if (!TryFindLabel(syntax.Label, out var label))
+                return BoundNoOpStatement.Instance;
+
+            return new BoundGotoStatement(label);
+        }
+
+        private BoundStatement BindLabelStatement(LabelStatementSyntax syntax)
+        {
+            if (!_scope.TryLookupLabel(syntax.Identifier.Text, out var label))
+                return BoundNoOpStatement.Instance;
+
+            return new BoundLabelStatement(label);
         }
 
         private BoundStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
@@ -413,11 +440,8 @@ namespace VSharp.Binding
         private BoundExpression BindCallExpression(CallExpressionSyntax syntax)
         {
             // Locate method.
-            if (!_scope.TryLookupMethod(syntax.Identifier.Text, out MethodSymbol? method))
-            {
-                Diagnostics.ReportUndefinedMethod(syntax.Identifier.Span, syntax.Identifier.Text);
+            if (!TryFindMethod(syntax.Identifier, out MethodSymbol? method) || method.ReturnType.IsError())
                 return BoundErrorExpression.Instace;
-            }
 
             // Validate argument count.
             if (syntax.Arguments.Count != method.Parameters.Length)
@@ -478,24 +502,17 @@ namespace VSharp.Binding
             _scope = _scope.Parent ?? throw new InvalidOperationException("Scope's parent was null");
         }
 
-        private bool TryFindVariable(SyntaxToken identifierToken, [NotNullWhen(true)] out VariableSymbol? variable)
+        private void DeclareLabel(LabelStatementSyntax syntax)
         {
-            string? name = identifierToken.Text;
-            if (string.IsNullOrEmpty(name))
-            {
-                variable = null;
-                return false;
-            }
+            string name = syntax.Identifier.Text ?? "?";
+            bool declare = syntax.Identifier.Text != null;
 
-            if (!_scope.TryLookupVariable(name, out variable))
-            {
-                Diagnostics.ReportUndefinedName(identifierToken.Span, name);
+            if (!declare)
+                return;
 
-                _scope.TryDeclareVariable(new VariableSymbol(name, isReadOnly: true, TypeSymbol.Error));
-                return false;
-            }
-
-            return true;
+            var label = new LabelSymbol(name);
+            if (!_scope.TryDeclareLabel(label))
+                Diagnostics.ReportLabelAlreadyDeclared(syntax.Identifier.Span, name);
         }
 
         private void DeclareMethod(MethodDeclarationStatementSyntax syntax)
@@ -536,6 +553,70 @@ namespace VSharp.Binding
 
             return new ParameterSymbol(name, type);
         }
+
+        #region TryFind
+
+        private bool TryFindVariable(SyntaxToken identifierToken, [NotNullWhen(true)] out VariableSymbol? variable)
+        {
+            string? name = identifierToken.Text;
+            if (string.IsNullOrEmpty(name))
+            {
+                variable = null;
+                return false;
+            }
+
+            if (!_scope.TryLookupVariable(name, out variable))
+            {
+                Diagnostics.ReportUndefinedSymbol(identifierToken.Span, name);
+
+                _scope.TryDeclareVariable(new VariableSymbol(name, isReadOnly: true, TypeSymbol.Error));
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryFindLabel(SyntaxToken identifierToken, [NotNullWhen(true)] out LabelSymbol? label)
+        {
+            string? name = identifierToken.Text;
+            if (string.IsNullOrEmpty(name))
+            {
+                label = null;
+                return false;
+            }
+
+            if (!_scope.TryLookupLabel(name, out label))
+            {
+                Diagnostics.ReportUndefinedSymbol(identifierToken.Span, name);
+
+                _scope.TryDeclareLabel(new LabelSymbol(name));
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryFindMethod(SyntaxToken identifierToken, [NotNullWhen(true)] out MethodSymbol? method)
+        {
+            string? name = identifierToken.Text;
+            if (string.IsNullOrEmpty(name))
+            {
+                method = null;
+                return false;
+            }
+
+            if (!_scope.TryLookupMethod(name, out method))
+            {
+                Diagnostics.ReportUndefinedSymbol(identifierToken.Span, name);
+
+                _scope.TryDeclareMethod(new MethodSymbol(name, ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Error));
+                return false;
+            }
+
+            return true;
+        }
+
+        #endregion TryFind
 
         #endregion Helpers
 

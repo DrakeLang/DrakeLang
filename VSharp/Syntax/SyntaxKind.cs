@@ -24,10 +24,11 @@ namespace VSharp.Syntax
 
         BadToken,
         EndOfFileToken,
-        SemicolonToken,
         IntegerToken,
         FloatToken,
         StringToken,
+        ColonToken,
+        SemicolonToken,
         PlusToken,
         PlusPlusToken,
         PlusEqualsToken,
@@ -95,6 +96,9 @@ namespace VSharp.Syntax
         IfStatement,
         WhileStatement,
         ForStatement,
+        GoToKeyword,
+        GoToStatement,
+        LabelStatement,
         ExpressionStatement,
 
         // Expressions

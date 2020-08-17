@@ -125,6 +125,11 @@ namespace VSharp.Syntax
                     syntaxKind = SyntaxKind.EndOfFileToken;
                     return true;
 
+                case ':':
+                    Next();
+                    syntaxKind = SyntaxKind.ColonToken;
+                    return true;
+
                 case ';':
                     Next();
                     syntaxKind = SyntaxKind.SemicolonToken;

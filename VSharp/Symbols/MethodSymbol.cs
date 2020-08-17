@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace VSharp.Symbols
 {
@@ -35,5 +36,16 @@ namespace VSharp.Symbols
         public TypeSymbol ReturnType { get; }
 
         #endregion Properties
+
+        public override string ToString() => ToString(showParamName: false);
+
+        public string ToString(bool showParamName)
+        {
+            var paramExpression = showParamName
+                ? Parameters.Select(p => p.ToString())
+                : Parameters.Select(p => p.Type.ToString());
+
+            return ReturnType + " " + Name + "(" + string.Join(", ", paramExpression) + ")";
+        }
     }
 }

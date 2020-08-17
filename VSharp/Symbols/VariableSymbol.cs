@@ -29,5 +29,10 @@ namespace VSharp.Symbols
         public override SymbolKind Kind => SymbolKind.Variable;
         public bool IsReadOnly { get; }
         public TypeSymbol Type { get; }
+
+        public override string ToString()
+        {
+            return Type + " " + Name;
+        }
     }
 }

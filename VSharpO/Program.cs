@@ -21,6 +21,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
+using System.Text;
 using VSharp;
 using VSharp.Symbols;
 using VSharp.Syntax;
@@ -36,8 +38,8 @@ namespace VSharpO
         [Option('p', "program", Default = false, HelpText = "Show the program")]
         public bool ShowProgram { get; set; }
 
-        [Option('s', "source", HelpText = "The path to the source to compile", Required = true)]
-        public string Source { get; set; } = string.Empty;
+        [Option('s', "source", HelpText = "The path to the source to compile", Required = true, Min = 1, Separator = ',')]
+        public IEnumerable<string> Source { get; set; } = Enumerable.Empty<string>();
     }
 
     internal static class Program
@@ -53,23 +55,44 @@ namespace VSharpO
             try
             {
                 Parser.Default.ParseArguments<Options>(args)
-            .WithParsed(o =>
-            {
-                if (!File.Exists(o.Source))
-                {
-                    ConsoleExt.WriteLine($"Source '{o.Source}' does not exist.", ConsoleColor.Red);
-                    return;
-                }
-
-                var code = File.ReadAllText(o.Source);
-                Parse(code, o);
-            });
+                    .WithParsed(Run);
             }
             catch (Exception ex)
             {
                 ConsoleExt.WriteLine($"Unhandled exception. " + ex, ConsoleColor.DarkRed);
             }
 #pragma warning restore CA1031 // Do not catch general exception types
+        }
+
+        private static void Run(Options o)
+        {
+            var sb = new StringBuilder();
+
+            ReadSource(o.Source, sb);
+            var code = sb.ToString();
+
+            Parse(code, o);
+        }
+
+        private static void ReadSource(IEnumerable<string> source, StringBuilder sb)
+        {
+            foreach (var s in source)
+            {
+                if (Directory.Exists(s))
+                {
+                    ReadSource(Directory.GetDirectories(s), sb);
+                    ReadSource(Directory.GetFiles(s), sb);
+                }
+                else if (File.Exists(s))
+                {
+                    var code = File.ReadAllText(s);
+                    sb.Append(code);
+                }
+                else
+                {
+                    ConsoleExt.WriteLine($"Source '{s}' does not exist.", ConsoleColor.Red);
+                }
+            }
         }
 
         /// <summary>
