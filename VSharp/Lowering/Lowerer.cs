@@ -32,13 +32,21 @@ namespace VSharp.Lowering
             _labelGenerator = labelGenerator;
         }
 
-        public static BoundBlockStatement Lower(BoundStatement statement, LabelGenerator labelGenerator)
+        public static ImmutableArray<BoundMethodDeclarationStatement> Lower(ImmutableArray<BoundMethodDeclarationStatement> methods, LabelGenerator labelGenerator)
         {
             var lowerer = new Lowerer(labelGenerator);
-            return lowerer.Lower_Internal(statement);
+            var rewrittenMethods = lowerer.RewriteStatements(methods);
+
+            if (rewrittenMethods is null)
+                return methods;
+
+            return rewrittenMethods.Value
+                .SelectMany(m => Flatten(m).Statements)
+                .Cast<BoundMethodDeclarationStatement>()
+                .ToImmutableArray();
         }
 
-        private BoundBlockStatement Lower_Internal(BoundStatement statement)
+        private BoundBlockStatement Lower(BoundStatement statement)
         {
             var result = RewriteStatement(statement);
             return Flatten(result);
@@ -46,10 +54,17 @@ namespace VSharp.Lowering
 
         #region RewriteStatement
 
-        protected override BoundMethodDeclarationStatement RewriteMethodDeclarationStatement(BoundMethodDeclarationStatement node)
+        protected override BoundStatement RewriteMethodDeclarationStatement(BoundMethodDeclarationStatement node)
         {
-            var declaration = Lower_Internal(node.Declaration);
-            return new BoundMethodDeclarationStatement(node.Method, declaration);
+            var declaration = Lower(node.Declaration);
+
+            var methods = declaration.Statements.OfType<BoundMethodDeclarationStatement>();
+            var generalStatements = declaration.Statements.Except(methods).ToImmutableArray();
+
+            var method = new BoundMethodDeclarationStatement(node.Method, new BoundBlockStatement(generalStatements));
+            methods = methods.Append(method);
+
+            return new BoundBlockStatement(methods.ToImmutableArray<BoundStatement>());
         }
 
         protected override BoundStatement RewriteIfStatement(BoundIfStatement node)
@@ -197,7 +212,6 @@ namespace VSharp.Lowering
             if (!(statement is BoundBlockStatement))
                 return new BoundBlockStatement(ImmutableArray.Create(statement));
 
-            var methodDeclarationBuilder = ImmutableArray.CreateBuilder<BoundMethodDeclarationStatement>();
             var statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>();
 
             var statementStack = new Stack<BoundStatement>();
@@ -209,7 +223,6 @@ namespace VSharp.Lowering
                 var current = statementStack.Pop();
                 if (current is BoundBlockStatement block)
                 {
-                    methodDeclarationBuilder.AddRange(block.MethodDeclarations);
                     foreach (var s in block.Statements.Reverse())
                         statementStack.Push(s);
                 }
@@ -219,20 +232,7 @@ namespace VSharp.Lowering
                 }
             }
 
-            // Remove all nested method declarations.
-
-            var methodDeclarationStack = new Stack<BoundMethodDeclarationStatement>(methodDeclarationBuilder);
-            while (methodDeclarationStack.Count > 0)
-            {
-                var current = methodDeclarationStack.Pop();
-                foreach (var childDeclaration in current.Declaration.MethodDeclarations)
-                {
-                    methodDeclarationStack.Push(childDeclaration);
-                    methodDeclarationBuilder.Add(childDeclaration);
-                }
-            }
-
-            return new BoundBlockStatement(statementBuilder.ToImmutable(), methodDeclarationBuilder.ToImmutable());
+            return new BoundBlockStatement(statementBuilder.ToImmutable());
         }
 
         #endregion Helpers

@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using VSharp.Binding;
 using VSharp.Symbols;
 
@@ -24,6 +25,6 @@ namespace VSharp
 {
     internal interface IEvaluator
     {
-        void Evaluate(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables);
+        void Evaluate(ImmutableArray<BoundMethodDeclarationStatement> methods, Dictionary<VariableSymbol, object> variables);
     }
 }

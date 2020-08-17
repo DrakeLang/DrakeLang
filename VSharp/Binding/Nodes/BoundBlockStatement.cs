@@ -26,13 +26,6 @@ namespace VSharp.Binding
         public BoundBlockStatement(ImmutableArray<BoundStatement> statements)
         {
             Statements = statements;
-            MethodDeclarations = ImmutableArray<BoundMethodDeclarationStatement>.Empty;
-        }
-
-        public BoundBlockStatement(ImmutableArray<BoundStatement> statements, ImmutableArray<BoundMethodDeclarationStatement> methodDeclarations)
-        {
-            Statements = statements;
-            MethodDeclarations = methodDeclarations;
         }
 
         #region Properties
@@ -40,17 +33,11 @@ namespace VSharp.Binding
         public override BoundNodeKind Kind => BoundNodeKind.BlockStatement;
 
         public ImmutableArray<BoundStatement> Statements { get; }
-        public ImmutableArray<BoundMethodDeclarationStatement> MethodDeclarations { get; }
 
         #endregion Properties
 
         public override IEnumerable<BoundNode> GetChildren()
         {
-            foreach (var methodDeclaration in MethodDeclarations)
-            {
-                yield return methodDeclaration;
-            }
-
             foreach (var statement in Statements)
             {
                 yield return statement;

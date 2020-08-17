@@ -51,8 +51,8 @@ namespace VSharp
                     var result = Binder.Bind(SyntaxTree.Root, _labelGenerator);
                     if (result.Diagnostics.Length == 0)
                     {
-                        var loweredResult = Lowerer.Lower(result.Statement, _labelGenerator);
-                        result = new BindingResult(ImmutableArray<Diagnostic>.Empty, loweredResult);
+                        var loweredEntryMethod = Lowerer.Lower(result.Methods, _labelGenerator);
+                        result = new BindingResult(loweredEntryMethod, ImmutableArray<Diagnostic>.Empty);
                     }
 
                     Interlocked.CompareExchange(ref _bindingResult, result, null);
@@ -72,13 +72,16 @@ namespace VSharp
 
             var evaluator = new Evaluator();
 
-            evaluator.Evaluate(BindingResult.Statement, variables);
+            evaluator.Evaluate(BindingResult.Methods, variables);
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty);
         }
 
         public void PrintProgram(TextWriter writer)
         {
-            BindingResult.Statement.WriteTo(writer);
+            foreach (var method in BindingResult.Methods)
+            {
+                method.WriteTo(writer);
+            }
         }
 
         #endregion Methods

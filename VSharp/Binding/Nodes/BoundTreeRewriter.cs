@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace VSharp.Binding
@@ -24,6 +25,45 @@ namespace VSharp.Binding
     internal abstract class BoundTreeRewriter
     {
         #region RewriteStatement
+
+        protected ImmutableArray<BoundStatement>? RewriteStatements(IReadOnlyList<BoundStatement> statements)
+        {
+            // Rewrite statements.
+            ImmutableArray<BoundStatement>.Builder? builder = null;
+            for (int i = 0; i < statements.Count; i++)
+            {
+                var oldStatement = statements[i];
+                var newStatement = RewriteStatement(oldStatement);
+
+                if (builder is null && (newStatement != oldStatement || ignore(oldStatement)))
+                {
+                    // There's at least one different element, so we initialize the builder and copy all ignored lines over.
+                    builder = ImmutableArray.CreateBuilder<BoundStatement>(statements.Count);
+                    for (int j = 0; j < i; j++)
+                    {
+                        tryAdd(statements[j]);
+                    }
+                }
+
+                if (builder != null)
+                    tryAdd(newStatement);
+            }
+
+            return builder?.ToImmutable();
+
+            void tryAdd(BoundStatement statement)
+            {
+                if (!ignore(statement))
+                {
+                    builder.Add(statement);
+                }
+            }
+
+            static bool ignore(BoundStatement statement)
+            {
+                return statement.Kind == BoundNodeKind.NoOpStatement;
+            }
+        }
 
         public virtual BoundStatement RewriteStatement(BoundStatement node)
         {
@@ -47,67 +87,11 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteBlockStatement(BoundBlockStatement node)
         {
-            // Rewrite method declarations.
-            ImmutableArray<BoundMethodDeclarationStatement>.Builder? methodDeclarationBuilder = null;
-            for (int i = 0; i < node.MethodDeclarations.Length; i++)
-            {
-                var oldDeclaration = node.MethodDeclarations[i];
-                var newDeclaration = RewriteMethodDeclarationStatement(oldDeclaration);
-
-                if (methodDeclarationBuilder is null && newDeclaration != oldDeclaration)
-                {
-                    // There's at least one different element, so we initialize the builder and copy all ignored lines over.
-                    methodDeclarationBuilder = ImmutableArray.CreateBuilder<BoundMethodDeclarationStatement>(node.MethodDeclarations.Length);
-                    for (int j = 0; j < i; j++)
-                    {
-                        methodDeclarationBuilder.Add(node.MethodDeclarations[i]);
-                    }
-                }
-
-                if (methodDeclarationBuilder != null)
-                    methodDeclarationBuilder.Add(newDeclaration);
-            }
-
-            // Rewrite statements.
-            ImmutableArray<BoundStatement>.Builder? statementBuilder = null;
-            for (int i = 0; i < node.Statements.Length; i++)
-            {
-                var oldStatement = node.Statements[i];
-                var newStatement = RewriteStatement(oldStatement);
-
-                if (statementBuilder is null && (newStatement != oldStatement || ignore(oldStatement)))
-                {
-                    // There's at least one different element, so we initialize the builder and copy all ignored lines over.
-                    statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>(node.Statements.Length);
-                    for (int j = 0; j < i; j++)
-                    {
-                        tryAdd(node.Statements[j]);
-                    }
-                }
-
-                if (statementBuilder != null)
-                    tryAdd(newStatement);
-            }
-
-            if (methodDeclarationBuilder is null && statementBuilder is null)
+            var statements = RewriteStatements(node.Statements);
+            if (statements is null)
                 return node;
 
-            var statements = statementBuilder?.ToImmutable() ?? node.Statements;
-            var methodDeclarations = methodDeclarationBuilder?.MoveToImmutable() ?? node.MethodDeclarations;
-            return new BoundBlockStatement(statements, methodDeclarations);
-
-            void tryAdd(BoundStatement statement)
-            {
-                if (!ignore(statement))
-                {
-                    statementBuilder.Add(statement);
-                }
-            }
-
-            static bool ignore(BoundStatement statement)
-            {
-                return statement.Kind == BoundNodeKind.NoOpStatement;
-            }
+            return new BoundBlockStatement(statements.Value);
         }
 
         protected virtual BoundStatement RewriteVariableDeclarationStatement(BoundVariableDeclarationStatement node)
@@ -119,7 +103,7 @@ namespace VSharp.Binding
             return new BoundVariableDeclarationStatement(node.Variable, initializer);
         }
 
-        protected virtual BoundMethodDeclarationStatement RewriteMethodDeclarationStatement(BoundMethodDeclarationStatement node)
+        protected virtual BoundStatement RewriteMethodDeclarationStatement(BoundMethodDeclarationStatement node)
         {
             var declaration = RewriteBlockStatement(node.Declaration);
             if (declaration is BoundBlockStatement blockStatement)
@@ -220,6 +204,32 @@ namespace VSharp.Binding
 
         #region RewriteExpression
 
+        protected ImmutableArray<BoundExpression> RewriteExpressions(ImmutableArray<BoundExpression> expressions)
+        {
+            ImmutableArray<BoundExpression>.Builder? builder = null;
+            for (int i = 0; i < expressions.Length; i++)
+            {
+                var oldExpression = expressions[i];
+                var newExpression = RewriteExpression(oldExpression);
+
+                if (builder is null && newExpression != oldExpression)
+                {
+                    // There's at least one different element, so we initialize the builder and copy all ignored lines over.
+                    builder = ImmutableArray.CreateBuilder<BoundExpression>(expressions.Length);
+                    for (int j = 0; j < i; j++)
+                        builder.Add(expressions[j]);
+                }
+
+                if (builder != null)
+                    builder.Add(newExpression);
+            }
+
+            if (builder is null)
+                return expressions;
+
+            return builder.MoveToImmutable();
+        }
+
         public virtual BoundExpression RewriteExpression(BoundExpression node)
         {
             return node.Kind switch
@@ -231,7 +241,7 @@ namespace VSharp.Binding
                 BoundNodeKind.UnaryExpression => RewriteUnaryExpression((BoundUnaryExpression)node),
                 BoundNodeKind.BinaryExpression => RewriteBinaryExpression((BoundBinaryExpression)node),
                 BoundNodeKind.CallExpression => RewriteCallExpression((BoundCallExpression)node),
-                BoundNodeKind.ExplicitCastExpression => RewriteExplicitCaseExpression((BoundExplicitCastExpression)node),
+                BoundNodeKind.ExplicitCastExpression => RewriteExplicitCastExpression((BoundExplicitCastExpression)node),
 
                 _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
             };
@@ -303,31 +313,14 @@ namespace VSharp.Binding
 
         protected virtual BoundExpression RewriteCallExpression(BoundCallExpression node)
         {
-            ImmutableArray<BoundExpression>.Builder? builder = null;
-            for (int i = 0; i < node.Arguments.Length; i++)
-            {
-                var oldArgument = node.Arguments[i];
-                var newArgument = RewriteExpression(oldArgument);
-
-                if (builder is null && newArgument != oldArgument)
-                {
-                    // There's at least one different element, so we initialize the builder and copy all ignored lines over.
-                    builder = ImmutableArray.CreateBuilder<BoundExpression>(node.Arguments.Length);
-                    for (int j = 0; j < i; j++)
-                        builder.Add(node.Arguments[j]);
-                }
-
-                if (builder != null)
-                    builder.Add(newArgument);
-            }
-
-            if (builder is null)
+            var arguments = RewriteExpressions(node.Arguments);
+            if (arguments == node.Arguments)
                 return node;
 
-            return new BoundCallExpression(node.Method, builder.MoveToImmutable());
+            return new BoundCallExpression(node.Method, arguments);
         }
 
-        protected virtual BoundExpression RewriteExplicitCaseExpression(BoundExplicitCastExpression node)
+        protected virtual BoundExpression RewriteExplicitCastExpression(BoundExplicitCastExpression node)
         {
             var expression = RewriteExpression(node.Expression);
             if (expression.Kind == BoundNodeKind.LiteralExpression)

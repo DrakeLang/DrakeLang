@@ -30,6 +30,9 @@ namespace VSharp.Binding
 {
     internal sealed class Binder
     {
+        public const string MainMethodName = "Main";
+        private static readonly MethodSymbol _mainMethodSymbol = new MethodSymbol(MainMethodName, ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void);
+
         private readonly LabelGenerator _labelGenerator;
         private BoundScope _scope;
 
@@ -47,31 +50,46 @@ namespace VSharp.Binding
         {
             var binder = new Binder(labelGenerator);
 
-            var statements = binder.BindStatements(syntax.Statements);
+            var statements = binder.BindTopLevelStatements(syntax.Statements);
             var diagnostics = binder.Diagnostics.ToImmutableArray();
 
-            return new BindingResult(diagnostics, statements);
+            return new BindingResult(statements, diagnostics);
         }
 
-        private BoundBlockStatement BindStatements(ImmutableArray<StatementSyntax> statements)
+        private ImmutableArray<BoundMethodDeclarationStatement> BindTopLevelStatements(IEnumerable<StatementSyntax> statements)
         {
-            // Declare and bind methods.
-            int methodDeclarations = 0;
+            var boundStatements = BindStatements(statements);
+
+            var methods = boundStatements.OfType<BoundMethodDeclarationStatement>();
+            var topLevelStatements = boundStatements.Except(methods).ToImmutableArray();
+
+            if (topLevelStatements.Length > 0)
+            {
+                // Implicitly create main method.
+
+                _scope.TryDeclareMethod(_mainMethodSymbol);
+
+                var mainMethodBody = new BoundBlockStatement(topLevelStatements);
+                var mainMethod = new BoundMethodDeclarationStatement(_mainMethodSymbol, mainMethodBody);
+
+                // Push a new method scope, so that the user may define a main method with the same signature.
+                PushMethodScope();
+
+                return methods.Prepend(mainMethod).ToImmutableArray();
+            }
+
+            return methods.ToImmutableArray();
+        }
+
+        private ImmutableArray<BoundStatement> BindStatements(IEnumerable<StatementSyntax> statements)
+        {
+            // Declare methods.
             foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.MethodDeclarationStatement))
             {
                 DeclareMethod((MethodDeclarationStatementSyntax)statement);
-                methodDeclarations++;
             }
 
-            var methodDeclarationBuilder = ImmutableArray.CreateBuilder<BoundMethodDeclarationStatement>(methodDeclarations);
-            foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.MethodDeclarationStatement))
-            {
-                var methodDeclaration = BindMethodDeclarationStatement((MethodDeclarationStatementSyntax)statement);
-                if (!(methodDeclaration is null))
-                    methodDeclarationBuilder.Add(methodDeclaration);
-            }
-
-            // Bind labels.
+            // Declare labels.
             foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.LabelStatement))
             {
                 DeclareLabel((LabelStatementSyntax)statement);
@@ -81,14 +99,11 @@ namespace VSharp.Binding
             var statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>();
             foreach (var statement in statements)
             {
-                if (statement.Kind == SyntaxKind.MethodDeclarationStatement)
-                    continue;
-
                 var boundStatement = BindStatement(statement);
                 statementBuilder.Add(boundStatement);
             }
 
-            return new BoundBlockStatement(statementBuilder.ToImmutable(), methodDeclarationBuilder.MoveToImmutable());
+            return statementBuilder.ToImmutable();
         }
 
         #endregion Constructors
@@ -107,6 +122,7 @@ namespace VSharp.Binding
             {
                 SyntaxKind.BlockStatement => BindBlockStatement((BlockStatementSyntax)syntax),
                 SyntaxKind.VariableDeclarationStatement => BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax),
+                SyntaxKind.MethodDeclarationStatement => BindMethodDeclarationStatement((MethodDeclarationStatementSyntax)syntax),
                 SyntaxKind.IfStatement => BindIfStatement((IfStatementSyntax)syntax),
                 SyntaxKind.WhileStatement => BindLoopStatement((WhileStatementSyntax)syntax),
                 SyntaxKind.ForStatement => BindLoopStatement((ForStatementSyntax)syntax),
@@ -125,7 +141,8 @@ namespace VSharp.Binding
             PushScope();
             try
             {
-                return BindStatements(syntax.Statements);
+                var statements = BindStatements(syntax.Statements);
+                return new BoundBlockStatement(statements);
             }
             finally
             {
@@ -169,10 +186,10 @@ namespace VSharp.Binding
             return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
-        private BoundMethodDeclarationStatement? BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax)
+        private BoundStatement BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax)
         {
             if (!_scope.TryLookupMethod(syntax.Identifier.Text, out var method))
-                return null;
+                return BoundNoOpStatement.Instance;
 
             PushMethodScope();
             try

@@ -22,13 +22,13 @@ namespace VSharp.Binding
 {
     internal sealed class BindingResult
     {
-        public BindingResult(ImmutableArray<Diagnostic> diagnostics, BoundBlockStatement statement)
+        public BindingResult(ImmutableArray<BoundMethodDeclarationStatement> methods, ImmutableArray<Diagnostic> diagnostics)
         {
+            Methods = methods;
             Diagnostics = diagnostics;
-            Statement = statement;
         }
 
         public ImmutableArray<Diagnostic> Diagnostics { get; }
-        public BoundBlockStatement Statement { get; }
+        public ImmutableArray<BoundMethodDeclarationStatement> Methods { get; }
     }
 }
