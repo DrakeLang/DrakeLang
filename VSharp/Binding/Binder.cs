@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading;
 using VSharp.Symbols;
 using VSharp.Syntax;
 using VSharp.Text;
@@ -34,31 +35,22 @@ namespace VSharp.Binding
 
         #region Constructors
 
-        private Binder(BoundScope root, LabelGenerator labelGenerator)
+        private Binder(LabelGenerator labelGenerator)
         {
-            _scope = new BoundScope(root);
             _labelGenerator = labelGenerator;
+
+            var rootScope = GetRootScope();
+            _scope = new BoundScope(rootScope, capturesVariables: false);
         }
 
         public static BindingResult Bind(CompilationUnitSyntax syntax, LabelGenerator labelGenerator)
         {
-            var parentScope = CreateRootScope();
-
-            var binder = new Binder(parentScope, labelGenerator);
+            var binder = new Binder(labelGenerator);
 
             var statements = binder.BindStatements(syntax.Statements);
             var diagnostics = binder.Diagnostics.ToImmutableArray();
 
             return new BindingResult(diagnostics, statements);
-        }
-
-        private static BoundScope CreateRootScope()
-        {
-            var root = new BoundScope();
-            foreach (var method in BuiltinMethods.GetAll())
-                root.TryDeclareMethod(method);
-
-            return root;
         }
 
         private BoundBlockStatement BindStatements(ImmutableArray<StatementSyntax> statements)
@@ -182,7 +174,7 @@ namespace VSharp.Binding
             if (!_scope.TryLookupMethod(syntax.Identifier.Text, out var method))
                 return null;
 
-            PushScope();
+            PushMethodScope();
             try
             {
                 foreach (var parameter in method.Parameters)
@@ -507,7 +499,15 @@ namespace VSharp.Binding
         /// </summary>
         private void PushScope()
         {
-            _scope = new BoundScope(_scope);
+            _scope = new BoundScope(_scope, capturesVariables: true);
+        }
+
+        /// <summary>
+        /// Moves into a new scope.
+        /// </summary>
+        private void PushMethodScope()
+        {
+            _scope = new BoundScope(_scope, capturesVariables: false);
         }
 
         /// <summary>
@@ -658,6 +658,22 @@ namespace VSharp.Binding
 
             _ => null,
         };
+
+        private static BoundScope? _rootScope;
+
+        private static BoundScope GetRootScope()
+        {
+            if (_rootScope is null)
+            {
+                var rootScope = new BoundScope();
+                foreach (var method in BuiltinMethods.GetAll())
+                    rootScope.TryDeclareMethod(method);
+
+                Interlocked.CompareExchange(ref _rootScope, rootScope, null);
+            }
+
+            return _rootScope;
+        }
 
         #endregion Utilities
     }

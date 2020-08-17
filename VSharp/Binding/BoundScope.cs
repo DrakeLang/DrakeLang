@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
@@ -33,13 +34,15 @@ namespace VSharp.Binding
 
         #region Constructors
 
-        public BoundScope() : this(null)
+        public BoundScope(bool isReadOnly = false)
         {
+            IsReadOnly = isReadOnly;
         }
 
-        public BoundScope(BoundScope? parent)
+        public BoundScope(BoundScope parent, bool capturesVariables)
         {
             Parent = parent;
+            CapturesVariables = capturesVariables;
         }
 
         public BoundScope(BoundScope? parent, LabelSymbol continueLabel, LabelSymbol breakLabel)
@@ -47,13 +50,21 @@ namespace VSharp.Binding
             Parent = parent;
             _continueLabel = continueLabel;
             _breakLabel = breakLabel;
+
+            CapturesVariables = true;
         }
 
         #endregion Constructors
 
         #region Properties
 
+        public bool IsReadOnly { get; }
         public BoundScope? Parent { get; }
+
+        /// <summary>
+        /// Gets a value indicating if the scope can access variables and labels in its parent scope.
+        /// </summary>
+        public bool CapturesVariables { get; }
 
         #endregion Properties
 
@@ -65,9 +76,9 @@ namespace VSharp.Binding
                 return true;
             }
 
-            if (Parent != null)
+            if (CapturesVariables)
             {
-                return Parent.TryGetContinueLabel(out continueLabel);
+                return Parent!.TryGetContinueLabel(out continueLabel);
             }
 
             continueLabel = null;
@@ -82,9 +93,9 @@ namespace VSharp.Binding
                 return true;
             }
 
-            if (Parent != null)
+            if (CapturesVariables)
             {
-                return Parent.TryGetBreakLabel(out breakLabel);
+                return Parent!.TryGetBreakLabel(out breakLabel);
             }
 
             breakLabel = null;
@@ -97,6 +108,8 @@ namespace VSharp.Binding
 
         public bool TryDeclareVariable(VariableSymbol variable)
         {
+            AssertMutable();
+
             if (_variables is null)
             {
                 _variables = new Dictionary<string, VariableSymbol>
@@ -122,13 +135,13 @@ namespace VSharp.Binding
             if (_variables != null && _variables.TryGetValue(name, out variable))
                 return true;
 
-            if (Parent is null)
+            if (CapturesVariables)
             {
-                variable = null;
-                return false;
+                return Parent!.TryLookupVariable(name, out variable);
             }
 
-            return Parent.TryLookupVariable(name, out variable);
+            variable = null;
+            return false;
         }
 
         public ImmutableArray<VariableSymbol> GetDeclaredVariables()
@@ -145,6 +158,8 @@ namespace VSharp.Binding
 
         public bool TryDeclareLabel(LabelSymbol label)
         {
+            AssertMutable();
+
             if (_labels is null)
             {
                 _labels = new Dictionary<string, LabelSymbol>
@@ -176,13 +191,13 @@ namespace VSharp.Binding
             if (_labels != null && _labels.TryGetValue(name, out label))
                 return true;
 
-            if (Parent is null)
+            if (CapturesVariables)
             {
-                label = null;
-                return false;
+                return Parent!.TryLookupLabel(name, out label);
             }
 
-            return Parent.TryLookupLabel(name, out label);
+            label = null;
+            return false;
         }
 
         public ImmutableArray<LabelSymbol> GetDeclaredLabels()
@@ -199,6 +214,8 @@ namespace VSharp.Binding
 
         public bool TryDeclareMethod(MethodSymbol method)
         {
+            AssertMutable();
+
             if (_methods is null)
             {
                 _methods = new Dictionary<string, MethodSymbol>
@@ -249,5 +266,15 @@ namespace VSharp.Binding
         #endregion Method
 
         #endregion Symbols
+
+        #region Helpers
+
+        private void AssertMutable()
+        {
+            if (IsReadOnly)
+                throw new InvalidOperationException("Cannot mutate immutable bound scope.");
+        }
+
+        #endregion Helpers
     }
 }
