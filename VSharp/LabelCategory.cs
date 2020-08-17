@@ -16,33 +16,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-using VSharp.Symbols;
+#pragma warning disable CA1724 // on't have type named Compilation due to conflict with 'System.Web.Compilation'
 
-namespace VSharp.Binding
+
+namespace VSharp
 {
-    internal sealed class BoundConditionalGotoStatement : BoundStatement
+    internal enum LabelCategory
     {
-        public BoundConditionalGotoStatement(LabelSymbol label, BoundExpression condition, bool jumpIfFalse = false)
-        {
-            Label = label;
-            Condition = condition;
-            JumpIfFalse = jumpIfFalse;
-        }
-
-        #region Properties
-
-        public override BoundNodeKind Kind => BoundNodeKind.ConditionalGotoStatement;
-
-        public LabelSymbol Label { get; }
-        public BoundExpression Condition { get; }
-        public bool JumpIfFalse { get; }
-
-        #endregion Properties
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield return Condition;
-        }
+        Continue,
+        Break,
+        Check,
+        Else,
+        End,
     }
 }

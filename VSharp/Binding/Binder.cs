@@ -29,63 +29,36 @@ namespace VSharp.Binding
 {
     internal sealed class Binder
     {
+        private readonly LabelGenerator _labelGenerator;
         private BoundScope _scope;
 
         #region Constructors
 
-        private Binder(BoundScope parent)
+        private Binder(BoundScope root, LabelGenerator labelGenerator)
         {
-            _scope = new BoundScope(parent);
+            _scope = new BoundScope(root);
+            _labelGenerator = labelGenerator;
         }
 
-        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope? previous, CompilationUnitSyntax syntax)
+        public static BindingResult Bind(CompilationUnitSyntax syntax, LabelGenerator labelGenerator)
         {
-            var parentScope = CreateParentScopes(previous);
+            var parentScope = CreateRootScope();
 
-            var binder = new Binder(parentScope);
+            var binder = new Binder(parentScope, labelGenerator);
 
             var statements = binder.BindStatements(syntax.Statements);
-            var diagnostics = previous is null ?
-                binder.Diagnostics.ToImmutableArray() :
-                previous.Diagnostics.AddRange(binder.Diagnostics);
+            var diagnostics = binder.Diagnostics.ToImmutableArray();
 
-            var variables = binder._scope.GetDeclaredVariables();
-            return new BoundGlobalScope(previous, diagnostics, variables, statements);
+            return new BindingResult(diagnostics, statements);
         }
 
-        private static BoundScope CreateParentScopes(BoundGlobalScope? previous)
+        private static BoundScope CreateRootScope()
         {
-            if (previous is null)
-                return CreateRootScope();
+            var root = new BoundScope();
+            foreach (var method in BuiltinMethods.GetAll())
+                root.TryDeclareMethod(method);
 
-            var stack = new Stack<BoundGlobalScope>();
-            while (previous != null)
-            {
-                stack.Push(previous);
-                previous = previous.Previous;
-            }
-
-            var parent = CreateRootScope();
-            while (stack.Count > 0)
-            {
-                previous = stack.Pop();
-                var scope = new BoundScope(parent);
-                foreach (var v in previous.Variables)
-                    scope.TryDeclareVariable(v);
-
-                parent = scope;
-            }
-
-            return parent;
-
-            static BoundScope CreateRootScope()
-            {
-                var root = new BoundScope();
-                foreach (var method in BuiltinMethods.GetAll())
-                    root.TryDeclareMethod(method);
-
-                return root;
-            }
+            return root;
         }
 
         private BoundBlockStatement BindStatements(ImmutableArray<StatementSyntax> statements)
@@ -143,10 +116,12 @@ namespace VSharp.Binding
                 SyntaxKind.BlockStatement => BindBlockStatement((BlockStatementSyntax)syntax),
                 SyntaxKind.VariableDeclarationStatement => BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax),
                 SyntaxKind.IfStatement => BindIfStatement((IfStatementSyntax)syntax),
-                SyntaxKind.WhileStatement => BindWhileStatement((WhileStatementSyntax)syntax),
-                SyntaxKind.ForStatement => BindForStatement((ForStatementSyntax)syntax),
+                SyntaxKind.WhileStatement => BindLoopStatement((WhileStatementSyntax)syntax),
+                SyntaxKind.ForStatement => BindLoopStatement((ForStatementSyntax)syntax),
                 SyntaxKind.GoToStatement => BindGoToStatement((GoToStatementSyntax)syntax),
                 SyntaxKind.LabelStatement => BindLabelStatement((LabelStatementSyntax)syntax),
+                SyntaxKind.ContinueStatement => BindContinueStatement((ContinueStatementSyntax)syntax),
+                SyntaxKind.BreakStatement => BindBreakStatement((BreakStatementSyntax)syntax),
                 SyntaxKind.ExpressionStatement => BindExpressionStatement((ExpressionStatementSyntax)syntax),
 
                 _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
@@ -233,25 +208,44 @@ namespace VSharp.Binding
             return new BoundIfStatement(condition, thenStatement, elseStatement);
         }
 
-        private BoundStatement BindWhileStatement(WhileStatementSyntax syntax)
+        private BoundStatement BindLoopStatement(LoopStatementSyntax syntax)
+        {
+            var continueLabel = _labelGenerator.GenerateLabel(LabelCategory.Continue);
+            var breakLabel = _labelGenerator.GenerateLabel(LabelCategory.Break);
+
+            PushScope(continueLabel, breakLabel);
+            try
+            {
+                return syntax.Kind switch
+                {
+                    SyntaxKind.WhileStatement => BindWhileStatement((WhileStatementSyntax)syntax, continueLabel, breakLabel),
+                    SyntaxKind.ForStatement => BindForStatement((ForStatementSyntax)syntax, continueLabel, breakLabel),
+
+                    _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
+                };
+            }
+            finally
+            {
+                PopScope();
+            }
+        }
+
+        private BoundStatement BindWhileStatement(WhileStatementSyntax syntax, LabelSymbol continueLabel, LabelSymbol breakLabel)
         {
             var condition = BindExpression(syntax.Condition.Expression, TypeSymbol.Boolean);
             var body = BindStatement(syntax.Body);
 
-            return new BoundWhileStatement(condition, body);
+            return new BoundWhileStatement(condition, body, continueLabel, breakLabel);
         }
 
-        private BoundStatement BindForStatement(ForStatementSyntax syntax)
+        private BoundStatement BindForStatement(ForStatementSyntax syntax, LabelSymbol continueLabel, LabelSymbol breakLabel)
         {
-            PushScope();
-
             var initStatement = BindStatement(syntax.InitializationStatement);
             var condition = BindExpression(syntax.Condition, TypeSymbol.Boolean);
             var updateStatement = BindStatement(syntax.UpdateStatement);
             var body = BindStatement(syntax.Body);
 
-            PopScope();
-            return new BoundForStatement(initStatement, condition, updateStatement, body);
+            return new BoundForStatement(initStatement, condition, updateStatement, body, continueLabel, breakLabel);
         }
 
         private BoundStatement BindGoToStatement(GoToStatementSyntax syntax)
@@ -268,6 +262,28 @@ namespace VSharp.Binding
                 return BoundNoOpStatement.Instance;
 
             return new BoundLabelStatement(label);
+        }
+
+        private BoundStatement BindContinueStatement(ContinueStatementSyntax syntax)
+        {
+            if (!_scope.TryGetContinueLabel(out var continueLabel))
+            {
+                Diagnostics.ReportUnexpectedBreakOrContinue(syntax.Span);
+                return BoundNoOpStatement.Instance;
+            }
+
+            return new BoundGotoStatement(continueLabel);
+        }
+
+        private BoundStatement BindBreakStatement(BreakStatementSyntax syntax)
+        {
+            if (!_scope.TryGetBreakLabel(out var breakLabel))
+            {
+                Diagnostics.ReportUnexpectedBreakOrContinue(syntax.Span);
+                return BoundNoOpStatement.Instance;
+            }
+
+            return new BoundGotoStatement(breakLabel);
         }
 
         private BoundStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
@@ -492,6 +508,17 @@ namespace VSharp.Binding
         private void PushScope()
         {
             _scope = new BoundScope(_scope);
+        }
+
+        /// <summary>
+        /// Moves into a new scope.
+        /// </summary>
+        private void PushScope(LabelSymbol continueLabel, LabelSymbol breakLabel)
+        {
+            _scope = new BoundScope(_scope, continueLabel, breakLabel);
+
+            _scope.TryDeclareLabel(continueLabel);
+            _scope.TryDeclareLabel(breakLabel);
         }
 
         /// <summary>

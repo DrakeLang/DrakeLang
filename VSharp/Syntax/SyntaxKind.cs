@@ -79,6 +79,8 @@ namespace VSharp.Syntax
         ElseKeyword,
         WhileKeyword,
         ForKeyword,
+        ContinueKeyword,
+        BreakKeyword,
         TypeofKeyword,
         NameofKeyword,
 
@@ -99,6 +101,8 @@ namespace VSharp.Syntax
         GoToKeyword,
         GoToStatement,
         LabelStatement,
+        ContinueStatement,
+        BreakStatement,
         ExpressionStatement,
 
         // Expressions

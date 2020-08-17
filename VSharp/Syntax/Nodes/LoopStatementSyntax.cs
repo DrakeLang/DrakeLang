@@ -16,24 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Symbols;
-using System.Collections.Immutable;
-
-namespace VSharp.Binding
+namespace VSharp.Syntax
 {
-    internal sealed class BoundGlobalScope
+    public abstract class LoopStatementSyntax : StatementSyntax
     {
-        public BoundGlobalScope(BoundGlobalScope? previous, ImmutableArray<Diagnostic> diagnostics, ImmutableArray<VariableSymbol> variables, BoundStatement statement)
+        public LoopStatementSyntax(StatementSyntax body)
         {
-            Previous = previous;
-            Diagnostics = diagnostics;
-            Variables = variables;
-            Statement = statement;
+            Body = body;
         }
 
-        public BoundGlobalScope? Previous { get; }
-        public ImmutableArray<Diagnostic> Diagnostics { get; }
-        public ImmutableArray<VariableSymbol> Variables { get; }
-        public BoundStatement Statement { get; }
+        public StatementSyntax Body { get; }
     }
 }

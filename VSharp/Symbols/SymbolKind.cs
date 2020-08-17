@@ -20,9 +20,10 @@ namespace VSharp.Symbols
 {
     public enum SymbolKind
     {
-        Function,
+        Method,
         Variable,
         Type,
         Parameter,
+        Label,
     }
 }

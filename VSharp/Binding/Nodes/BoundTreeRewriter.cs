@@ -157,7 +157,7 @@ namespace VSharp.Binding
             if (condition == node.Condition && body == node.Body)
                 return node;
 
-            return new BoundWhileStatement(condition, body);
+            return new BoundWhileStatement(condition, body, node.ContinueLabel, node.BreakLabel);
         }
 
         protected virtual BoundStatement RewriteForStatement(BoundForStatement node)
@@ -175,7 +175,7 @@ namespace VSharp.Binding
                 return node;
             }
 
-            return new BoundForStatement(initializationStatement, condition, updateStatement, body);
+            return new BoundForStatement(initializationStatement, condition, updateStatement, body, node.ContinueLabel, node.BreakLabel);
         }
 
         protected virtual BoundStatement RewriteLabelStatement(BoundLabelStatement node)

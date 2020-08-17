@@ -17,32 +17,31 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using VSharp.Symbols;
 
-namespace VSharp.Binding
+namespace VSharp.Syntax
 {
-    internal sealed class BoundConditionalGotoStatement : BoundStatement
+    internal sealed class ContinueStatementSyntax : StatementSyntax
     {
-        public BoundConditionalGotoStatement(LabelSymbol label, BoundExpression condition, bool jumpIfFalse = false)
+        public ContinueStatementSyntax(SyntaxToken continueKeyword, LiteralExpressionSyntax? layerExpression, SyntaxToken semicolon)
         {
-            Label = label;
-            Condition = condition;
-            JumpIfFalse = jumpIfFalse;
+            ContinueKeyword = continueKeyword;
+            LayerExpression = layerExpression;
+            Semicolon = semicolon;
         }
 
-        #region Properties
+        public override SyntaxKind Kind => SyntaxKind.ContinueStatement;
 
-        public override BoundNodeKind Kind => BoundNodeKind.ConditionalGotoStatement;
+        public SyntaxToken ContinueKeyword { get; }
+        public LiteralExpressionSyntax? LayerExpression { get; }
+        public SyntaxToken Semicolon { get; }
 
-        public LabelSymbol Label { get; }
-        public BoundExpression Condition { get; }
-        public bool JumpIfFalse { get; }
-
-        #endregion Properties
-
-        public override IEnumerable<BoundNode> GetChildren()
+        public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return Condition;
+            yield return ContinueKeyword;
+            if (LayerExpression != null)
+                yield return LayerExpression;
+
+            yield return Semicolon;
         }
     }
 }

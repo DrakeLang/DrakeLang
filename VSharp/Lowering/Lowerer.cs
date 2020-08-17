@@ -25,13 +25,16 @@ namespace VSharp.Lowering
 {
     internal sealed class Lowerer : BoundTreeRewriter
     {
-        private Lowerer()
+        private readonly LabelGenerator _labelGenerator;
+
+        private Lowerer(LabelGenerator labelGenerator)
         {
+            _labelGenerator = labelGenerator;
         }
 
-        public static BoundBlockStatement Lower(BoundStatement statement)
+        public static BoundBlockStatement Lower(BoundStatement statement, LabelGenerator labelGenerator)
         {
-            var lowerer = new Lowerer();
+            var lowerer = new Lowerer(labelGenerator);
             return lowerer.Lower_Internal(statement);
         }
 
@@ -68,7 +71,7 @@ namespace VSharp.Lowering
                  *
                  */
 
-                var endLabel = GenerateLabel(LabelCategory.End);
+                var endLabel = _labelGenerator.GenerateLabel(LabelCategory.End);
                 var endLabelStatement = new BoundLabelStatement(endLabel);
 
                 var conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfFalse: true);
@@ -100,8 +103,8 @@ namespace VSharp.Lowering
                  *
                  */
 
-                var elseLabel = GenerateLabel(LabelCategory.Else);
-                var endLabel = GenerateLabel(LabelCategory.End);
+                var elseLabel = _labelGenerator.GenerateLabel(LabelCategory.Else);
+                var endLabel = _labelGenerator.GenerateLabel(LabelCategory.End);
 
                 var elseLabelStatement = new BoundLabelStatement(elseLabel);
                 var endLabelStatement = new BoundLabelStatement(endLabel);
@@ -138,14 +141,11 @@ namespace VSharp.Lowering
              *
              */
 
-            var checkLabel = GenerateLabel(LabelCategory.Check);
-            var endLabel = GenerateLabel(LabelCategory.End);
+            var checkLabelStatement = new BoundLabelStatement(node.ContinueLabel);
+            var endLabelStatement = new BoundLabelStatement(node.BreakLabel);
 
-            var checkLabelStatement = new BoundLabelStatement(checkLabel);
-            var endLabelStatement = new BoundLabelStatement(endLabel);
-
-            var gotoCheck = new BoundGotoStatement(checkLabel);
-            var conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfFalse: true);
+            var gotoCheck = new BoundGotoStatement(node.ContinueLabel);
+            var conditionalGotoEnd = new BoundConditionalGotoStatement(node.BreakLabel, node.Condition, jumpIfFalse: true);
 
             var result = new BoundBlockStatement(ImmutableArray.Create(
                 checkLabelStatement,
@@ -170,6 +170,7 @@ namespace VSharp.Lowering
              *    while (<condition>)
              *    {
              *       <body>
+             *       continue:
              *       <update>
              *    }
              * }
@@ -177,8 +178,9 @@ namespace VSharp.Lowering
              */
 
             // Create the inner while statement (condition, body, update).
-            var whileBlock = new BoundBlockStatement(ImmutableArray.Create(node.Body, node.UpdateStatement));
-            var whileStatement = new BoundWhileStatement(node.Condition, whileBlock);
+            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
+            var whileBlock = new BoundBlockStatement(ImmutableArray.Create(node.Body, continueLabelStatement, node.UpdateStatement));
+            var whileStatement = new BoundWhileStatement(node.Condition, whileBlock, _labelGenerator.GenerateLabel(LabelCategory.Continue), node.BreakLabel);
 
             // Create the outer block statement (init, while).
             var result = new BoundBlockStatement(ImmutableArray.Create(node.InitializationStatement, whileStatement));
@@ -187,33 +189,6 @@ namespace VSharp.Lowering
         }
 
         #endregion RewriteStatement
-
-        #region Utilities
-
-        private int _labelCount;
-        private readonly Dictionary<LabelCategory, int> _labelCounters = new Dictionary<LabelCategory, int>();
-
-        private enum LabelCategory
-        {
-            Check,
-            Else,
-            End,
-        }
-
-        private LabelSymbol GenerateLabel(LabelCategory category)
-        {
-            _labelCounters.TryGetValue(category, out int count);
-
-            string name = $"{category}{count}_{_labelCount}";
-
-            count++;
-            _labelCount++;
-
-            _labelCounters[category] = count;
-            return new LabelSymbol(name);
-        }
-
-        #endregion Utilities
 
         #region Helpers
 

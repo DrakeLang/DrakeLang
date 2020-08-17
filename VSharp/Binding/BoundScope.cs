@@ -28,6 +28,8 @@ namespace VSharp.Binding
         private Dictionary<string, VariableSymbol>? _variables;
         private Dictionary<string, LabelSymbol>? _labels;
         private Dictionary<string, MethodSymbol>? _methods;
+        private readonly LabelSymbol? _continueLabel;
+        private readonly LabelSymbol? _breakLabel;
 
         #region Constructors
 
@@ -40,6 +42,13 @@ namespace VSharp.Binding
             Parent = parent;
         }
 
+        public BoundScope(BoundScope? parent, LabelSymbol continueLabel, LabelSymbol breakLabel)
+        {
+            Parent = parent;
+            _continueLabel = continueLabel;
+            _breakLabel = breakLabel;
+        }
+
         #endregion Constructors
 
         #region Properties
@@ -47,6 +56,42 @@ namespace VSharp.Binding
         public BoundScope? Parent { get; }
 
         #endregion Properties
+
+        public bool TryGetContinueLabel([NotNullWhen(true)] out LabelSymbol? continueLabel)
+        {
+            if (_continueLabel != null)
+            {
+                continueLabel = _continueLabel;
+                return true;
+            }
+
+            if (Parent != null)
+            {
+                return Parent.TryGetContinueLabel(out continueLabel);
+            }
+
+            continueLabel = null;
+            return false;
+        }
+
+        public bool TryGetBreakLabel([NotNullWhen(true)] out LabelSymbol? breakLabel)
+        {
+            if (_breakLabel != null)
+            {
+                breakLabel = _breakLabel;
+                return true;
+            }
+
+            if (Parent != null)
+            {
+                return Parent.TryGetBreakLabel(out breakLabel);
+            }
+
+            breakLabel = null;
+            return false;
+        }
+
+        #region Symbols
 
         #region Variable
 
@@ -202,5 +247,7 @@ namespace VSharp.Binding
         }
 
         #endregion Method
+
+        #endregion Symbols
     }
 }

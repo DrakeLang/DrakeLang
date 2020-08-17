@@ -106,6 +106,8 @@ namespace VSharp.Syntax
                 SyntaxKind.ForKeyword => ParseForStatement(),
                 SyntaxKind.GoToKeyword => ParseGoToStatement(),
                 SyntaxKind.IdentifierToken when LookAhead.Kind == SyntaxKind.ColonToken => ParseLabelDeclarationStatement(),
+                SyntaxKind.ContinueKeyword => ParseContinueStatement(),
+                SyntaxKind.BreakKeyword => ParseBreakStatement(),
 
                 _ => ParseExpressionStatement(requireSemicolon),
             };
@@ -223,6 +225,30 @@ namespace VSharp.Syntax
                 updateStatement,
                 rightParenthesis,
                 statement);
+        }
+
+        private ContinueStatementSyntax ParseContinueStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.ContinueKeyword);
+            LiteralExpressionSyntax? layerExpression = null;
+            if (Current.Kind == SyntaxKind.IntegerToken)
+                layerExpression = ParseIntegerLiteral();
+
+            var semicolon = MatchToken(SyntaxKind.SemicolonToken);
+
+            return new ContinueStatementSyntax(keyword, layerExpression, semicolon);
+        }
+
+        private BreakStatementSyntax ParseBreakStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.BreakKeyword);
+            LiteralExpressionSyntax? layerExpression = null;
+            if (Current.Kind == SyntaxKind.IntegerToken)
+                layerExpression = ParseIntegerLiteral();
+
+            var semicolon = MatchToken(SyntaxKind.SemicolonToken);
+
+            return new BreakStatementSyntax(keyword, layerExpression, semicolon);
         }
 
         private GoToStatementSyntax ParseGoToStatement()

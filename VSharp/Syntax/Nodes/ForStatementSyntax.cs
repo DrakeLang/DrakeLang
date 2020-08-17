@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    public sealed class ForStatementSyntax : StatementSyntax
+    public sealed class ForStatementSyntax : LoopStatementSyntax
     {
         public ForStatementSyntax(
             SyntaxToken forKeyword,
@@ -29,6 +29,7 @@ namespace VSharp.Syntax
             ExpressionSyntax condition, SyntaxToken conditionSemicolon, StatementSyntax updateStatement,
             SyntaxToken closeParenthesisToken,
             StatementSyntax body)
+            : base(body)
         {
             ForKeyword = forKeyword;
             OpenParenthesisToken = openParenthesisToken;
@@ -38,7 +39,6 @@ namespace VSharp.Syntax
             ConditionSemicolon = conditionSemicolon;
             UpdateStatement = updateStatement;
             CloseParenthesisToken = closeParenthesisToken;
-            Body = body;
         }
 
         #region Properties
@@ -53,8 +53,6 @@ namespace VSharp.Syntax
         public SyntaxToken ConditionSemicolon { get; }
         public StatementSyntax UpdateStatement { get; }
         public SyntaxToken CloseParenthesisToken { get; }
-        public StatementSyntax Body { get; }
-
         #endregion Properties
 
         #region Methods

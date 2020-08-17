@@ -80,6 +80,12 @@ namespace VSharp
             Report(span, message);
         }
 
+        public void ReportUnexpectedBreakOrContinue(TextSpan span)
+        {
+            string message = "No enclosing loop out of which to break or continue.";
+            Report(span, message);
+        }
+
         public void ReportUndefinedUnaryOperator(TextSpan span, string? operatorText, TypeSymbol type)
         {
             string message = $"Unary operator '{operatorText}' is not defined for type '{type}'.";
@@ -114,8 +120,8 @@ namespace VSharp
         {
             string message = $"A variable with the name '{name}' is already declared.";
             Report(span, message);
-        }   
-        
+        }
+
         public void ReportLabelAlreadyDeclared(TextSpan span, string? name)
         {
             string message = $"A label with the name '{name}' is already declared.";

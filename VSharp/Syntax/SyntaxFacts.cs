@@ -190,6 +190,8 @@ namespace VSharp.Syntax
             SyntaxKind.WhileKeyword => "while",
             SyntaxKind.GoToKeyword => "goto",
             SyntaxKind.ForKeyword => "for",
+            SyntaxKind.ContinueKeyword => "continue",
+            SyntaxKind.BreakKeyword => "break",
             SyntaxKind.TypeofKeyword => "typeof",
             SyntaxKind.NameofKeyword => "nameof",
 
@@ -213,7 +215,10 @@ namespace VSharp.Syntax
                 "if" => SyntaxKind.IfKeyword,
                 "else" => SyntaxKind.ElseKeyword,
                 "while" => SyntaxKind.WhileKeyword,
+                "goto" => SyntaxKind.GoToKeyword,
                 "for" => SyntaxKind.ForKeyword,
+                "continue" => SyntaxKind.ContinueKeyword,
+                "break" => SyntaxKind.BreakKeyword,
 
                 "typeof" => SyntaxKind.TypeofKeyword,
                 "nameof" => SyntaxKind.NameofKeyword,

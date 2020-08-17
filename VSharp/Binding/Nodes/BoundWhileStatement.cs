@@ -17,15 +17,19 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
-    internal sealed class BoundWhileStatement : BoundStatement
+    internal sealed class BoundWhileStatement : BoundLoopStatement
     {
-        public BoundWhileStatement(BoundExpression condition, BoundStatement body)
+        public BoundWhileStatement(BoundExpression condition,
+                                   BoundStatement body,
+                                   LabelSymbol continueLabel,
+                                   LabelSymbol breakLabel)
+            : base(body, continueLabel, breakLabel)
         {
             Condition = condition;
-            Body = body;
         }
 
         #region Properties
@@ -33,7 +37,6 @@ namespace VSharp.Binding
         public override BoundNodeKind Kind => BoundNodeKind.WhileStatement;
 
         public BoundExpression Condition { get; }
-        public BoundStatement Body { get; }
 
         #endregion Properties
 

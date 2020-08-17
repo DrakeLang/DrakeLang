@@ -16,33 +16,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
 using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
-    internal sealed class BoundConditionalGotoStatement : BoundStatement
+    internal abstract class BoundLoopStatement : BoundStatement
     {
-        public BoundConditionalGotoStatement(LabelSymbol label, BoundExpression condition, bool jumpIfFalse = false)
+        public BoundLoopStatement(BoundStatement body, LabelSymbol continueLabel, LabelSymbol breakLabel)
         {
-            Label = label;
-            Condition = condition;
-            JumpIfFalse = jumpIfFalse;
+            Body = body;
+            ContinueLabel = continueLabel;
+            BreakLabel = breakLabel;
         }
 
-        #region Properties
-
-        public override BoundNodeKind Kind => BoundNodeKind.ConditionalGotoStatement;
-
-        public LabelSymbol Label { get; }
-        public BoundExpression Condition { get; }
-        public bool JumpIfFalse { get; }
-
-        #endregion Properties
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield return Condition;
-        }
+        public BoundStatement Body { get; }
+        public LabelSymbol ContinueLabel { get; }
+        public LabelSymbol BreakLabel { get; }
     }
 }

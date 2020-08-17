@@ -16,17 +16,31 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+#pragma warning disable CA1724 // on't have type named Compilation due to conflict with 'System.Web.Compilation'
+
+using System.Collections.Generic;
+using VSharp.Symbols;
+
 namespace VSharp
 {
-    public sealed class LabelSymbol
+    internal sealed class LabelGenerator
     {
-        public LabelSymbol(string name)
+        private readonly Dictionary<LabelCategory, int> _labelCounters = new Dictionary<LabelCategory, int>();
+
+        public LabelGenerator()
         {
-            Name = name;
         }
 
-        public string Name { get; }
+        public LabelSymbol GenerateLabel(LabelCategory category)
+        {
+            _labelCounters.TryGetValue(category, out int count);
 
-        public override string ToString() => Name;
+            string name = $"{category}_{count}";
+
+            count++;
+
+            _labelCounters[category] = count;
+            return new LabelSymbol(name);
+        }
     }
 }

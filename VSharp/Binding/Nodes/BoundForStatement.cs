@@ -17,17 +17,23 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
-    internal sealed class BoundForStatement : BoundStatement
+    internal sealed class BoundForStatement : BoundLoopStatement
     {
-        public BoundForStatement(BoundStatement initializationStatement, BoundExpression condition, BoundStatement updateStatement, BoundStatement body)
+        public BoundForStatement(BoundStatement initializationStatement,
+                                 BoundExpression condition,
+                                 BoundStatement updateStatement,
+                                 BoundStatement body,
+                                 LabelSymbol continueLabel,
+                                 LabelSymbol breakLabel)
+            : base(body, continueLabel, breakLabel)
         {
             InitializationStatement = initializationStatement;
             Condition = condition;
             UpdateStatement = updateStatement;
-            Body = body;
         }
 
         #region Properties
@@ -37,7 +43,6 @@ namespace VSharp.Binding
         public BoundStatement InitializationStatement { get; }
         public BoundExpression Condition { get; }
         public BoundStatement UpdateStatement { get; }
-        public BoundStatement Body { get; }
 
         #endregion Properties
 

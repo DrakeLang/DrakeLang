@@ -31,7 +31,7 @@ namespace VSharp.Symbols
 
         #region Properties
 
-        public override SymbolKind Kind => SymbolKind.Function;
+        public override SymbolKind Kind => SymbolKind.Method;
         public ImmutableArray<ParameterSymbol> Parameters { get; }
         public TypeSymbol ReturnType { get; }
 
