@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ using VSharp.Symbols;
 
 namespace VSharp
 {
-    internal sealed class LiteralEvaluator
+    internal static class LiteralEvaluator
     {
         public static object EvaluateUnaryExpression(BoundUnaryOperator op, object operand)
         {

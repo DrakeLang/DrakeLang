@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -78,6 +78,7 @@ namespace VSharp.Binding
                 BoundNodeKind.LabelStatement => RewriteLabelStatement((BoundLabelStatement)node),
                 BoundNodeKind.GotoStatement => RewriteGotoStatement((BoundGotoStatement)node),
                 BoundNodeKind.ConditionalGotoStatement => RewriteConditionalGotoStatement((BoundConditionalGotoStatement)node),
+                BoundNodeKind.ReturnStatement => RewriteReturnStatement((BoundReturnStatement)node),
                 BoundNodeKind.ExpressionStatement => RewriteExpressionStatement((BoundExpressionStatement)node),
                 BoundNodeKind.NoOpStatement => node,
 
@@ -189,6 +190,18 @@ namespace VSharp.Binding
                 return node;
 
             return new BoundConditionalGotoStatement(node.Label, condition, node.JumpIfFalse);
+        }
+
+        protected virtual BoundStatement RewriteReturnStatement(BoundReturnStatement node)
+        {
+            if (node.Expression is null)
+                return node;
+
+            var expression = RewriteExpression(node.Expression);
+            if (expression == node.Expression)
+                return node;
+
+            return new BoundReturnStatement(expression);
         }
 
         protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)

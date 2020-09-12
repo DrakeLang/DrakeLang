@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -67,7 +67,7 @@ namespace VSharp
                 }
             }
 
-            public void Evaluate()
+            public object Evaluate()
             {
                 // Evaluate program.
                 int index = 0;
@@ -99,6 +99,13 @@ namespace VSharp
                                 index++;
                             break;
 
+                        case BoundNodeKind.ReturnStatement:
+                            var returnStatement = (BoundReturnStatement)s;
+                            if (returnStatement.Expression is null)
+                                return 0;
+                            else
+                                return EvaluateExpression(returnStatement.Expression);
+
                         case BoundNodeKind.LabelStatement:
                         case BoundNodeKind.NoOpStatement:
                             index++;
@@ -108,6 +115,8 @@ namespace VSharp
                             throw new Exception($"Unexpected node '{s.Kind}'.");
                     }
                 }
+
+                return 0;
             }
 
             #region EvaluateStatement
@@ -228,7 +237,7 @@ namespace VSharp
                         stackFrame[node.Method.Parameters[i]] = EvaluateExpression(node.Arguments[i]);
                     }
 
-                    new InternalEvaluator(method.Declaration, stackFrame, _methods).Evaluate();
+                    return new InternalEvaluator(method.Declaration, stackFrame, _methods).Evaluate();
                 }
                 else throw new Exception($"Unexpected method '{node.Method}'.");
 

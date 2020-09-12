@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -127,6 +127,7 @@ namespace VSharp.Binding
                 SyntaxKind.WhileStatement => BindLoopStatement((WhileStatementSyntax)syntax),
                 SyntaxKind.ForStatement => BindLoopStatement((ForStatementSyntax)syntax),
                 SyntaxKind.GoToStatement => BindGoToStatement((GoToStatementSyntax)syntax),
+                SyntaxKind.ReturnStatement => BindReturnStatement((ReturnStatementSyntax)syntax),
                 SyntaxKind.LabelStatement => BindLabelStatement((LabelStatementSyntax)syntax),
                 SyntaxKind.ContinueStatement => BindContinueStatement((ContinueStatementSyntax)syntax),
                 SyntaxKind.BreakStatement => BindBreakStatement((BreakStatementSyntax)syntax),
@@ -263,6 +264,12 @@ namespace VSharp.Binding
                 return BoundNoOpStatement.Instance;
 
             return new BoundGotoStatement(label);
+        }
+
+        private BoundStatement BindReturnStatement(ReturnStatementSyntax syntax)
+        {
+            var expression = syntax.Expression is null ? null : BindExpression(syntax.Expression);
+            return new BoundReturnStatement(expression);
         }
 
         private BoundStatement BindLabelStatement(LabelStatementSyntax syntax)
@@ -567,7 +574,11 @@ namespace VSharp.Binding
                 return;
 
             var parameters = BindParameters(syntax.Parameters);
-            var method = new MethodSymbol(name, parameters, TypeSymbol.Void);
+            var type = syntax.TypeOrDefKeyword.Kind == SyntaxKind.DefKeyword
+                ? TypeSymbol.Void
+                : ResolveType(syntax.TypeOrDefKeyword.Kind) ?? TypeSymbol.Error;
+
+            var method = new MethodSymbol(name, parameters, type);
 
             if (!_scope.TryDeclareMethod(method))
                 Diagnostics.ReportMethodAlreadyDeclared(syntax.Identifier.Span, name);

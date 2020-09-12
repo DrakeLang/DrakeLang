@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -79,6 +79,7 @@ namespace VSharp.Syntax
         ElseKeyword,
         WhileKeyword,
         ForKeyword,
+        ReturnKeyword,
         ContinueKeyword,
         BreakKeyword,
         TypeofKeyword,
@@ -101,6 +102,7 @@ namespace VSharp.Syntax
         GoToKeyword,
         GoToStatement,
         LabelStatement,
+        ReturnStatement,
         ContinueStatement,
         BreakStatement,
         ExpressionStatement,

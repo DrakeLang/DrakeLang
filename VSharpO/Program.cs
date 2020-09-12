@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ namespace VSharpO
             catch (Exception ex)
             {
                 ConsoleExt.WriteLine($"Unhandled exception. " + ex, ConsoleColor.DarkRed);
+                Console.ResetColor();
             }
 #pragma warning restore CA1031 // Do not catch general exception types
         }
