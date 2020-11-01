@@ -54,9 +54,9 @@ namespace VSharp.Syntax
                     return 8;
 
                 case SyntaxKind.LessToken:
-                case SyntaxKind.LessOrEqualsToken:
+                case SyntaxKind.LessEqualsToken:
                 case SyntaxKind.GreaterToken:
-                case SyntaxKind.GreaterOrEqualsToken:
+                case SyntaxKind.GreaterEqualsToken:
                     return 7;
 
                 case SyntaxKind.EqualsEqualsToken:
@@ -166,9 +166,9 @@ namespace VSharp.Syntax
             SyntaxKind.PipeEqualsToken => "|=",
             SyntaxKind.EqualsEqualsToken => "==",
             SyntaxKind.LessToken => "<",
-            SyntaxKind.LessOrEqualsToken => "<=",
+            SyntaxKind.LessEqualsToken => "<=",
             SyntaxKind.GreaterToken => ">",
-            SyntaxKind.GreaterOrEqualsToken => ">=",
+            SyntaxKind.GreaterEqualsToken => ">=",
             SyntaxKind.OpenParenthesisToken => "(",
             SyntaxKind.CloseParenthesisToken => ")",
             SyntaxKind.OpenBraceToken => "{",

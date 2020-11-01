@@ -307,7 +307,7 @@ namespace VSharp.Syntax
                     if (Current == '=')
                     {
                         Next();
-                        syntaxKind = SyntaxKind.LessOrEqualsToken;
+                        syntaxKind = SyntaxKind.LessEqualsToken;
                     }
                     else
                         syntaxKind = SyntaxKind.LessToken;
@@ -318,7 +318,7 @@ namespace VSharp.Syntax
                     if (Current == '=')
                     {
                         Next();
-                        syntaxKind = SyntaxKind.GreaterOrEqualsToken;
+                        syntaxKind = SyntaxKind.GreaterEqualsToken;
                     }
                     else
                         syntaxKind = SyntaxKind.GreaterToken;
