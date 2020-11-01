@@ -80,12 +80,11 @@ namespace VSharp.Tests.Syntax
             string? binaryText = binaryKind.GetText();
             string text = $"{unaryText} a {binaryText} b";
 
-            ExpressionSyntax expression = ParseExpression(text);
+            var expression = ParseExpression(text);
+            using var e = new AssertingEnumerator(expression);
 
             if (unaryPrecedence >= binaryPrecedence)
             {
-                using AssertingEnumerator e = new AssertingEnumerator(expression);
-
                 e.AssertNode(SyntaxKind.BinaryExpression);
                 e.AssertNode(SyntaxKind.UnaryExpression);
                 e.AssertToken(unaryKind, unaryText);
@@ -97,8 +96,6 @@ namespace VSharp.Tests.Syntax
             }
             else
             {
-                using AssertingEnumerator e = new AssertingEnumerator(expression);
-
                 e.AssertNode(SyntaxKind.UnaryExpression);
                 e.AssertToken(unaryKind, unaryText);
                 e.AssertNode(SyntaxKind.BinaryExpression);
@@ -117,6 +114,13 @@ namespace VSharp.Tests.Syntax
 var a = 5;
 var b = a * a;
 ");
+            Assert.Empty(syntaxTree.Diagnostics);
+        }
+
+        [Fact]
+        public void Parser_Supports_ExpressionBodies()
+        {
+            var syntaxTree = SyntaxTree.Parse(@"def main() => a + a;");
             Assert.Empty(syntaxTree.Diagnostics);
         }
 

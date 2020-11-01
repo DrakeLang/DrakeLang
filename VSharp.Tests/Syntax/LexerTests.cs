@@ -200,24 +200,30 @@ namespace VSharp.Tests.Syntax
             {
                 if (t2Kind == SyntaxKind.EqualsToken) return true;
                 if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualGreaterToken) return true;
             }
 
             if (t1Kind == SyntaxKind.EqualsToken)
             {
                 if (t2Kind == SyntaxKind.EqualsToken) return true;
                 if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+                if (t2Kind == SyntaxKind.GreaterEqualsToken) return true;
+                if (t2Kind == SyntaxKind.GreaterToken) return true;
+                if (t2Kind == SyntaxKind.EqualGreaterToken) return true;
             }
 
             if (t1Kind == SyntaxKind.LessToken)
             {
                 if (t2Kind == SyntaxKind.EqualsToken) return true;
                 if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualGreaterToken) return true;
             }
 
             if (t1Kind == SyntaxKind.GreaterToken)
             {
                 if (t2Kind == SyntaxKind.EqualsToken) return true;
                 if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualGreaterToken) return true;
             }
 
             if (t1Kind == SyntaxKind.PlusToken)
@@ -227,6 +233,7 @@ namespace VSharp.Tests.Syntax
                 if (t2Kind == SyntaxKind.EqualsToken) return true;
                 if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
                 if (t2Kind == SyntaxKind.PlusEqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualGreaterToken) return true;
             }
 
             if (t1Kind == SyntaxKind.MinusToken)
@@ -236,12 +243,14 @@ namespace VSharp.Tests.Syntax
                 if (t2Kind == SyntaxKind.EqualsToken) return true;
                 if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
                 if (t2Kind == SyntaxKind.MinusEqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualGreaterToken) return true;
             }
 
             if (t1Kind == SyntaxKind.StarToken)
             {
                 if (t2Kind == SyntaxKind.EqualsToken) return true;
                 if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualGreaterToken) return true;
             }
 
             if (t1Kind == SyntaxKind.SlashToken)
@@ -254,6 +263,7 @@ namespace VSharp.Tests.Syntax
                 if (t2Kind == SyntaxKind.StarEqualsToken) return true;
                 if (t2Kind == SyntaxKind.LineCommentToken) return true;
                 if (t2Kind == SyntaxKind.MultiLineCommentToken) return true;
+                if (t2Kind == SyntaxKind.EqualGreaterToken) return true;
             }
 
             if (t1Kind == SyntaxKind.PipeToken)
@@ -263,6 +273,7 @@ namespace VSharp.Tests.Syntax
                 if (t2Kind == SyntaxKind.EqualsToken) return true;
                 if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
                 if (t2Kind == SyntaxKind.PipeEqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualGreaterToken) return true;
             }
 
             if (t1Kind == SyntaxKind.AmpersandToken)
@@ -272,6 +283,7 @@ namespace VSharp.Tests.Syntax
                 if (t2Kind == SyntaxKind.EqualsToken) return true;
                 if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
                 if (t2Kind == SyntaxKind.AmpersandEqualsToken) return true;
+                if (t2Kind == SyntaxKind.EqualGreaterToken) return true;
             }
 
             return RequiresLinebreak(t1Kind, t2Kind);

@@ -293,7 +293,7 @@ namespace VSharp.Syntax
             var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
             var parameters = ParseParameterList();
             var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
-            var declaration = ParseBlockStatement();
+            var declaration = Current.Kind == SyntaxKind.EqualGreaterToken ? (BodyStatementSyntax)ParseExpressionBody() : ParseBlockBody();
 
             return new MethodDeclarationStatementSyntax(defKeyword, identifier, leftParenthesis, parameters, rightParenthesis, declaration);
         }
@@ -334,6 +334,20 @@ namespace VSharp.Syntax
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
 
             return new ParameterSyntax(type, identifier);
+        }
+
+        private ExpressionBodyStatementSyntax ParseExpressionBody()
+        {
+            var lambdaOperator = MatchToken(SyntaxKind.EqualGreaterToken);
+            var statement = ParseStatement();
+
+            return new ExpressionBodyStatementSyntax(lambdaOperator, statement);
+        }
+
+        private BlockBodyStatementSyntax ParseBlockBody()
+        {
+            var blockStatement = ParseBlockStatement();
+            return new BlockBodyStatementSyntax(blockStatement.OpenBraceToken, blockStatement.Statements, blockStatement.CloseBraceToken);
         }
 
         private ExpressionStatementSyntax ParseExpressionStatement(bool requireSemicolon)

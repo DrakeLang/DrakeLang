@@ -287,6 +287,11 @@ namespace VSharp.Syntax
                         Next();
                         syntaxKind = SyntaxKind.EqualsEqualsToken;
                     }
+                    else if (Current == '>')
+                    {
+                        Next();
+                        syntaxKind = SyntaxKind.EqualGreaterToken;
+                    }
                     else
                         syntaxKind = SyntaxKind.EqualsToken;
                     return true;

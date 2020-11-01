@@ -56,6 +56,7 @@ namespace VSharp.Syntax
         GreaterEqualsToken,
         LessToken,
         GreaterToken,
+        EqualGreaterToken,
         OpenParenthesisToken,
         CloseParenthesisToken,
         OpenBraceToken,
@@ -106,6 +107,8 @@ namespace VSharp.Syntax
         ReturnStatement,
         ContinueStatement,
         BreakStatement,
+        BlockBodyStatement,
+        ExpressionBodyStatement,
         ExpressionStatement,
 
         // Expressions

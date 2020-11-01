@@ -46,12 +46,64 @@ namespace VSharp.Syntax
         {
             yield return OpenBraceToken;
 
-            foreach (StatementSyntax statement in Statements)
+            foreach (var statement in Statements)
                 yield return statement;
 
             yield return CloseBraceToken;
         }
 
         #endregion Methods
+    }
+
+    public abstract class BodyStatementSyntax : StatementSyntax
+    {
+        public abstract ImmutableArray<StatementSyntax> Statements { get; }
+    }
+
+    public sealed class BlockBodyStatementSyntax : BodyStatementSyntax
+    {
+        public BlockBodyStatementSyntax(SyntaxToken openBraceToken, ImmutableArray<StatementSyntax> statements, SyntaxToken closeBraceToken)
+        {
+            OpenBraceToken = openBraceToken;
+            Statements = statements;
+            CloseBraceToken = closeBraceToken;
+        }
+
+        public override SyntaxKind Kind => SyntaxKind.BlockBodyStatement;
+        public SyntaxToken OpenBraceToken { get; }
+        public override ImmutableArray<StatementSyntax> Statements { get; }
+        public SyntaxToken CloseBraceToken { get; }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return OpenBraceToken;
+
+            foreach (var statement in Statements)
+                yield return statement;
+
+            yield return CloseBraceToken;
+        }
+    }
+
+    public sealed class ExpressionBodyStatementSyntax : BodyStatementSyntax
+    {
+        public ExpressionBodyStatementSyntax(SyntaxToken lambdaOperator, StatementSyntax statement)
+        {
+            LambdaOperator = lambdaOperator;
+            Statement = statement;
+            Statements = ImmutableArray.Create(statement);
+        }
+
+        public override SyntaxKind Kind => SyntaxKind.ExpressionBodyStatement;
+        public SyntaxToken LambdaOperator { get; }
+        public StatementSyntax Statement { get; }
+
+        public override ImmutableArray<StatementSyntax> Statements { get; }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return LambdaOperator;
+            yield return Statement;
+        }
     }
 }

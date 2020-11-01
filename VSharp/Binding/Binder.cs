@@ -200,7 +200,9 @@ namespace VSharp.Binding
                     _scope.TryDeclareVariable(parameter);
                 }
 
-                var boundDeclaration = BindBlockStatement(syntax.Declaration);
+                var statements = BindStatements(syntax.Declaration.Statements);
+                var boundDeclaration = new BoundBlockStatement(statements);
+
                 return new BoundMethodDeclarationStatement(method, boundDeclaration);
             }
             finally

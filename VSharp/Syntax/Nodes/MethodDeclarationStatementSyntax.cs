@@ -30,7 +30,7 @@ namespace VSharp.Syntax
 
     public sealed class MethodDeclarationStatementSyntax : StatementSyntax
     {
-        public MethodDeclarationStatementSyntax(SyntaxToken typeOrDefKeyword, SyntaxToken identifier, SyntaxToken leftParenthesis, SeparatedSyntaxCollection<ParameterSyntax> parameters, SyntaxToken rightParenthesis, BlockStatementSyntax declaration)
+        public MethodDeclarationStatementSyntax(SyntaxToken typeOrDefKeyword, SyntaxToken identifier, SyntaxToken leftParenthesis, SeparatedSyntaxCollection<ParameterSyntax> parameters, SyntaxToken rightParenthesis, BodyStatementSyntax declaration)
         {
             TypeOrDefKeyword = typeOrDefKeyword;
             Identifier = identifier;
@@ -47,7 +47,7 @@ namespace VSharp.Syntax
         public SyntaxToken LeftParenthesis { get; }
         public SeparatedSyntaxCollection<ParameterSyntax> Parameters { get; }
         public SyntaxToken RightParenthesis { get; }
-        public BlockStatementSyntax Declaration { get; }
+        public BodyStatementSyntax Declaration { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
