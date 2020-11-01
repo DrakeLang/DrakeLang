@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
@@ -39,6 +40,23 @@ namespace VSharp.Binding
         public override IEnumerable<BoundNode> GetChildren()
         {
             return Enumerable.Empty<BoundNode>();
+        }
+    }
+
+    internal sealed class BoundReturnStatement : BoundStatement
+    {
+        public BoundReturnStatement(BoundExpression? expression)
+        {
+            Expression = expression;
+        }
+
+        public override BoundNodeKind Kind => BoundNodeKind.ReturnStatement;
+        public BoundExpression? Expression { get; }
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            if (Expression != null)
+                yield return Expression;
         }
     }
 }

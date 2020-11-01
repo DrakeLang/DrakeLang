@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -94,7 +94,12 @@ namespace VSharp.Syntax
         private StatementSyntax ParseStatement(bool requireSemicolon = true)
         {
             if (Current.Kind.IsTypeKeyword())
-                return ParseVariableDeclarationStatement(requireSemicolon);
+            {
+                if (LookAhead.Kind == SyntaxKind.IdentifierToken && Peek(2).Kind == SyntaxKind.OpenParenthesisToken)
+                    return ParseMethodDeclarationStatement();
+                else
+                    return ParseVariableDeclarationStatement(requireSemicolon);
+            }
 
             return Current.Kind switch
             {
@@ -103,6 +108,11 @@ namespace VSharp.Syntax
                 SyntaxKind.IfKeyword => ParseIfStatement(),
                 SyntaxKind.WhileKeyword => ParseWhileStatement(),
                 SyntaxKind.ForKeyword => ParseForStatement(),
+                SyntaxKind.GoToKeyword => ParseGoToStatement(),
+                SyntaxKind.IdentifierToken when LookAhead.Kind == SyntaxKind.ColonToken => ParseLabelDeclarationStatement(),
+                SyntaxKind.ReturnKeyword => ParseReturnStatement(),
+                SyntaxKind.ContinueKeyword => ParseContinueStatement(),
+                SyntaxKind.BreakKeyword => ParseBreakStatement(),
 
                 _ => ParseExpressionStatement(requireSemicolon),
             };
@@ -222,9 +232,62 @@ namespace VSharp.Syntax
                 statement);
         }
 
+        private ReturnStatementSyntax ParseReturnStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.ReturnKeyword);
+            ExpressionSyntax? expression = null;
+            if (Current.Kind != SyntaxKind.SemicolonToken)
+                expression = ParseExpression();
+
+            var semicolon = MatchToken(SyntaxKind.SemicolonToken);
+
+            return new ReturnStatementSyntax(keyword, expression, semicolon);
+        }
+
+        private ContinueStatementSyntax ParseContinueStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.ContinueKeyword);
+            LiteralExpressionSyntax? layerExpression = null;
+            if (Current.Kind == SyntaxKind.IntegerToken)
+                layerExpression = ParseIntegerLiteral();
+
+            var semicolon = MatchToken(SyntaxKind.SemicolonToken);
+
+            return new ContinueStatementSyntax(keyword, layerExpression, semicolon);
+        }
+
+        private BreakStatementSyntax ParseBreakStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.BreakKeyword);
+            LiteralExpressionSyntax? layerExpression = null;
+            if (Current.Kind == SyntaxKind.IntegerToken)
+                layerExpression = ParseIntegerLiteral();
+
+            var semicolon = MatchToken(SyntaxKind.SemicolonToken);
+
+            return new BreakStatementSyntax(keyword, layerExpression, semicolon);
+        }
+
+        private GoToStatementSyntax ParseGoToStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.GoToKeyword);
+            var label = MatchToken(SyntaxKind.IdentifierToken);
+            var semicolon = MatchToken(SyntaxKind.SemicolonToken);
+
+            return new GoToStatementSyntax(keyword, label, semicolon);
+        }
+
+        private LabelStatementSyntax ParseLabelDeclarationStatement()
+        {
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var colonToken = MatchToken(SyntaxKind.ColonToken);
+
+            return new LabelStatementSyntax(identifier, colonToken);
+        }
+
         private MethodDeclarationStatementSyntax ParseMethodDeclarationStatement()
         {
-            var defKeyword = MatchToken(SyntaxKind.DefKeyword);
+            var defKeyword = Current.Kind.IsTypeKeyword() ? NextToken() : MatchToken(SyntaxKind.DefKeyword);
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
             var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
             var parameters = ParseParameterList();

@@ -20,42 +20,46 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    public sealed class VariableDeclarationStatementSyntax : StatementSyntax
+    public sealed class LabelStatementSyntax : StatementSyntax
     {
-        public VariableDeclarationStatementSyntax(SyntaxToken keyword, SyntaxToken identifier, SyntaxToken equalsToken, ExpressionSyntax initializer, SyntaxToken? semicolonToken)
+        public LabelStatementSyntax(SyntaxToken identifier, SyntaxToken colonToken)
         {
-            Keyword = keyword;
             Identifier = identifier;
-            EqualsToken = equalsToken;
-            Initializer = initializer;
-            SemicolonToken = semicolonToken;
+            ColonToken = colonToken;
         }
 
-        #region Properties
+        public override SyntaxKind Kind => SyntaxKind.LabelStatement;
 
-        public override SyntaxKind Kind => SyntaxKind.VariableDeclarationStatement;
-
-        public SyntaxToken Keyword { get; }
         public SyntaxToken Identifier { get; }
-        public SyntaxToken EqualsToken { get; }
-        public ExpressionSyntax Initializer { get; }
-        public SyntaxToken? SemicolonToken { get; }
-
-        #endregion Properties
-
-        #region Methods
+        public SyntaxToken ColonToken { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return Keyword;
             yield return Identifier;
-            yield return EqualsToken;
-            yield return Initializer;
+            yield return ColonToken;
+        }
+    }
 
-            if (SemicolonToken != null)
-                yield return SemicolonToken;
+    public sealed class GoToStatementSyntax : StatementSyntax
+    {
+        public GoToStatementSyntax(SyntaxToken goToKeyword, SyntaxToken label, SyntaxToken semicolon)
+        {
+            GoToKeyword = goToKeyword;
+            Label = label;
+            Semicolon = semicolon;
         }
 
-        #endregion Methods
+        public override SyntaxKind Kind => SyntaxKind.GoToStatement;
+
+        public SyntaxToken GoToKeyword { get; }
+        public SyntaxToken Label { get; }
+        public SyntaxToken Semicolon { get; }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return GoToKeyword;
+            yield return Label;
+            yield return Semicolon;
+        }
     }
 }

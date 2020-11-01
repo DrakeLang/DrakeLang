@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using VSharp.Binding;
 using VSharp.Symbols;
@@ -26,81 +27,96 @@ namespace VSharp
 {
     internal sealed class Evaluator : IEvaluator
     {
-        private readonly Dictionary<MethodSymbol, BoundMethodDeclarationStatement>? _methods;
-
         public Evaluator()
         {
         }
 
-        private Evaluator(Dictionary<MethodSymbol, BoundMethodDeclarationStatement> methods)
+        public void Evaluate(ImmutableArray<BoundMethodDeclarationStatement> methods, Dictionary<VariableSymbol, object> variables)
         {
-            _methods = methods;
-        }
+            var entryMethod = methods.FirstOrDefault(m => m.Method.Name == Binder.MainMethodName);
+            if (entryMethod is null)
+                throw new Exception($"No method with the name '{Binder.MainMethodName}' was found.");
 
-        public void Evaluate(BoundBlockStatement root, Dictionary<VariableSymbol, object> variables)
-        {
-            // Create label-index mapping for goto statements.
-            var labelToIndex = new Dictionary<LabelSymbol, int>();
-            for (int i = 0; i < root.Statements.Length; i++)
-            {
-                if (root.Statements[i] is BoundLabelStatement l)
-                {
-                    labelToIndex.Add(l.Label, i + 1);
-                }
-            }
+            var evaluator = new InternalEvaluator(entryMethod.Declaration, variables, methods.ToDictionary(md => md.Method));
 
-            var evaluator = new InternalEvaluator(variables, _methods ?? root.MethodDeclarations.ToDictionary(md => md.Method));
-
-            // Evaluate program.
-            int index = 0;
-            while (index < root.Statements.Length)
-            {
-                var s = root.Statements[index];
-                switch (s.Kind)
-                {
-                    case BoundNodeKind.VariableDeclarationStatement:
-                        evaluator.EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)s);
-                        index++;
-                        break;
-
-                    case BoundNodeKind.ExpressionStatement:
-                        evaluator.EvaluateExpressionStatement((BoundExpressionStatement)s);
-                        index++;
-                        break;
-
-                    case BoundNodeKind.GotoStatement:
-                        var gotoStatement = (BoundGotoStatement)s;
-                        index = labelToIndex[gotoStatement.Label];
-                        break;
-
-                    case BoundNodeKind.ConditionalGotoStatement:
-                        var conGotoStatement = (BoundConditionalGotoStatement)s;
-                        if (evaluator.EvaluateConditionalGotoStatement(conGotoStatement))
-                            index = labelToIndex[conGotoStatement.Label];
-                        else
-                            index++;
-                        break;
-
-                    case BoundNodeKind.LabelStatement:
-                    case BoundNodeKind.NoOpStatement:
-                        index++;
-                        break;
-
-                    default:
-                        throw new Exception($"Unexpected node '{s.Kind}'.");
-                }
-            }
+            evaluator.Evaluate();
         }
 
         private sealed class InternalEvaluator
         {
+            private readonly BoundBlockStatement _root;
             private readonly Dictionary<VariableSymbol, object> _variables;
+            private readonly Dictionary<LabelSymbol, int> _labelToIndex = new Dictionary<LabelSymbol, int>();
             private readonly Dictionary<MethodSymbol, BoundMethodDeclarationStatement> _methods;
 
-            public InternalEvaluator(Dictionary<VariableSymbol, object> variables, Dictionary<MethodSymbol, BoundMethodDeclarationStatement> methods)
+            public InternalEvaluator(BoundBlockStatement root,
+                                     Dictionary<VariableSymbol, object> variables,
+                                     Dictionary<MethodSymbol, BoundMethodDeclarationStatement> methods)
             {
+                _root = root;
                 _variables = variables;
                 _methods = methods;
+
+                // Create label-index mapping for goto statements.
+                for (int i = 0; i < _root.Statements.Length; i++)
+                {
+                    if (_root.Statements[i] is BoundLabelStatement l)
+                    {
+                        _labelToIndex.Add(l.Label, i + 1);
+                    }
+                }
+            }
+
+            public object Evaluate()
+            {
+                // Evaluate program.
+                int index = 0;
+                while (index < _root.Statements.Length)
+                {
+                    var s = _root.Statements[index];
+                    switch (s.Kind)
+                    {
+                        case BoundNodeKind.VariableDeclarationStatement:
+                            EvaluateVariableDeclarationStatement((BoundVariableDeclarationStatement)s);
+                            index++;
+                            break;
+
+                        case BoundNodeKind.ExpressionStatement:
+                            EvaluateExpressionStatement((BoundExpressionStatement)s);
+                            index++;
+                            break;
+
+                        case BoundNodeKind.GotoStatement:
+                            var gotoStatement = (BoundGotoStatement)s;
+                            index = _labelToIndex[gotoStatement.Label];
+                            break;
+
+                        case BoundNodeKind.ConditionalGotoStatement:
+                            var conGotoStatement = (BoundConditionalGotoStatement)s;
+                            if (EvaluateConditionalGotoStatement(conGotoStatement))
+                                index = _labelToIndex[conGotoStatement.Label];
+                            else
+                                index++;
+                            break;
+
+                        case BoundNodeKind.ReturnStatement:
+                            var returnStatement = (BoundReturnStatement)s;
+                            if (returnStatement.Expression is null)
+                                return 0;
+                            else
+                                return EvaluateExpression(returnStatement.Expression);
+
+                        case BoundNodeKind.LabelStatement:
+                        case BoundNodeKind.NoOpStatement:
+                            index++;
+                            break;
+
+                        default:
+                            throw new Exception($"Unexpected node '{s.Kind}'.");
+                    }
+                }
+
+                return 0;
             }
 
             #region EvaluateStatement
@@ -221,7 +237,7 @@ namespace VSharp
                         stackFrame[node.Method.Parameters[i]] = EvaluateExpression(node.Arguments[i]);
                     }
 
-                    new Evaluator(_methods).Evaluate(method.Declaration, stackFrame);
+                    return new InternalEvaluator(method.Declaration, stackFrame, _methods).Evaluate();
                 }
                 else throw new Exception($"Unexpected method '{node.Method}'.");
 

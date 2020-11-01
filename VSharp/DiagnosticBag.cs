@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -80,6 +80,12 @@ namespace VSharp
             Report(span, message);
         }
 
+        public void ReportUnexpectedBreakOrContinue(TextSpan span)
+        {
+            string message = "No enclosing loop out of which to break or continue.";
+            Report(span, message);
+        }
+
         public void ReportUndefinedUnaryOperator(TextSpan span, string? operatorText, TypeSymbol type)
         {
             string message = $"Unary operator '{operatorText}' is not defined for type '{type}'.";
@@ -92,15 +98,9 @@ namespace VSharp
             Report(span, message);
         }
 
-        public void ReportUndefinedName(TextSpan span, string? name)
+        public void ReportUndefinedSymbol(TextSpan span, string? name)
         {
-            string message = $"Variable '{name}' does not exist.";
-            Report(span, message);
-        }
-
-        public void ReportUndefinedMethod(TextSpan span, string? name)
-        {
-            string message = $"Method '{name}' does not exist.";
+            string message = $"Symbol '{name}' does not exist.";
             Report(span, message);
         }
 
@@ -118,7 +118,13 @@ namespace VSharp
 
         public void ReportVariableAlreadyDeclared(TextSpan span, string? name)
         {
-            string message = $"Variable '{name}' is already declared.";
+            string message = $"A variable with the name '{name}' is already declared.";
+            Report(span, message);
+        }
+
+        public void ReportLabelAlreadyDeclared(TextSpan span, string? name)
+        {
+            string message = $"A label with the name '{name}' is already declared.";
             Report(span, message);
         }
 

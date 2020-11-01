@@ -17,20 +17,31 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using System.Linq;
 
-namespace VSharp.Binding
+namespace VSharp.Syntax
 {
-    internal sealed class BoundNoOpStatement : BoundStatement
+    internal sealed class BreakStatementSyntax : StatementSyntax
     {
-        public static BoundNoOpStatement Instance { get; } = new BoundNoOpStatement();
-
-        private BoundNoOpStatement()
+        public BreakStatementSyntax(SyntaxToken breakKeyword, LiteralExpressionSyntax? layerExpression, SyntaxToken semicolon)
         {
+            BreakKeyword = breakKeyword;
+            LayerExpression = layerExpression;
+            Semicolon = semicolon;
         }
 
-        public override BoundNodeKind Kind => BoundNodeKind.NoOpStatement;
+        public override SyntaxKind Kind => SyntaxKind.BreakStatement;
 
-        public override IEnumerable<BoundNode> GetChildren() => Enumerable.Empty<BoundNode>();
+        public SyntaxToken BreakKeyword { get; }
+        public LiteralExpressionSyntax? LayerExpression { get; }
+        public SyntaxToken Semicolon { get; }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return BreakKeyword;
+            if (LayerExpression != null)
+                yield return LayerExpression;
+
+            yield return Semicolon;
+        }
     }
 }

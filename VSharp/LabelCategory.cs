@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,17 +16,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+#pragma warning disable CA1724 // on't have type named Compilation due to conflict with 'System.Web.Compilation'
+
+
 namespace VSharp
 {
-    public sealed class LabelSymbol
+    internal enum LabelCategory
     {
-        public LabelSymbol(string name)
-        {
-            Name = name;
-        }
-
-        public string Name { get; }
-
-        public override string ToString() => Name;
+        Continue,
+        Break,
+        Check,
+        Else,
+        End,
     }
 }

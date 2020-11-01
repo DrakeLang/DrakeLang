@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,24 +16,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Symbols;
 using System.Collections.Immutable;
 
 namespace VSharp.Binding
 {
-    internal sealed class BoundGlobalScope
+    internal sealed class BindingResult
     {
-        public BoundGlobalScope(BoundGlobalScope? previous, ImmutableArray<Diagnostic> diagnostics, ImmutableArray<VariableSymbol> variables, BoundStatement statement)
+        public BindingResult(ImmutableArray<BoundMethodDeclarationStatement> methods, ImmutableArray<Diagnostic> diagnostics)
         {
-            Previous = previous;
+            Methods = methods;
             Diagnostics = diagnostics;
-            Variables = variables;
-            Statement = statement;
         }
 
-        public BoundGlobalScope? Previous { get; }
         public ImmutableArray<Diagnostic> Diagnostics { get; }
-        public ImmutableArray<VariableSymbol> Variables { get; }
-        public BoundStatement Statement { get; }
+        public ImmutableArray<BoundMethodDeclarationStatement> Methods { get; }
     }
 }

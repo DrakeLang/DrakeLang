@@ -16,21 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-using System.Linq;
-
-namespace VSharp.Binding
+namespace VSharp.Syntax
 {
-    internal sealed class BoundNoOpStatement : BoundStatement
+    public abstract class LoopStatementSyntax : StatementSyntax
     {
-        public static BoundNoOpStatement Instance { get; } = new BoundNoOpStatement();
-
-        private BoundNoOpStatement()
+        public LoopStatementSyntax(StatementSyntax body)
         {
+            Body = body;
         }
 
-        public override BoundNodeKind Kind => BoundNodeKind.NoOpStatement;
-
-        public override IEnumerable<BoundNode> GetChildren() => Enumerable.Empty<BoundNode>();
+        public StatementSyntax Body { get; }
     }
 }

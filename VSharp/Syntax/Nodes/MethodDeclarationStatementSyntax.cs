@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,15 +23,16 @@ namespace VSharp.Syntax
     /**
      * Syntax:
      * def methodName() {}
+     * int methodName() {}
      * def methodName(type param1) {}
      * def methodName(type param2, type param2) {}
      */
 
     public sealed class MethodDeclarationStatementSyntax : StatementSyntax
     {
-        public MethodDeclarationStatementSyntax(SyntaxToken defKeyword, SyntaxToken identifier, SyntaxToken leftParenthesis, SeparatedSyntaxCollection<ParameterSyntax> parameters, SyntaxToken rightParenthesis, BlockStatementSyntax declaration)
+        public MethodDeclarationStatementSyntax(SyntaxToken typeOrDefKeyword, SyntaxToken identifier, SyntaxToken leftParenthesis, SeparatedSyntaxCollection<ParameterSyntax> parameters, SyntaxToken rightParenthesis, BlockStatementSyntax declaration)
         {
-            DefKeyword = defKeyword;
+            TypeOrDefKeyword = typeOrDefKeyword;
             Identifier = identifier;
             LeftParenthesis = leftParenthesis;
             Parameters = parameters;
@@ -41,7 +42,7 @@ namespace VSharp.Syntax
 
         public override SyntaxKind Kind => SyntaxKind.MethodDeclarationStatement;
 
-        public SyntaxToken DefKeyword { get; }
+        public SyntaxToken TypeOrDefKeyword { get; }
         public SyntaxToken Identifier { get; }
         public SyntaxToken LeftParenthesis { get; }
         public SeparatedSyntaxCollection<ParameterSyntax> Parameters { get; }
@@ -50,7 +51,7 @@ namespace VSharp.Syntax
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return DefKeyword;
+            yield return TypeOrDefKeyword;
             yield return Identifier;
             yield return LeftParenthesis;
             foreach (var parameter in Parameters)

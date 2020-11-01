@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,17 +25,28 @@ namespace VSharp.Lowering
 {
     internal sealed class Lowerer : BoundTreeRewriter
     {
-        private Lowerer()
+        private readonly LabelGenerator _labelGenerator;
+
+        private Lowerer(LabelGenerator labelGenerator)
         {
+            _labelGenerator = labelGenerator;
         }
 
-        public static BoundBlockStatement Lower(BoundStatement statement)
+        public static ImmutableArray<BoundMethodDeclarationStatement> Lower(ImmutableArray<BoundMethodDeclarationStatement> methods, LabelGenerator labelGenerator)
         {
-            var lowerer = new Lowerer();
-            return lowerer.Lower_Internal(statement);
+            var lowerer = new Lowerer(labelGenerator);
+            var rewrittenMethods = lowerer.RewriteStatements(methods);
+
+            if (rewrittenMethods is null)
+                return methods;
+
+            return rewrittenMethods.Value
+                .SelectMany(m => Flatten(m).Statements)
+                .Cast<BoundMethodDeclarationStatement>()
+                .ToImmutableArray();
         }
 
-        private BoundBlockStatement Lower_Internal(BoundStatement statement)
+        private BoundBlockStatement Lower(BoundStatement statement)
         {
             var result = RewriteStatement(statement);
             return Flatten(result);
@@ -43,10 +54,17 @@ namespace VSharp.Lowering
 
         #region RewriteStatement
 
-        protected override BoundMethodDeclarationStatement RewriteMethodDeclarationStatement(BoundMethodDeclarationStatement node)
+        protected override BoundStatement RewriteMethodDeclarationStatement(BoundMethodDeclarationStatement node)
         {
-            var declaration = Lower_Internal(node.Declaration);
-            return new BoundMethodDeclarationStatement(node.Method, declaration);
+            var declaration = Lower(node.Declaration);
+
+            var methods = declaration.Statements.OfType<BoundMethodDeclarationStatement>();
+            var generalStatements = declaration.Statements.Except(methods).ToImmutableArray();
+
+            var method = new BoundMethodDeclarationStatement(node.Method, new BoundBlockStatement(generalStatements));
+            methods = methods.Append(method);
+
+            return new BoundBlockStatement(methods.ToImmutableArray<BoundStatement>());
         }
 
         protected override BoundStatement RewriteIfStatement(BoundIfStatement node)
@@ -68,7 +86,7 @@ namespace VSharp.Lowering
                  *
                  */
 
-                var endLabel = GenerateLabel(LabelCategory.End);
+                var endLabel = _labelGenerator.GenerateLabel(LabelCategory.End);
                 var endLabelStatement = new BoundLabelStatement(endLabel);
 
                 var conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfFalse: true);
@@ -100,8 +118,8 @@ namespace VSharp.Lowering
                  *
                  */
 
-                var elseLabel = GenerateLabel(LabelCategory.Else);
-                var endLabel = GenerateLabel(LabelCategory.End);
+                var elseLabel = _labelGenerator.GenerateLabel(LabelCategory.Else);
+                var endLabel = _labelGenerator.GenerateLabel(LabelCategory.End);
 
                 var elseLabelStatement = new BoundLabelStatement(elseLabel);
                 var endLabelStatement = new BoundLabelStatement(endLabel);
@@ -138,14 +156,11 @@ namespace VSharp.Lowering
              *
              */
 
-            var checkLabel = GenerateLabel(LabelCategory.Check);
-            var endLabel = GenerateLabel(LabelCategory.End);
+            var checkLabelStatement = new BoundLabelStatement(node.ContinueLabel);
+            var endLabelStatement = new BoundLabelStatement(node.BreakLabel);
 
-            var checkLabelStatement = new BoundLabelStatement(checkLabel);
-            var endLabelStatement = new BoundLabelStatement(endLabel);
-
-            var gotoCheck = new BoundGotoStatement(checkLabel);
-            var conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfFalse: true);
+            var gotoCheck = new BoundGotoStatement(node.ContinueLabel);
+            var conditionalGotoEnd = new BoundConditionalGotoStatement(node.BreakLabel, node.Condition, jumpIfFalse: true);
 
             var result = new BoundBlockStatement(ImmutableArray.Create(
                 checkLabelStatement,
@@ -170,6 +185,7 @@ namespace VSharp.Lowering
              *    while (<condition>)
              *    {
              *       <body>
+             *       continue:
              *       <update>
              *    }
              * }
@@ -177,8 +193,9 @@ namespace VSharp.Lowering
              */
 
             // Create the inner while statement (condition, body, update).
-            var whileBlock = new BoundBlockStatement(ImmutableArray.Create(node.Body, node.UpdateStatement));
-            var whileStatement = new BoundWhileStatement(node.Condition, whileBlock);
+            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
+            var whileBlock = new BoundBlockStatement(ImmutableArray.Create(node.Body, continueLabelStatement, node.UpdateStatement));
+            var whileStatement = new BoundWhileStatement(node.Condition, whileBlock, _labelGenerator.GenerateLabel(LabelCategory.Continue), node.BreakLabel);
 
             // Create the outer block statement (init, while).
             var result = new BoundBlockStatement(ImmutableArray.Create(node.InitializationStatement, whileStatement));
@@ -188,33 +205,6 @@ namespace VSharp.Lowering
 
         #endregion RewriteStatement
 
-        #region Utilities
-
-        private int _labelCount;
-        private readonly Dictionary<LabelCategory, int> _labelCounters = new Dictionary<LabelCategory, int>();
-
-        private enum LabelCategory
-        {
-            Check,
-            Else,
-            End,
-        }
-
-        private LabelSymbol GenerateLabel(LabelCategory category)
-        {
-            _labelCounters.TryGetValue(category, out int count);
-
-            string name = $"{category}{count}_{_labelCount}";
-
-            count++;
-            _labelCount++;
-
-            _labelCounters[category] = count;
-            return new LabelSymbol(name);
-        }
-
-        #endregion Utilities
-
         #region Helpers
 
         private static BoundBlockStatement Flatten(BoundStatement statement)
@@ -222,7 +212,6 @@ namespace VSharp.Lowering
             if (!(statement is BoundBlockStatement))
                 return new BoundBlockStatement(ImmutableArray.Create(statement));
 
-            var methodDeclarationBuilder = ImmutableArray.CreateBuilder<BoundMethodDeclarationStatement>();
             var statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>();
 
             var statementStack = new Stack<BoundStatement>();
@@ -234,7 +223,6 @@ namespace VSharp.Lowering
                 var current = statementStack.Pop();
                 if (current is BoundBlockStatement block)
                 {
-                    methodDeclarationBuilder.AddRange(block.MethodDeclarations);
                     foreach (var s in block.Statements.Reverse())
                         statementStack.Push(s);
                 }
@@ -244,20 +232,7 @@ namespace VSharp.Lowering
                 }
             }
 
-            // Remove all nested method declarations.
-
-            var methodDeclarationStack = new Stack<BoundMethodDeclarationStatement>(methodDeclarationBuilder);
-            while (methodDeclarationStack.Count > 0)
-            {
-                var current = methodDeclarationStack.Pop();
-                foreach (var childDeclaration in current.Declaration.MethodDeclarations)
-                {
-                    methodDeclarationStack.Push(childDeclaration);
-                    methodDeclarationBuilder.Add(childDeclaration);
-                }
-            }
-
-            return new BoundBlockStatement(statementBuilder.ToImmutable(), methodDeclarationBuilder.ToImmutable());
+            return new BoundBlockStatement(statementBuilder.ToImmutable());
         }
 
         #endregion Helpers

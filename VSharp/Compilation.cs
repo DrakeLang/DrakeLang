@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,81 +16,72 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-#pragma warning disable CA1724 // on't have type named Compilation due to conflict with 'System.Web.Compilation'
+#pragma warning disable CA1724 // don't have type named Compilation due to conflict with 'System.Web.Compilation'
 
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using VSharp.Binding;
 using VSharp.Lowering;
 using VSharp.Symbols;
 using VSharp.Syntax;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.IO; 
-using System.Linq;
-using System.Threading;
 
 namespace VSharp
 {
     public sealed class Compilation
     {
-        private BoundGlobalScope? _globalScope;
+        private readonly LabelGenerator _labelGenerator = new LabelGenerator();
+        private BindingResult? _bindingResult;
 
         public Compilation(SyntaxTree syntaxTree)
-            : this(null, syntaxTree)
         {
-        }
-
-        private Compilation(Compilation? previous, SyntaxTree syntaxTree)
-        {
-            Previous = previous;
             SyntaxTree = syntaxTree;
         }
 
-        public Compilation? Previous { get; }
         public SyntaxTree SyntaxTree { get; }
 
-        internal BoundGlobalScope GlobalScope
+        internal BindingResult BindingResult
         {
             get
             {
-                if (_globalScope is null)
+                if (_bindingResult is null)
                 {
-                    var globalScope = Binder.BindGlobalScope(Previous?.GlobalScope, SyntaxTree.Root);
-                    Interlocked.CompareExchange(ref _globalScope, globalScope, null);
+                    var result = Binder.Bind(SyntaxTree.Root, _labelGenerator);
+                    if (result.Diagnostics.Length == 0)
+                    {
+                        var loweredEntryMethod = Lowerer.Lower(result.Methods, _labelGenerator);
+                        result = new BindingResult(loweredEntryMethod, ImmutableArray<Diagnostic>.Empty);
+                    }
+
+                    Interlocked.CompareExchange(ref _bindingResult, result, null);
                 }
 
-                return _globalScope;
+                return _bindingResult;
             }
         }
 
         #region Methods
 
-        public Compilation ContinueWith(SyntaxTree syntaxTree)
-        {
-            return new Compilation(this, syntaxTree);
-        }
-
         public EvaluationResult Evaluate(Dictionary<VariableSymbol, object> variables)
         {
-            var diagnostics = SyntaxTree.Diagnostics.Concat(GlobalScope.Diagnostics);
+            var diagnostics = SyntaxTree.Diagnostics.Concat(BindingResult.Diagnostics);
             if (diagnostics.Any())
                 return new EvaluationResult(diagnostics.ToImmutableArray());
 
-            var statement = GetStatement();
             var evaluator = new Evaluator();
 
-            evaluator.Evaluate(statement, variables);
+            evaluator.Evaluate(BindingResult.Methods, variables);
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty);
         }
 
         public void PrintProgram(TextWriter writer)
         {
-            var statement = GetStatement();
-            statement.WriteTo(writer);
-        }
-
-        private BoundBlockStatement GetStatement()
-        {
-            return Lowerer.Lower(GlobalScope.Statement);
+            foreach (var method in BindingResult.Methods)
+            {
+                method.WriteTo(writer);
+            }
         }
 
         #endregion Methods

@@ -16,21 +16,31 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+#pragma warning disable CA1724 // on't have type named Compilation due to conflict with 'System.Web.Compilation'
+
 using System.Collections.Generic;
-using System.Linq;
+using VSharp.Symbols;
 
-namespace VSharp.Binding
+namespace VSharp
 {
-    internal sealed class BoundNoOpStatement : BoundStatement
+    internal sealed class LabelGenerator
     {
-        public static BoundNoOpStatement Instance { get; } = new BoundNoOpStatement();
+        private readonly Dictionary<LabelCategory, int> _labelCounters = new Dictionary<LabelCategory, int>();
 
-        private BoundNoOpStatement()
+        public LabelGenerator()
         {
         }
 
-        public override BoundNodeKind Kind => BoundNodeKind.NoOpStatement;
+        public LabelSymbol GenerateLabel(LabelCategory category)
+        {
+            _labelCounters.TryGetValue(category, out int count);
 
-        public override IEnumerable<BoundNode> GetChildren() => Enumerable.Empty<BoundNode>();
+            string name = $"{category}_{count}";
+
+            count++;
+
+            _labelCounters[category] = count;
+            return new LabelSymbol(name);
+        }
     }
 }

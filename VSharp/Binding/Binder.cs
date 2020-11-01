@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading;
 using VSharp.Symbols;
 using VSharp.Syntax;
 using VSharp.Text;
@@ -29,92 +30,80 @@ namespace VSharp.Binding
 {
     internal sealed class Binder
     {
+        public const string MainMethodName = "Main";
+        private static readonly MethodSymbol _mainMethodSymbol = new MethodSymbol(MainMethodName, ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void);
+
+        private readonly LabelGenerator _labelGenerator;
         private BoundScope _scope;
 
         #region Constructors
 
-        private Binder(BoundScope parent)
+        private Binder(LabelGenerator labelGenerator)
         {
-            _scope = new BoundScope(parent);
+            _labelGenerator = labelGenerator;
+
+            var rootScope = GetRootScope();
+            _scope = new BoundScope(rootScope, capturesVariables: false);
         }
 
-        public static BoundGlobalScope BindGlobalScope(BoundGlobalScope? previous, CompilationUnitSyntax syntax)
+        public static BindingResult Bind(CompilationUnitSyntax syntax, LabelGenerator labelGenerator)
         {
-            var parentScope = CreateParentScopes(previous);
+            var binder = new Binder(labelGenerator);
 
-            var binder = new Binder(parentScope);
+            var statements = binder.BindTopLevelStatements(syntax.Statements);
+            var diagnostics = binder.Diagnostics.ToImmutableArray();
 
-            var statements = binder.BindStatements(syntax.Statements);
-            var diagnostics = previous is null ?
-                binder.Diagnostics.ToImmutableArray() :
-                previous.Diagnostics.AddRange(binder.Diagnostics);
-
-            var variables = binder._scope.GetDeclaredVariables();
-            return new BoundGlobalScope(previous, diagnostics, variables, statements);
+            return new BindingResult(statements, diagnostics);
         }
 
-        private static BoundScope CreateParentScopes(BoundGlobalScope? previous)
+        private ImmutableArray<BoundMethodDeclarationStatement> BindTopLevelStatements(IEnumerable<StatementSyntax> statements)
         {
-            if (previous is null)
-                return CreateRootScope();
+            var boundStatements = BindStatements(statements);
 
-            var stack = new Stack<BoundGlobalScope>();
-            while (previous != null)
+            var methods = boundStatements.OfType<BoundMethodDeclarationStatement>();
+            var topLevelStatements = boundStatements.Except(methods).ToImmutableArray();
+
+            if (topLevelStatements.Length > 0)
             {
-                stack.Push(previous);
-                previous = previous.Previous;
+                // Implicitly create main method.
+
+                _scope.TryDeclareMethod(_mainMethodSymbol);
+
+                var mainMethodBody = new BoundBlockStatement(topLevelStatements);
+                var mainMethod = new BoundMethodDeclarationStatement(_mainMethodSymbol, mainMethodBody);
+
+                // Push a new method scope, so that the user may define a main method with the same signature.
+                PushMethodScope();
+
+                return methods.Prepend(mainMethod).ToImmutableArray();
             }
 
-            var parent = CreateRootScope();
-            while (stack.Count > 0)
-            {
-                previous = stack.Pop();
-                var scope = new BoundScope(parent);
-                foreach (var v in previous.Variables)
-                    scope.TryDeclareVariable(v);
-
-                parent = scope;
-            }
-
-            return parent;
-
-            static BoundScope CreateRootScope()
-            {
-                var root = new BoundScope();
-                foreach (var method in BuiltinMethods.GetAll())
-                    root.TryDeclareMethod(method);
-
-                return root;
-            }
+            return methods.ToImmutableArray();
         }
 
-        private BoundBlockStatement BindStatements(ImmutableArray<StatementSyntax> statements)
+        private ImmutableArray<BoundStatement> BindStatements(IEnumerable<StatementSyntax> statements)
         {
-            // Declare all methods in scope first.
-            int methodDeclarations = 0;
+            // Declare methods.
             foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.MethodDeclarationStatement))
             {
                 DeclareMethod((MethodDeclarationStatementSyntax)statement);
-                methodDeclarations++;
             }
 
-            var methodDeclarationBuilder = ImmutableArray.CreateBuilder<BoundMethodDeclarationStatement>(methodDeclarations);
+            // Declare labels.
+            foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.LabelStatement))
+            {
+                DeclareLabel((LabelStatementSyntax)statement);
+            }
+
+            // Bind remaining statements.
             var statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>();
             foreach (var statement in statements)
             {
-                if (statement.Kind == SyntaxKind.MethodDeclarationStatement)
-                {
-                    var methodDeclaration = BindMethodDeclarationStatement((MethodDeclarationStatementSyntax)statement);
-                    methodDeclarationBuilder.Add(methodDeclaration);
-                }
-                else
-                {
-                    var boundStatement = BindStatement(statement);
-                    statementBuilder.Add(boundStatement);
-                }
+                var boundStatement = BindStatement(statement);
+                statementBuilder.Add(boundStatement);
             }
 
-            return new BoundBlockStatement(statementBuilder.ToImmutable(), methodDeclarationBuilder.MoveToImmutable());
+            return statementBuilder.ToImmutable();
         }
 
         #endregion Constructors
@@ -133,9 +122,15 @@ namespace VSharp.Binding
             {
                 SyntaxKind.BlockStatement => BindBlockStatement((BlockStatementSyntax)syntax),
                 SyntaxKind.VariableDeclarationStatement => BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax),
+                SyntaxKind.MethodDeclarationStatement => BindMethodDeclarationStatement((MethodDeclarationStatementSyntax)syntax),
                 SyntaxKind.IfStatement => BindIfStatement((IfStatementSyntax)syntax),
-                SyntaxKind.WhileStatement => BindWhileStatement((WhileStatementSyntax)syntax),
-                SyntaxKind.ForStatement => BindForStatement((ForStatementSyntax)syntax),
+                SyntaxKind.WhileStatement => BindLoopStatement((WhileStatementSyntax)syntax),
+                SyntaxKind.ForStatement => BindLoopStatement((ForStatementSyntax)syntax),
+                SyntaxKind.GoToStatement => BindGoToStatement((GoToStatementSyntax)syntax),
+                SyntaxKind.ReturnStatement => BindReturnStatement((ReturnStatementSyntax)syntax),
+                SyntaxKind.LabelStatement => BindLabelStatement((LabelStatementSyntax)syntax),
+                SyntaxKind.ContinueStatement => BindContinueStatement((ContinueStatementSyntax)syntax),
+                SyntaxKind.BreakStatement => BindBreakStatement((BreakStatementSyntax)syntax),
                 SyntaxKind.ExpressionStatement => BindExpressionStatement((ExpressionStatementSyntax)syntax),
 
                 _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
@@ -147,7 +142,8 @@ namespace VSharp.Binding
             PushScope();
             try
             {
-                return BindStatements(syntax.Statements);
+                var statements = BindStatements(syntax.Statements);
+                return new BoundBlockStatement(statements);
             }
             finally
             {
@@ -191,12 +187,12 @@ namespace VSharp.Binding
             return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
-        private BoundMethodDeclarationStatement BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax)
+        private BoundStatement BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax)
         {
             if (!_scope.TryLookupMethod(syntax.Identifier.Text, out var method))
-                throw new Exception($"Failed to resolve symbol for method '{syntax.Identifier.Text}'.");
+                return BoundNoOpStatement.Instance;
 
-            PushScope();
+            PushMethodScope();
             try
             {
                 foreach (var parameter in method.Parameters)
@@ -222,25 +218,88 @@ namespace VSharp.Binding
             return new BoundIfStatement(condition, thenStatement, elseStatement);
         }
 
-        private BoundStatement BindWhileStatement(WhileStatementSyntax syntax)
+        private BoundStatement BindLoopStatement(LoopStatementSyntax syntax)
+        {
+            var continueLabel = _labelGenerator.GenerateLabel(LabelCategory.Continue);
+            var breakLabel = _labelGenerator.GenerateLabel(LabelCategory.Break);
+
+            PushScope(continueLabel, breakLabel);
+            try
+            {
+                return syntax.Kind switch
+                {
+                    SyntaxKind.WhileStatement => BindWhileStatement((WhileStatementSyntax)syntax, continueLabel, breakLabel),
+                    SyntaxKind.ForStatement => BindForStatement((ForStatementSyntax)syntax, continueLabel, breakLabel),
+
+                    _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
+                };
+            }
+            finally
+            {
+                PopScope();
+            }
+        }
+
+        private BoundStatement BindWhileStatement(WhileStatementSyntax syntax, LabelSymbol continueLabel, LabelSymbol breakLabel)
         {
             var condition = BindExpression(syntax.Condition.Expression, TypeSymbol.Boolean);
             var body = BindStatement(syntax.Body);
 
-            return new BoundWhileStatement(condition, body);
+            return new BoundWhileStatement(condition, body, continueLabel, breakLabel);
         }
 
-        private BoundStatement BindForStatement(ForStatementSyntax syntax)
+        private BoundStatement BindForStatement(ForStatementSyntax syntax, LabelSymbol continueLabel, LabelSymbol breakLabel)
         {
-            PushScope();
-
             var initStatement = BindStatement(syntax.InitializationStatement);
             var condition = BindExpression(syntax.Condition, TypeSymbol.Boolean);
             var updateStatement = BindStatement(syntax.UpdateStatement);
             var body = BindStatement(syntax.Body);
 
-            PopScope();
-            return new BoundForStatement(initStatement, condition, updateStatement, body);
+            return new BoundForStatement(initStatement, condition, updateStatement, body, continueLabel, breakLabel);
+        }
+
+        private BoundStatement BindGoToStatement(GoToStatementSyntax syntax)
+        {
+            if (!TryFindLabel(syntax.Label, out var label))
+                return BoundNoOpStatement.Instance;
+
+            return new BoundGotoStatement(label);
+        }
+
+        private BoundStatement BindReturnStatement(ReturnStatementSyntax syntax)
+        {
+            var expression = syntax.Expression is null ? null : BindExpression(syntax.Expression);
+            return new BoundReturnStatement(expression);
+        }
+
+        private BoundStatement BindLabelStatement(LabelStatementSyntax syntax)
+        {
+            if (!_scope.TryLookupLabel(syntax.Identifier.Text, out var label))
+                return BoundNoOpStatement.Instance;
+
+            return new BoundLabelStatement(label);
+        }
+
+        private BoundStatement BindContinueStatement(ContinueStatementSyntax syntax)
+        {
+            if (!_scope.TryGetContinueLabel(out var continueLabel))
+            {
+                Diagnostics.ReportUnexpectedBreakOrContinue(syntax.Span);
+                return BoundNoOpStatement.Instance;
+            }
+
+            return new BoundGotoStatement(continueLabel);
+        }
+
+        private BoundStatement BindBreakStatement(BreakStatementSyntax syntax)
+        {
+            if (!_scope.TryGetBreakLabel(out var breakLabel))
+            {
+                Diagnostics.ReportUnexpectedBreakOrContinue(syntax.Span);
+                return BoundNoOpStatement.Instance;
+            }
+
+            return new BoundGotoStatement(breakLabel);
         }
 
         private BoundStatement BindExpressionStatement(ExpressionStatementSyntax syntax)
@@ -413,11 +472,8 @@ namespace VSharp.Binding
         private BoundExpression BindCallExpression(CallExpressionSyntax syntax)
         {
             // Locate method.
-            if (!_scope.TryLookupMethod(syntax.Identifier.Text, out MethodSymbol? method))
-            {
-                Diagnostics.ReportUndefinedMethod(syntax.Identifier.Span, syntax.Identifier.Text);
+            if (!TryFindMethod(syntax.Identifier, out MethodSymbol? method) || method.ReturnType.IsError())
                 return BoundErrorExpression.Instace;
-            }
 
             // Validate argument count.
             if (syntax.Arguments.Count != method.Parameters.Length)
@@ -467,7 +523,26 @@ namespace VSharp.Binding
         /// </summary>
         private void PushScope()
         {
-            _scope = new BoundScope(_scope);
+            _scope = new BoundScope(_scope, capturesVariables: true);
+        }
+
+        /// <summary>
+        /// Moves into a new scope.
+        /// </summary>
+        private void PushMethodScope()
+        {
+            _scope = new BoundScope(_scope, capturesVariables: false);
+        }
+
+        /// <summary>
+        /// Moves into a new scope.
+        /// </summary>
+        private void PushScope(LabelSymbol continueLabel, LabelSymbol breakLabel)
+        {
+            _scope = new BoundScope(_scope, continueLabel, breakLabel);
+
+            _scope.TryDeclareLabel(continueLabel);
+            _scope.TryDeclareLabel(breakLabel);
         }
 
         /// <summary>
@@ -478,24 +553,17 @@ namespace VSharp.Binding
             _scope = _scope.Parent ?? throw new InvalidOperationException("Scope's parent was null");
         }
 
-        private bool TryFindVariable(SyntaxToken identifierToken, [NotNullWhen(true)] out VariableSymbol? variable)
+        private void DeclareLabel(LabelStatementSyntax syntax)
         {
-            string? name = identifierToken.Text;
-            if (string.IsNullOrEmpty(name))
-            {
-                variable = null;
-                return false;
-            }
+            string name = syntax.Identifier.Text ?? "?";
+            bool declare = syntax.Identifier.Text != null;
 
-            if (!_scope.TryLookupVariable(name, out variable))
-            {
-                Diagnostics.ReportUndefinedName(identifierToken.Span, name);
+            if (!declare)
+                return;
 
-                _scope.TryDeclareVariable(new VariableSymbol(name, isReadOnly: true, TypeSymbol.Error));
-                return false;
-            }
-
-            return true;
+            var label = new LabelSymbol(name);
+            if (!_scope.TryDeclareLabel(label))
+                Diagnostics.ReportLabelAlreadyDeclared(syntax.Identifier.Span, name);
         }
 
         private void DeclareMethod(MethodDeclarationStatementSyntax syntax)
@@ -506,7 +574,11 @@ namespace VSharp.Binding
                 return;
 
             var parameters = BindParameters(syntax.Parameters);
-            var method = new MethodSymbol(name, parameters, TypeSymbol.Void);
+            var type = syntax.TypeOrDefKeyword.Kind == SyntaxKind.DefKeyword
+                ? TypeSymbol.Void
+                : ResolveType(syntax.TypeOrDefKeyword.Kind) ?? TypeSymbol.Error;
+
+            var method = new MethodSymbol(name, parameters, type);
 
             if (!_scope.TryDeclareMethod(method))
                 Diagnostics.ReportMethodAlreadyDeclared(syntax.Identifier.Span, name);
@@ -537,6 +609,70 @@ namespace VSharp.Binding
             return new ParameterSymbol(name, type);
         }
 
+        #region TryFind
+
+        private bool TryFindVariable(SyntaxToken identifierToken, [NotNullWhen(true)] out VariableSymbol? variable)
+        {
+            string? name = identifierToken.Text;
+            if (string.IsNullOrEmpty(name))
+            {
+                variable = null;
+                return false;
+            }
+
+            if (!_scope.TryLookupVariable(name, out variable))
+            {
+                Diagnostics.ReportUndefinedSymbol(identifierToken.Span, name);
+
+                _scope.TryDeclareVariable(new VariableSymbol(name, isReadOnly: true, TypeSymbol.Error));
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryFindLabel(SyntaxToken identifierToken, [NotNullWhen(true)] out LabelSymbol? label)
+        {
+            string? name = identifierToken.Text;
+            if (string.IsNullOrEmpty(name))
+            {
+                label = null;
+                return false;
+            }
+
+            if (!_scope.TryLookupLabel(name, out label))
+            {
+                Diagnostics.ReportUndefinedSymbol(identifierToken.Span, name);
+
+                _scope.TryDeclareLabel(new LabelSymbol(name));
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryFindMethod(SyntaxToken identifierToken, [NotNullWhen(true)] out MethodSymbol? method)
+        {
+            string? name = identifierToken.Text;
+            if (string.IsNullOrEmpty(name))
+            {
+                method = null;
+                return false;
+            }
+
+            if (!_scope.TryLookupMethod(name, out method))
+            {
+                Diagnostics.ReportUndefinedSymbol(identifierToken.Span, name);
+
+                _scope.TryDeclareMethod(new MethodSymbol(name, ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Error));
+                return false;
+            }
+
+            return true;
+        }
+
+        #endregion TryFind
+
         #endregion Helpers
 
         #region Utilities
@@ -547,10 +683,25 @@ namespace VSharp.Binding
             SyntaxKind.IntKeyword => TypeSymbol.Int,
             SyntaxKind.StringKeyword => TypeSymbol.String,
             SyntaxKind.FloatKeyword => TypeSymbol.Float,
-            SyntaxKind.VarKeyword => null,
 
-            _ => throw new Exception($"Unexpected keyword '{typeKeyword}'."),
+            _ => null,
         };
+
+        private static BoundScope? _rootScope;
+
+        private static BoundScope GetRootScope()
+        {
+            if (_rootScope is null)
+            {
+                var rootScope = new BoundScope();
+                foreach (var method in BuiltinMethods.GetAll())
+                    rootScope.TryDeclareMethod(method);
+
+                Interlocked.CompareExchange(ref _rootScope, rootScope, null);
+            }
+
+            return _rootScope;
+        }
 
         #endregion Utilities
     }

@@ -1,6 +1,6 @@
 ﻿//------------------------------------------------------------------------------
 // VSharp - Viv's C#-esque sandbox.
-// Copyright (C) 2019  Niklas Gransjøen
+// Copyright (C) 2019  Vivian Vea
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,13 +20,13 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    internal sealed class WhileStatementSyntax : StatementSyntax
+    internal sealed class WhileStatementSyntax : LoopStatementSyntax
     {
         public WhileStatementSyntax(SyntaxToken whileKeyword, ParenthesizedExpressionSyntax condition, StatementSyntax body)
+            : base(body)
         {
             WhileKeyword = whileKeyword;
             Condition = condition;
-            Body = body;
         }
 
         #region Properties
@@ -35,7 +35,6 @@ namespace VSharp.Syntax
 
         public SyntaxToken WhileKeyword { get; }
         public ParenthesizedExpressionSyntax Condition { get; }
-        public StatementSyntax Body { get; }
 
         #endregion Properties
 
