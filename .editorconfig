@@ -1,7 +1,5 @@
 ﻿# This file configures the VS editor for project wide properties
 
-root = true
-
 [*.cs]
 # Naming styles
 dotnet_naming_style.pascal_case_style.capitalization = pascal_case
@@ -12,7 +10,6 @@ dotnet_naming_style.underscore_camel_case_style.required_prefix = _
 
 dotnet_naming_style.interface_pascal_case.capitalization = pascal_case
 dotnet_naming_style.interface_pascal_case.required_prefix = I
-
 
 # Constants are to be styles as PascalCase
 dotnet_naming_rule.constants_pascal_cased.symbols = constant_symbols
@@ -60,8 +57,44 @@ dotnet_naming_symbols.interface_symbols.applicable_accessibilities = *
 dotnet_naming_rule.interfaces_begins_with_i.style = interface_pascal_case
 dotnet_naming_rule.interfaces_begins_with_i.severity = suggestion
 
-# CA1716: Identifiers should not match keywords
-dotnet_diagnostic.CA1716.severity = none
+# CA1030: Use events where appropriate
+dotnet_diagnostic.CA1030.severity = none
 
 # CA1032: Implement standard exception constructors
 dotnet_diagnostic.CA1032.severity = none
+
+# CA1062: Validate arguments of public methods
+dotnet_diagnostic.CA1062.severity = error
+
+# CA1303: Do not pass literals as localized parameters
+dotnet_diagnostic.CA1303.severity = none
+
+# CA1305: Specify IFormatProvider
+dotnet_diagnostic.CA1305.severity = error
+
+# CA1716: Identifiers should not match keywords
+dotnet_diagnostic.CA1716.severity = none
+
+# CA1720: Identifier contains type name
+dotnet_diagnostic.CA1720.severity = none
+
+# CA1721: Property names should not match get methods
+dotnet_diagnostic.CA1721.severity = none
+
+# CA1805: Do not initialize unnecessarily
+dotnet_diagnostic.CA1805.severity = none
+
+# CA1812 Internal class is never instantiated
+dotnet_diagnostic.CA1812.severity = none
+
+# CA1819: Properties should not return arrays
+dotnet_diagnostic.CA1819.severity = warning
+
+# CA2000: Dispose objects before losing scope
+dotnet_diagnostic.CA2000.severity = suggestion
+
+# CA2007: Consider calling ConfigureAwait on the awaited task
+dotnet_diagnostic.CA2007.severity = none
+
+# CA2227: Collection properties should be read only
+dotnet_diagnostic.CA2227.severity = none
