@@ -16,10 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using VSharp.Syntax;
 using Xunit;
 
 namespace VSharp.Tests.Syntax
@@ -138,6 +138,10 @@ namespace VSharp.Tests.Syntax
                 (SyntaxKind.LineCommentToken, "// "),
                 (SyntaxKind.LineCommentToken, "// comment"),
                 (SyntaxKind.LineCommentToken, "///////"),
+                (SyntaxKind.LineCommentToken, "///* */"),
+                (SyntaxKind.MultiLineCommentToken, "/* */"),
+                (SyntaxKind.MultiLineCommentToken, "/* /////// */"),
+                (SyntaxKind.MultiLineCommentToken, "/* \n\n */"),
             };
 
             return fixedTokens.Concat(dynamicTokens);
@@ -243,10 +247,13 @@ namespace VSharp.Tests.Syntax
             if (t1Kind == SyntaxKind.SlashToken)
             {
                 if (t2Kind == SyntaxKind.SlashToken) return true;
+                if (t2Kind == SyntaxKind.StarToken) return true;
                 if (t2Kind == SyntaxKind.EqualsToken) return true;
                 if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
                 if (t2Kind == SyntaxKind.SlashEqualsToken) return true;
+                if (t2Kind == SyntaxKind.StarEqualsToken) return true;
                 if (t2Kind == SyntaxKind.LineCommentToken) return true;
+                if (t2Kind == SyntaxKind.MultiLineCommentToken) return true;
             }
 
             if (t1Kind == SyntaxKind.PipeToken)

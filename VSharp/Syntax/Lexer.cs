@@ -16,9 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Text;
 using System.Collections.Immutable;
 using System.Text;
+using VSharp.Text;
 
 namespace VSharp.Syntax
 {
@@ -194,6 +194,15 @@ namespace VSharp.Syntax
                         while (Current != '\n' && Current != '\r' && Current != '\0');
 
                         syntaxKind = SyntaxKind.LineCommentToken;
+                    }
+                    else if (Current == '*')
+                    {
+                        do
+                        {
+                            Next();
+                        } while ((Peek(-2) != '*' || Peek(-1) != '/') && Current != '\0');
+
+                        syntaxKind = SyntaxKind.MultiLineCommentToken;
                     }
                     else
                         syntaxKind = SyntaxKind.SlashToken;

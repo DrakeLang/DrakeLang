@@ -64,6 +64,7 @@ namespace VSharp.Syntax
         CommaToken,
         WhitespaceToken,
         LineCommentToken,
+        MultiLineCommentToken,
 
         // Keywords
 

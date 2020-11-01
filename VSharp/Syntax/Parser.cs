@@ -16,7 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using VSharp.Symbols;
@@ -26,6 +25,14 @@ namespace VSharp.Syntax
 {
     internal class Parser
     {
+        private static readonly ImmutableHashSet<SyntaxKind> _ignoredTokens = new[]
+        {
+            SyntaxKind.BadToken,
+            SyntaxKind.WhitespaceToken,
+            SyntaxKind.LineCommentToken,
+            SyntaxKind.MultiLineCommentToken,
+        }.ToImmutableHashSet();
+
         private readonly DiagnosticBag _diagnostics = new DiagnosticBag();
 
         private readonly ImmutableArray<SyntaxToken> _tokens;
@@ -33,7 +40,7 @@ namespace VSharp.Syntax
 
         public Parser(SourceText text)
         {
-            var tokens = new List<SyntaxToken>();
+            var tokens = ImmutableArray.CreateBuilder<SyntaxToken>();
 
             var lexer = new Lexer(text);
             SyntaxToken token;
@@ -41,17 +48,11 @@ namespace VSharp.Syntax
             {
                 token = lexer.Lex();
 
-                if (token.Kind == SyntaxKind.BadToken ||
-                    token.Kind == SyntaxKind.WhitespaceToken ||
-                    token.Kind == SyntaxKind.LineCommentToken)
-                {
-                    continue;
-                }
-
-                tokens.Add(token);
+                if (!_ignoredTokens.Contains(token.Kind))
+                    tokens.Add(token);
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
-            _tokens = tokens.ToImmutableArray();
+            _tokens = tokens.ToImmutable();
             _diagnostics.AddRange(lexer.GetDiagnostics());
         }
 
