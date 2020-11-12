@@ -34,6 +34,8 @@ namespace VSharp.Binding
         private static readonly MethodSymbol _mainMethodSymbol = new MethodSymbol(MainMethodName, ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void);
 
         private readonly LabelGenerator _labelGenerator;
+        private readonly Stack<MethodSymbol> _callStack = new Stack<MethodSymbol>();
+
         private BoundScope _scope;
 
         #region Constructors
@@ -73,7 +75,7 @@ namespace VSharp.Binding
                 var mainMethod = new BoundMethodDeclarationStatement(_mainMethodSymbol, mainMethodBody);
 
                 // Push a new method scope, so that the user may define a main method with the same signature.
-                PushMethodScope();
+                PushMethodScope(_mainMethodSymbol);
 
                 return methods.Prepend(mainMethod).ToImmutableArray();
             }
@@ -111,6 +113,8 @@ namespace VSharp.Binding
         #region Properties
 
         public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
+
+        private MethodSymbol CurrentMethod => _callStack.Peek();
 
         #endregion Properties
 
@@ -192,7 +196,7 @@ namespace VSharp.Binding
             if (!_scope.TryLookupMethod(syntax.Identifier.Text, out var method))
                 return BoundNoOpStatement.Instance;
 
-            PushMethodScope();
+            PushMethodScope(method);
             try
             {
                 foreach (var parameter in method.Parameters)
@@ -224,7 +228,7 @@ namespace VSharp.Binding
             }
             finally
             {
-                PopScope();
+                PopMethodScope();
             }
         }
 
@@ -583,9 +587,10 @@ namespace VSharp.Binding
         /// <summary>
         /// Moves into a new scope.
         /// </summary>
-        private void PushMethodScope()
+        private void PushMethodScope(MethodSymbol method)
         {
             _scope = new BoundScope(_scope, capturesVariables: false);
+            _callStack.Push(method);
         }
 
         /// <summary>
@@ -605,6 +610,12 @@ namespace VSharp.Binding
         private void PopScope()
         {
             _scope = _scope.Parent ?? throw new InvalidOperationException("Scope's parent was null");
+        }
+
+        private void PopMethodScope()
+        {
+            PopScope();
+            _callStack.Pop();
         }
 
         private void DeclareLabel(LabelStatementSyntax syntax)
