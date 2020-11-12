@@ -188,6 +188,12 @@ namespace VSharp
             Report(span, message);
         }
 
+        public void ReportMethodNotAllPathsReturnValue(TextSpan span)
+        {
+            string message = $"Not all paths return a value.";
+            Report(span, message);
+        }
+
         #endregion Report
 
         #region IEnumerable

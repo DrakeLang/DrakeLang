@@ -200,10 +200,27 @@ namespace VSharp.Binding
                     _scope.TryDeclareVariable(parameter);
                 }
 
-                var statements = BindStatements(syntax.Declaration.Statements);
-                var boundDeclaration = new BoundBlockStatement(statements);
+                if (syntax.TypeOrDefKeyword.Kind != SyntaxKind.DefKeyword && syntax.Declaration is ExpressionBodyStatementSyntax expressionBody)
+                {
+                    if (!(expressionBody.Statement is ExpressionStatementSyntax expressionStatement))
+                    {
+                        Diagnostics.ReportMethodNotAllPathsReturnValue(syntax.Identifier.Span);
+                        return BoundNoOpStatement.Instance;
+                    }
 
-                return new BoundMethodDeclarationStatement(method, boundDeclaration);
+                    var expression = BindExpression(expressionStatement.Expression);
+                    var returnStatement = new BoundReturnStatement(expression);
+                    var boundDeclaration = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(returnStatement));
+
+                    return new BoundMethodDeclarationStatement(method, boundDeclaration);
+                }
+                else
+                {
+                    var statements = BindStatements(syntax.Declaration.Statements);
+                    var boundDeclaration = new BoundBlockStatement(statements);
+
+                    return new BoundMethodDeclarationStatement(method, boundDeclaration);
+                }
             }
             finally
             {
