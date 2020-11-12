@@ -563,17 +563,31 @@ namespace VSharp.Syntax
             return new CallExpressionSyntax(identifierToken, leftParenthesis, arguments, rightParenthesis);
         }
 
-        private SeparatedSyntaxCollection<ExpressionSyntax> ParseArguments()
+        private SeparatedSyntaxCollection<SyntaxNode> ParseArguments()
         {
             var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
 
             while (Current.Kind != SyntaxKind.CloseParenthesisToken &&
                    Current.Kind != SyntaxKind.EndOfFileToken)
             {
-                var currentToken = Current;
+                if (Current.Kind == SyntaxKind.UnderscoreToken)
+                {
+                    var pipeArgument = NextToken();
+                    builder.Add(pipeArgument);
+                }
+                else
+                {
+                    var currentToken = Current;
 
-                var expression = ParseExpression();
-                builder.Add(expression);
+                    var expression = ParseExpression();
+                    builder.Add(expression);
+
+                    // If no tokens were consumed by the parse call,
+                    // we should escape the loop. Parse errors will
+                    // have already been reported.
+                    if (currentToken == Current)
+                        break;
+                }
 
                 // Don't expect comma after final argument.
                 if (Current.Kind != SyntaxKind.CloseParenthesisToken &&
@@ -582,15 +596,9 @@ namespace VSharp.Syntax
                     var comma = MatchToken(SyntaxKind.CommaToken);
                     builder.Add(comma);
                 }
-
-                // If no tokens were consumed by the parse call,
-                // we should escape the loop. Parse errors will
-                // have already been reported.
-                if (currentToken == Current)
-                    break;
             }
 
-            return new SeparatedSyntaxCollection<ExpressionSyntax>(builder.ToImmutable());
+            return new SeparatedSyntaxCollection<SyntaxNode>(builder.ToImmutable());
         }
 
         private NameExpressionSyntax ParseNameExpression()

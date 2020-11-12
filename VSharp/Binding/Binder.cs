@@ -491,24 +491,40 @@ namespace VSharp.Binding
 
             var parameterCount = syntax.Arguments.Count + (pipedParameter is null ? 0 : 1);
 
-            // Validate argument count.
-            if (parameterCount != method.Parameters.Length)
-            {
-                Diagnostics.ReportWrongArgumentCount(syntax.Span, method.Name, method.Parameters.Length, parameterCount);
-                return BoundErrorExpression.Instace;
-            }
-
             // Bind arguments.
             var boundArguments = ImmutableArray.CreateBuilder<BoundExpression>();
+            foreach (var argument in syntax.Arguments)
+            {
+                if (argument is ExpressionSyntax expressionArg)
+                {
+                    var boundArgument = BindExpression(expressionArg);
+                    boundArguments.Add(boundArgument);
+                }
+                else if (pipedParameter != null)
+                {
+                    var boundArgument = BindExpression(pipedParameter);
+                    boundArguments.Add(boundArgument);
+                    pipedParameter = null;
+                }
+                else
+                {
+                    Diagnostics.ReportUnexpectedPipedArgument(argument.Span);
+                }
+            }
+
+            // If piped argument was not consumed, append to arguemnts.
             if (pipedParameter != null)
             {
                 var boundArgument = BindExpression(pipedParameter);
                 boundArguments.Add(boundArgument);
+                pipedParameter = null;
             }
-            foreach (var argument in syntax.Arguments)
+
+            // Validate argument count.
+            if (boundArguments.Count != method.Parameters.Length)
             {
-                var boundArgument = BindExpression(argument);
-                boundArguments.Add(boundArgument);
+                Diagnostics.ReportWrongArgumentCount(syntax.Span, method.Name, method.Parameters.Length, parameterCount);
+                return BoundErrorExpression.Instace;
             }
 
             // Validate argument types.

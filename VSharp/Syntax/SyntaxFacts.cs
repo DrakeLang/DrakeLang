@@ -179,6 +179,7 @@ namespace VSharp.Syntax
             SyntaxKind.OpenBraceToken => "{",
             SyntaxKind.CloseBraceToken => "}",
             SyntaxKind.CommaToken => ",",
+            SyntaxKind.UnderscoreToken => "_",
             SyntaxKind.ColonToken => ":",
             SyntaxKind.SemicolonToken => ";",
 

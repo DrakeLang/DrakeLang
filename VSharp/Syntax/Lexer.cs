@@ -238,6 +238,11 @@ namespace VSharp.Syntax
                     syntaxKind = SyntaxKind.CommaToken;
                     return true;
 
+                case '_':
+                    Next();
+                    syntaxKind = SyntaxKind.UnderscoreToken;
+                    return true;
+
                 case '~':
                     Next();
                     syntaxKind = SyntaxKind.TildeToken;

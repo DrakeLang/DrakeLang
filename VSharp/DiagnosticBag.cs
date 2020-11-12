@@ -110,6 +110,12 @@ namespace VSharp
             Report(span, message);
         }
 
+        public void ReportUnexpectedPipedArgument(TextSpan span)
+        {
+            string message = $"Unexpected piped argument. Method call was either not provided a piped argument, or multiple piped arguments were attempted used.";
+            Report(span, message);
+        }
+
         public void ReportWrongArgumentType(TextSpan span, string methodName, string parameterName, TypeSymbol expected, TypeSymbol actual)
         {
             string message = $"Parameter '{parameterName}' in method '{methodName}' requires value of type '{expected}', but recieved value of type '{actual}'.";
