@@ -24,7 +24,7 @@ namespace VSharp.Binding
 {
     internal sealed class BoundErrorExpression : BoundExpression
     {
-        public static BoundErrorExpression Instace { get; } = new BoundErrorExpression();
+        public static BoundErrorExpression Instance { get; } = new BoundErrorExpression();
 
         private BoundErrorExpression()
         {

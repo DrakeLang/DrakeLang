@@ -349,13 +349,8 @@ namespace VSharp.Binding
         private BoundExpression BindExpression(ExpressionSyntax syntax, TypeSymbol targetType)
         {
             var expression = BindExpression(syntax);
-
-            if (expression.Type != targetType &&
-                !expression.Type.IsError() &&
-                !targetType.IsError())
-            {
-                Diagnostics.ReportCannotConvert(syntax.Span, expression.Type, targetType);
-            }
+            if (!expression.Type.IsError() && !targetType.IsError())
+                return BindConvertion(syntax.Span, expression, targetType);
 
             return expression;
         }
@@ -369,7 +364,7 @@ namespace VSharp.Binding
         private BoundExpression BindNameExpression(NameExpressionSyntax syntax)
         {
             if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable))
-                return BoundErrorExpression.Instace;
+                return BoundErrorExpression.Instance;
 
             return new BoundVariableExpression(variable);
         }
@@ -379,13 +374,13 @@ namespace VSharp.Binding
             var boundOperand = BindExpression(syntax.Operand);
 
             if (boundOperand.Type.IsError())
-                return BoundErrorExpression.Instace;
+                return BoundErrorExpression.Instance;
 
             var boundOp = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, syntax.UnaryType, boundOperand.Type);
             if (boundOp is null)
             {
                 Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundOperand.Type);
-                return BoundErrorExpression.Instace;
+                return BoundErrorExpression.Instance;
             }
 
             return new BoundUnaryExpression(boundOp, boundOperand);
@@ -399,7 +394,7 @@ namespace VSharp.Binding
                 if (syntax.Right is not CallExpressionSyntax callExpression)
                 {
                     Diagnostics.ReportCanOnlyPipeToMethods(syntax.OperatorToken.Span);
-                    return BoundErrorExpression.Instace;
+                    return BoundErrorExpression.Instance;
                 }
 
                 return BindCallExpression(callExpression, syntax.Left);
@@ -409,13 +404,13 @@ namespace VSharp.Binding
             var boundRight = BindExpression(syntax.Right);
 
             if (boundLeft.Type.IsError() || boundRight.Type.IsError())
-                return BoundErrorExpression.Instace;
+                return BoundErrorExpression.Instance;
 
             var boundOp = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
             if (boundOp is null)
             {
                 Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundLeft.Type, boundRight.Type);
-                return BoundErrorExpression.Instace;
+                return BoundErrorExpression.Instance;
             }
 
             return new BoundBinaryExpression(boundLeft, boundOp, boundRight);
@@ -435,7 +430,7 @@ namespace VSharp.Binding
         private BoundExpression BindNameofExpression(NameofExpressionSyntax syntax)
         {
             if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable))
-                return BoundErrorExpression.Instace;
+                return BoundErrorExpression.Instance;
 
             return new BoundLiteralExpression(variable.Name);
         }
@@ -443,14 +438,14 @@ namespace VSharp.Binding
         private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax)
         {
             if (!TryFindVariable(syntax.IdentifierToken, out VariableSymbol? variable) || variable.Type.IsError())
-                return BoundErrorExpression.Instace;
+                return BoundErrorExpression.Instance;
 
             if (variable.IsReadOnly)
                 Diagnostics.ReportCannotAssignReadOnly(syntax.EqualsToken.Span, variable.Name);
 
             var boundExpression = BindExpression(syntax.Expression);
             if (boundExpression.Type.IsError())
-                return BoundErrorExpression.Instace;
+                return BoundErrorExpression.Instance;
 
             if (syntax.EqualsToken.Kind != SyntaxKind.EqualsToken)
             {
@@ -471,12 +466,12 @@ namespace VSharp.Binding
                 if (boundOp is null)
                 {
                     Diagnostics.ReportUndefinedBinaryOperator(syntax.EqualsToken.Span, syntax.EqualsToken.Text, variable.Type, boundExpression.Type);
-                    return BoundErrorExpression.Instace;
+                    return BoundErrorExpression.Instance;
                 }
 
                 boundExpression = new BoundBinaryExpression(boundVariable, boundOp, boundExpression);
                 if (boundExpression.Type.IsError())
-                    return BoundErrorExpression.Instace;
+                    return BoundErrorExpression.Instance;
             }
 
             boundExpression = BindConvertion(syntax.Expression.Span, boundExpression, variable.Type);
@@ -487,7 +482,7 @@ namespace VSharp.Binding
         {
             // Locate method.
             if (!TryFindMethod(syntax.Identifier, out MethodSymbol? method) || method.ReturnType.IsError())
-                return BoundErrorExpression.Instace;
+                return BoundErrorExpression.Instance;
 
             var parameterCount = syntax.Arguments.Count + (pipedParameter is null ? 0 : 1);
 
@@ -524,7 +519,7 @@ namespace VSharp.Binding
             if (boundArguments.Count != method.Parameters.Length)
             {
                 Diagnostics.ReportWrongArgumentCount(syntax.Span, method.Name, method.Parameters.Length, parameterCount);
-                return BoundErrorExpression.Instace;
+                return BoundErrorExpression.Instance;
             }
 
             // Validate argument types.
@@ -536,17 +531,29 @@ namespace VSharp.Binding
                 if (argument.Type != parameter.Type && !argument.Type.IsError() && !parameter.Type.IsError())
                 {
                     Diagnostics.ReportWrongArgumentType(syntax.Span, method.Name, parameter.Name, parameter.Type, argument.Type);
-                    return BoundErrorExpression.Instace;
+                    return BoundErrorExpression.Instance;
                 }
             }
 
             return new BoundCallExpression(method, boundArguments.ToImmutableArray());
         }
 
-        private BoundExplicitCastExpression BindExplicitCastExpression(ExplicitCastExpressionSyntax syntax)
+        private BoundExpression BindExplicitCastExpression(ExplicitCastExpressionSyntax syntax)
         {
-            var type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? TypeSymbol.Error;
             var expression = BindExpression(syntax.Expression);
+            if (expression.Type == TypeSymbol.Error)
+                return BoundErrorExpression.Instance;
+
+            var type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? TypeSymbol.Error;
+            if (type == TypeSymbol.Error)
+                return BoundErrorExpression.Instance;
+
+            var conversion = Conversion.Classify(expression.Type, type);
+            if (conversion == Conversion.None)
+            {
+                Diagnostics.ReportNoExplicitConversion(syntax.Span, expression.Type, type);
+                return BoundErrorExpression.Instance;
+            }
 
             return new BoundExplicitCastExpression(type, expression);
         }

@@ -152,6 +152,12 @@ namespace VSharp
             Report(span, message);
         }
 
+        public void ReportNoExplicitConversion(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
+        {
+            string message = $"No explicit convertion exists for type '{fromType}' to '{toType}'.";
+            Report(span, message);
+        }
+
         public void ReportCannotConvert(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
         {
             string message = $"Cannot convert type '{fromType}' to '{toType}'.";
