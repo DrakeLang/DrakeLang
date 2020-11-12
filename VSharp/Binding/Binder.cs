@@ -283,8 +283,27 @@ namespace VSharp.Binding
 
         private BoundStatement BindReturnStatement(ReturnStatementSyntax syntax)
         {
-            var expression = syntax.Expression is null ? null : BindExpression(syntax.Expression);
-            return new BoundReturnStatement(expression);
+            if (CurrentMethod.ReturnType == TypeSymbol.Void)
+            {
+                if (syntax.Expression is not null)
+                {
+                    Diagnostics.ReportInvalidReturnInVoidMethod(syntax.Span);
+                    return BoundNoOpStatement.Instance;
+                }
+
+                return new BoundReturnStatement();
+            }
+            else
+            {
+                if (syntax.Expression is null)
+                {
+                    Diagnostics.ReportMissingReturnExpression(syntax.Span);
+                    return BoundNoOpStatement.Instance;
+                }
+
+                var expression = BindExpression(syntax.Expression, CurrentMethod.ReturnType);
+                return new BoundReturnStatement(expression);
+            }
         }
 
         private BoundStatement BindLabelStatement(LabelStatementSyntax syntax)

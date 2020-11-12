@@ -200,6 +200,18 @@ namespace VSharp
             Report(span, message);
         }
 
+        public void ReportInvalidReturnInVoidMethod(TextSpan span)
+        {
+            string message = $"Cannot return an expression from a method returning void.";
+            Report(span, message);
+        }
+
+        public void ReportMissingReturnExpression(TextSpan span)
+        {
+            string message = $"Expected to return expression in non-void returning method.";
+            Report(span, message);
+        }
+
         #endregion Report
 
         #region IEnumerable
