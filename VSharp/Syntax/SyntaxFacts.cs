@@ -173,7 +173,7 @@ namespace VSharp.Syntax
             SyntaxKind.GreaterEqualsToken => ">=",
             SyntaxKind.LessToken => "<",
             SyntaxKind.GreaterToken => ">",
-            SyntaxKind.EqualGreaterToken => "=>",
+            SyntaxKind.EqualsGreaterToken => "=>",
             SyntaxKind.OpenParenthesisToken => "(",
             SyntaxKind.CloseParenthesisToken => ")",
             SyntaxKind.OpenBraceToken => "{",

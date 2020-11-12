@@ -300,7 +300,7 @@ namespace VSharp.Syntax
                     else if (Current == '>')
                     {
                         Next();
-                        syntaxKind = SyntaxKind.EqualGreaterToken;
+                        syntaxKind = SyntaxKind.EqualsGreaterToken;
                     }
                     else
                         syntaxKind = SyntaxKind.EqualsToken;

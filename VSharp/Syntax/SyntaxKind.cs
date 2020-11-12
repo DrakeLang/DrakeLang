@@ -57,7 +57,7 @@ namespace VSharp.Syntax
         GreaterEqualsToken,
         LessToken,
         GreaterToken,
-        EqualGreaterToken,
+        EqualsGreaterToken,
         OpenParenthesisToken,
         CloseParenthesisToken,
         OpenBraceToken,

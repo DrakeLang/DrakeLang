@@ -293,7 +293,7 @@ namespace VSharp.Syntax
             var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
             var parameters = ParseParameterList();
             var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
-            var declaration = Current.Kind == SyntaxKind.EqualGreaterToken ? (BodyStatementSyntax)ParseExpressionBody() : ParseBlockBody();
+            var declaration = Current.Kind == SyntaxKind.EqualsGreaterToken ? (BodyStatementSyntax)ParseExpressionBody() : ParseBlockBody();
 
             return new MethodDeclarationStatementSyntax(defKeyword, identifier, leftParenthesis, parameters, rightParenthesis, declaration);
         }
@@ -338,7 +338,7 @@ namespace VSharp.Syntax
 
         private ExpressionBodyStatementSyntax ParseExpressionBody()
         {
-            var lambdaOperator = MatchToken(SyntaxKind.EqualGreaterToken);
+            var lambdaOperator = MatchToken(SyntaxKind.EqualsGreaterToken);
             var statement = ParseStatement();
 
             return new ExpressionBodyStatementSyntax(lambdaOperator, statement);
