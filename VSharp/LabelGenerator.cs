@@ -16,8 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-#pragma warning disable CA1724 // on't have type named Compilation due to conflict with 'System.Web.Compilation'
-
 using System.Collections.Generic;
 using VSharp.Symbols;
 
