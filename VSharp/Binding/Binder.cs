@@ -173,16 +173,8 @@ namespace VSharp.Binding
             var variableType = ResolveType(syntax.Keyword.Kind);
             if (variableType is null)
                 variableType = initializer.Type;
-
-            var conversion = Conversion.Classify(variableType, initializer.Type);
-            if (conversion == Conversion.Explicit)
-            {
-                Diagnostics.ReportCannotImplicitlyConvert(syntax.Initializer.Span, initializer.Type, variableType);
-            }
-            else if (conversion == Conversion.None)
-            {
-                Diagnostics.ReportCannotConvert(syntax.Initializer.Span, initializer.Type, variableType);
-            }
+            else
+                initializer = BindConvertion(syntax.Initializer.Span, initializer, variableType);
 
             var variable = new VariableSymbol(name, isReadOnly, variableType);
             if (declare && !_scope.TryDeclareVariable(variable))
@@ -487,21 +479,8 @@ namespace VSharp.Binding
                     return BoundErrorExpression.Instace;
             }
 
-            var conversion = Conversion.Classify(boundExpression.Type, variable.Type);
-            if (conversion == Conversion.Identity || conversion == Conversion.Implicit)
-            {
-                return new BoundAssignmentExpression(variable, boundExpression);
-            }
-            else if (conversion == Conversion.Explicit)
-            {
-                Diagnostics.ReportCannotImplicitlyConvert(syntax.Expression.Span, boundExpression.Type, variable.Type);
-                return boundExpression;
-            }
-            else
-            {
-                Diagnostics.ReportCannotConvert(syntax.Expression.Span, boundExpression.Type, variable.Type);
-                return boundExpression;
-            }
+            boundExpression = BindConvertion(syntax.Expression.Span, boundExpression, variable.Type);
+            return new BoundAssignmentExpression(variable, boundExpression);
         }
 
         private BoundExpression BindCallExpression(CallExpressionSyntax syntax, ExpressionSyntax? pipedParameter = null)
@@ -672,6 +651,31 @@ namespace VSharp.Binding
             var type = ResolveType(parameter.TypeToken.TypeIdentifier.Kind) ?? TypeSymbol.Error;
 
             return new ParameterSymbol(name, type);
+        }
+
+        /// <summary>
+        /// Reports a diagnostic if there's an invalid assignment.
+        /// </summary>
+        /// <param name="span"></param>
+        /// <param name="expression"></param>
+        /// <param name="resultType"></param>
+        /// <returns></returns>
+        private BoundExpression BindConvertion(TextSpan span, BoundExpression expression, TypeSymbol resultType)
+        {
+            var conversion = Conversion.Classify(expression.Type, resultType);
+            if (conversion == Conversion.Identity || conversion == Conversion.Implicit)
+            {
+            }
+            else if (conversion == Conversion.Explicit)
+            {
+                Diagnostics.ReportCannotImplicitlyConvert(span, expression.Type, resultType);
+            }
+            else
+            {
+                Diagnostics.ReportCannotConvert(span, expression.Type, resultType);
+            }
+
+            return expression;
         }
 
         #region TryFind
