@@ -17,29 +17,23 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using System.Linq;
-using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
-    internal sealed class BoundLabelStatement : BoundStatement
+    internal sealed class BoundReturnStatement : BoundStatement
     {
-        public BoundLabelStatement(LabelSymbol label)
+        public BoundReturnStatement(BoundExpression? expression = null)
         {
-            Label = label;
+            Expression = expression;
         }
 
-        #region Properties
-
-        public LabelSymbol Label { get; }
-
-        public override BoundNodeKind Kind => BoundNodeKind.LabelStatement;
-
-        #endregion Properties
+        public override BoundNodeKind Kind => BoundNodeKind.ReturnStatement;
+        public BoundExpression? Expression { get; }
 
         public override IEnumerable<BoundNode> GetChildren()
         {
-            return Enumerable.Empty<BoundNode>();
+            if (Expression != null)
+                yield return Expression;
         }
     }
 }
