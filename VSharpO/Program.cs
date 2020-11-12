@@ -50,8 +50,6 @@ namespace VSharpO
             {
                 Environment.Exit(0);
             };
-
-#pragma warning disable CA1031 // Do not catch general exception types
             try
             {
                 Parser.Default.ParseArguments<Options>(args)
@@ -62,7 +60,6 @@ namespace VSharpO
                 ConsoleExt.WriteLine($"Unhandled exception. " + ex, ConsoleColor.DarkRed);
                 Console.ResetColor();
             }
-#pragma warning restore CA1031 // Do not catch general exception types
         }
 
         private static void Run(Options o)

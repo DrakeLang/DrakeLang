@@ -288,14 +288,14 @@ namespace VSharp.Tests
             var result = compilation.Evaluate(variables);
 
             Assert.Empty(result.Diagnostics);
-
+            
             var resultVariable = variables.Keys.FirstOrDefault(v => v.Name == "result");
             Assert.NotNull(resultVariable);
 
-            Assert.Equal(expectedValue, variables[resultVariable]);
+            Assert.Equal(expectedValue, variables[resultVariable!]);
         }
 
-        private void AssertDiagnostics(string text, string diagnosticText)
+        private static void AssertDiagnostics(string text, string diagnosticText)
         {
             AnnotatedText annotaedText = AnnotatedText.Parse(text);
             SyntaxTree syntaxTree = SyntaxTree.Parse(annotaedText.Text);

@@ -16,8 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-#pragma warning disable CA1720 // Identifier contains type name
-
 namespace VSharp.Symbols
 {
     public static class TypeSymbolExtensions

@@ -23,125 +23,70 @@ namespace VSharp.Syntax
 {
     public static class SyntaxFacts
     {
-        public static int GetUnaryOperatorPrecedence(this SyntaxKind kind)
+        public static int GetUnaryOperatorPrecedence(this SyntaxKind kind) => kind switch
         {
-            switch (kind)
-            {
-                case SyntaxKind.PlusPlusToken:
-                case SyntaxKind.MinusMinusToken:
-                case SyntaxKind.PlusToken:
-                case SyntaxKind.MinusToken:
-                case SyntaxKind.BangToken:
-                case SyntaxKind.TildeToken:
-                    return 10;
+            SyntaxKind.PlusPlusToken or
+            SyntaxKind.MinusMinusToken or
+            SyntaxKind.PlusToken or
+            SyntaxKind.MinusToken or
+            SyntaxKind.BangToken or
+            SyntaxKind.TildeToken => 10,
 
-                default:
-                    return 0;
-            }
-        }
+            _ => 0,
+        };
 
-        public static int GetBinaryOperatorPrecedence(this SyntaxKind kind)
+        public static int GetBinaryOperatorPrecedence(this SyntaxKind kind) => kind switch
         {
-            switch (kind)
-            {
-                case SyntaxKind.StarToken:
-                case SyntaxKind.SlashToken:
-                case SyntaxKind.PercentToken:
-                    return 10;
+            SyntaxKind.StarToken or
+            SyntaxKind.SlashToken or
+            SyntaxKind.PercentToken => 10,
+            SyntaxKind.PlusToken or
+            SyntaxKind.MinusToken => 9,
+            SyntaxKind.LessToken or
+            SyntaxKind.LessEqualsToken or
+            SyntaxKind.GreaterToken or
+            SyntaxKind.GreaterEqualsToken => 8,
+            SyntaxKind.EqualsEqualsToken or
+            SyntaxKind.BangEqualsToken => 7,
+            SyntaxKind.AmpersandToken => 6,
+            SyntaxKind.HatToken => 5,
+            SyntaxKind.PipeToken => 4,
+            SyntaxKind.AmpersandAmpersandToken => 3,
+            SyntaxKind.PipePipeToken => 2,
+            SyntaxKind.PipeGreaterToken => 1,
 
-                case SyntaxKind.PlusToken:
-                case SyntaxKind.MinusToken:
-                    return 9;
-
-                case SyntaxKind.LessToken:
-                case SyntaxKind.LessEqualsToken:
-                case SyntaxKind.GreaterToken:
-                case SyntaxKind.GreaterEqualsToken:
-                    return 8;
-
-                case SyntaxKind.EqualsEqualsToken:
-                case SyntaxKind.BangEqualsToken:
-                    return 7;
-
-                case SyntaxKind.AmpersandToken:
-                    return 6;
-
-                case SyntaxKind.HatToken:
-                    return 5;
-
-                case SyntaxKind.PipeToken:
-                    return 4;
-
-                case SyntaxKind.AmpersandAmpersandToken:
-                    return 3;
-
-                case SyntaxKind.PipePipeToken:
-                    return 2;
-
-                case SyntaxKind.PipeGreaterToken:
-                    return 1;
-
-                default:
-                    return 0;
-            }
-        }
+            _ => 0,
+        };
 
         /// <summary>
         /// Returns a value indicating if the given syntax kind is an assignment operator (=, +=, |=).
         /// </summary>
-        public static bool IsAssignmentOperator(this SyntaxKind kind)
-        {
-            switch (kind)
-            {
-                case SyntaxKind.EqualsToken:
-                case SyntaxKind.PlusEqualsToken:
-                case SyntaxKind.MinusEqualsToken:
-                case SyntaxKind.StarEqualsToken:
-                case SyntaxKind.SlashEqualsToken:
-                case SyntaxKind.AmpersandEqualsToken:
-                case SyntaxKind.PipeEqualsToken:
-                    return true;
-
-                default:
-                    return false;
-            }
-        }
+        public static bool IsAssignmentOperator(this SyntaxKind kind) => kind is
+            SyntaxKind.EqualsToken or
+            SyntaxKind.PlusEqualsToken or
+            SyntaxKind.MinusEqualsToken or
+            SyntaxKind.StarEqualsToken or
+            SyntaxKind.SlashEqualsToken or
+            SyntaxKind.AmpersandEqualsToken or
+            SyntaxKind.PipeEqualsToken;
 
         /// <summary>
         /// Returns a value indicating if the given syntax kind is an unary operator (+, -, ++, --, !).
         /// </summary>
-        public static bool IsUnaryOperator(this SyntaxKind kind)
-        {
-            switch (kind)
-            {
-                case SyntaxKind.PlusToken:
-                case SyntaxKind.PlusPlusToken:
-                case SyntaxKind.MinusToken:
-                case SyntaxKind.MinusMinusToken:
-                case SyntaxKind.BangToken:
-                case SyntaxKind.TildeToken:
-                    return true;
+        public static bool IsUnaryOperator(this SyntaxKind kind) => kind is
+            SyntaxKind.PlusToken or 
+            SyntaxKind.PlusPlusToken or 
+            SyntaxKind.MinusToken or 
+            SyntaxKind.MinusMinusToken or 
+            SyntaxKind.BangToken or 
+            SyntaxKind.TildeToken;
 
-                default:
-                    return false;
-            }
-        }
-
-        public static bool IsTypeKeyword(this SyntaxKind kind)
-        {
-            switch (kind)
-            {
-                case SyntaxKind.BoolKeyword:
-                case SyntaxKind.IntKeyword:
-                case SyntaxKind.FloatKeyword:
-                case SyntaxKind.StringKeyword:
-                case SyntaxKind.VarKeyword:
-                    return true;
-
-                default:
-                    return false;
-            }
-        }
+        public static bool IsTypeKeyword(this SyntaxKind kind) => kind is 
+            SyntaxKind.BoolKeyword or 
+            SyntaxKind.IntKeyword or 
+            SyntaxKind.FloatKeyword or 
+            SyntaxKind.StringKeyword or 
+            SyntaxKind.VarKeyword;
 
         public static string? GetText(this SyntaxKind kind) => kind switch
         {

@@ -202,7 +202,7 @@ namespace VSharp.Binding
 
                 if (syntax.TypeOrDefKeyword.Kind != SyntaxKind.DefKeyword && syntax.Declaration is ExpressionBodyStatementSyntax expressionBody)
                 {
-                    if (!(expressionBody.Statement is ExpressionStatementSyntax expressionStatement))
+                    if (expressionBody.Statement is not ExpressionStatementSyntax expressionStatement)
                     {
                         Diagnostics.ReportMethodNotAllPathsReturnValue(syntax.Identifier.Span);
                         return BoundNoOpStatement.Instance;
@@ -400,7 +400,7 @@ namespace VSharp.Binding
             if (syntax.OperatorToken.Kind == SyntaxKind.PipeGreaterToken)
             {
                 // Piped argument.
-                if (!(syntax.Right is CallExpressionSyntax callExpression))
+                if (syntax.Right is not CallExpressionSyntax callExpression)
                 {
                     Diagnostics.ReportCanOnlyPipeToMethods(syntax.OperatorToken.Span);
                     return BoundErrorExpression.Instace;

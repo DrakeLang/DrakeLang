@@ -222,7 +222,7 @@ namespace VSharp
             {
                 if (node.Method == BuiltinMethods.Input)
                 {
-                    return Console.ReadLine();
+                    return Console.ReadLine() ?? string.Empty;
                 }
                 else if (node.Method == BuiltinMethods.Print)
                 {

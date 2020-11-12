@@ -111,7 +111,7 @@ namespace VSharp.Tests
                 if (lines[i].Length == 0)
                     continue;
 
-                lines[i] = lines[i].Substring(minIndentation);
+                lines[i] = lines[i][minIndentation..];
             }
 
             while (lines.Count > 0 && lines[0].Length == 0)
