@@ -270,10 +270,13 @@ namespace VSharp.Tests.Syntax
             {
                 if (t2Kind == SyntaxKind.PipeToken) return true;
                 if (t2Kind == SyntaxKind.PipePipeToken) return true;
+                if (t2Kind == SyntaxKind.PipeGreaterToken) return true;
                 if (t2Kind == SyntaxKind.EqualsToken) return true;
                 if (t2Kind == SyntaxKind.EqualsEqualsToken) return true;
                 if (t2Kind == SyntaxKind.PipeEqualsToken) return true;
                 if (t2Kind == SyntaxKind.EqualsGreaterToken) return true;
+                if (t2Kind == SyntaxKind.GreaterToken) return true;
+                if (t2Kind == SyntaxKind.GreaterEqualsToken) return true;
             }
 
             if (t1Kind == SyntaxKind.AmpersandToken)
