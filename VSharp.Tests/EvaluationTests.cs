@@ -271,6 +271,13 @@ namespace VSharp.Tests
             // Line comment
             yield return ("var a = 3; var result = nameof(a); // gets the name of result\n", "a");
             yield return ("var result = 5; //nameof(a); \n", 5);
+
+            // Piping
+            yield return ("string Ret(string s) => s; var result = \"a\" |> Ret();", "a");
+            yield return ("string Ret(string s) => s; var result = \"a\" |> Ret(_);", "a");
+            yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\");", "ba");
+            yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\", _);", "ba");
+            yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(_, \"b\");", "ab");
         }
 
         private static void AssertValue(string text, object expectedValue)
