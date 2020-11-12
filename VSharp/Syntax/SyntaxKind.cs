@@ -50,6 +50,7 @@ namespace VSharp.Syntax
         PipeToken,
         PipePipeToken,
         PipeEqualsToken,
+        PipeGreaterToken,
         EqualsEqualsToken,
         BangEqualsToken,
         LessEqualsToken,

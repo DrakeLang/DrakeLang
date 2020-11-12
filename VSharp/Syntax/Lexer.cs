@@ -276,6 +276,11 @@ namespace VSharp.Syntax
                         Next();
                         syntaxKind = SyntaxKind.PipeEqualsToken;
                     }
+                    else if (Current == '>')
+                    {
+                        Next();
+                        syntaxKind = SyntaxKind.PipeGreaterToken;
+                    }
                     else
                         syntaxKind = SyntaxKind.PipeToken;
                     return true;

@@ -47,35 +47,38 @@ namespace VSharp.Syntax
                 case SyntaxKind.StarToken:
                 case SyntaxKind.SlashToken:
                 case SyntaxKind.PercentToken:
-                    return 9;
+                    return 10;
 
                 case SyntaxKind.PlusToken:
                 case SyntaxKind.MinusToken:
-                    return 8;
+                    return 9;
 
                 case SyntaxKind.LessToken:
                 case SyntaxKind.LessEqualsToken:
                 case SyntaxKind.GreaterToken:
                 case SyntaxKind.GreaterEqualsToken:
-                    return 7;
+                    return 8;
 
                 case SyntaxKind.EqualsEqualsToken:
                 case SyntaxKind.BangEqualsToken:
-                    return 6;
+                    return 7;
 
                 case SyntaxKind.AmpersandToken:
-                    return 5;
+                    return 6;
 
                 case SyntaxKind.HatToken:
-                    return 4;
+                    return 5;
 
                 case SyntaxKind.PipeToken:
-                    return 3;
+                    return 4;
 
                 case SyntaxKind.AmpersandAmpersandToken:
-                    return 2;
+                    return 3;
 
                 case SyntaxKind.PipePipeToken:
+                    return 2;
+
+                case SyntaxKind.PipeGreaterToken:
                     return 1;
 
                 default:
@@ -164,6 +167,7 @@ namespace VSharp.Syntax
             SyntaxKind.PipeToken => "|",
             SyntaxKind.PipePipeToken => "||",
             SyntaxKind.PipeEqualsToken => "|=",
+            SyntaxKind.PipeGreaterToken => "|>",
             SyntaxKind.EqualsEqualsToken => "==",
             SyntaxKind.LessEqualsToken => "<=",
             SyntaxKind.GreaterEqualsToken => ">=",

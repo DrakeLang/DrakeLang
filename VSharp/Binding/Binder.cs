@@ -380,6 +380,18 @@ namespace VSharp.Binding
 
         private BoundExpression BindBinaryExpression(BinaryExpressionSyntax syntax)
         {
+            if (syntax.OperatorToken.Kind == SyntaxKind.PipeGreaterToken)
+            {
+                // Piped argument.
+                if (!(syntax.Right is CallExpressionSyntax callExpression))
+                {
+                    Diagnostics.ReportCanOnlyPipeToMethods(syntax.OperatorToken.Span);
+                    return BoundErrorExpression.Instace;
+                }
+
+                return BindCallExpression(callExpression, syntax.Left);
+            }
+
             var boundLeft = BindExpression(syntax.Left);
             var boundRight = BindExpression(syntax.Right);
 
@@ -471,21 +483,28 @@ namespace VSharp.Binding
             }
         }
 
-        private BoundExpression BindCallExpression(CallExpressionSyntax syntax)
+        private BoundExpression BindCallExpression(CallExpressionSyntax syntax, ExpressionSyntax? pipedParameter = null)
         {
             // Locate method.
             if (!TryFindMethod(syntax.Identifier, out MethodSymbol? method) || method.ReturnType.IsError())
                 return BoundErrorExpression.Instace;
 
+            var parameterCount = syntax.Arguments.Count + (pipedParameter is null ? 0 : 1);
+
             // Validate argument count.
-            if (syntax.Arguments.Count != method.Parameters.Length)
+            if (parameterCount != method.Parameters.Length)
             {
-                Diagnostics.ReportWrongArgumentCount(syntax.Span, method.Name, method.Parameters.Length, syntax.Arguments.Count);
+                Diagnostics.ReportWrongArgumentCount(syntax.Span, method.Name, method.Parameters.Length, parameterCount);
                 return BoundErrorExpression.Instace;
             }
 
             // Bind arguments.
             var boundArguments = ImmutableArray.CreateBuilder<BoundExpression>();
+            if (pipedParameter != null)
+            {
+                var boundArgument = BindExpression(pipedParameter);
+                boundArguments.Add(boundArgument);
+            }
             foreach (var argument in syntax.Arguments)
             {
                 var boundArgument = BindExpression(argument);
