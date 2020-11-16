@@ -114,7 +114,7 @@ namespace VSharp.Binding
 
         public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
-        private MethodSymbol CurrentMethod => _callStack.Peek();
+        private MethodSymbol? CurrentMethod => _callStack.TryPeek(out var method) ? method : null;
 
         #endregion Properties
 
@@ -283,7 +283,7 @@ namespace VSharp.Binding
 
         private BoundStatement BindReturnStatement(ReturnStatementSyntax syntax)
         {
-            if (CurrentMethod.ReturnType == TypeSymbol.Void)
+            if (CurrentMethod is null || CurrentMethod.ReturnType == TypeSymbol.Void )
             {
                 if (syntax.Expression is not null)
                 {
