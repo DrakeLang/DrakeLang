@@ -46,6 +46,11 @@ namespace VSharp.Lowering
                 .ToImmutableArray();
         }
 
+        public static BoundBlockStatement Lower(BoundStatement statement, LabelGenerator labelGenerator)
+        {
+            return new Lowerer(labelGenerator).Lower(statement);
+        }
+
         private BoundBlockStatement Lower(BoundStatement statement)
         {
             var result = RewriteStatement(statement);

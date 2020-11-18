@@ -22,6 +22,7 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
+using VSharp.Lowering;
 using VSharp.Symbols;
 using VSharp.Syntax;
 using VSharp.Text;
@@ -196,6 +197,7 @@ namespace VSharp.Binding
                     _scope.TryDeclareVariable(parameter);
                 }
 
+                BoundBlockStatement boundDeclaration;
                 if (syntax.TypeOrDefKeyword.Kind != SyntaxKind.DefKeyword && syntax.Declaration is ExpressionBodyStatementSyntax expressionBody)
                 {
                     if (expressionBody.Statement is not ExpressionStatementSyntax expressionStatement)
@@ -206,17 +208,19 @@ namespace VSharp.Binding
 
                     var expression = BindExpression(expressionStatement.Expression);
                     var returnStatement = new BoundReturnStatement(expression);
-                    var boundDeclaration = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(returnStatement));
-
-                    return new BoundMethodDeclarationStatement(method, boundDeclaration);
+                    boundDeclaration = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(returnStatement));
                 }
                 else
                 {
                     var statements = BindStatements(syntax.Declaration.Statements);
-                    var boundDeclaration = new BoundBlockStatement(statements);
-
-                    return new BoundMethodDeclarationStatement(method, boundDeclaration);
+                    boundDeclaration = new BoundBlockStatement(statements);
                 }
+
+                boundDeclaration = Lowerer.Lower(boundDeclaration, _labelGenerator);
+                if (method.ReturnType != TypeSymbol.Void && !new ControlFlowGraph(boundDeclaration).AllPathsReturn())
+                    Diagnostics.ReportMethodNotAllPathsReturnValue(syntax.Identifier.Span);
+
+                return new BoundMethodDeclarationStatement(method, boundDeclaration);
             }
             finally
             {
@@ -283,7 +287,7 @@ namespace VSharp.Binding
 
         private BoundStatement BindReturnStatement(ReturnStatementSyntax syntax)
         {
-            if (CurrentMethod is null || CurrentMethod.ReturnType == TypeSymbol.Void )
+            if (CurrentMethod is null || CurrentMethod.ReturnType == TypeSymbol.Void)
             {
                 if (syntax.Expression is not null)
                 {
