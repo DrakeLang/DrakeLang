@@ -98,13 +98,14 @@ namespace VSharpO
         /// </summary>
         private static void Parse(string code, Options options)
         {
-            SyntaxTree syntaxTree = SyntaxTree.Parse(code);
-            Compilation compilation = new Compilation(syntaxTree);
+            var syntaxTree = SyntaxTree.Parse(code);
+            var compilation = new Compilation(syntaxTree);
 
             if (options.ShowTree) syntaxTree.PrintTree(Console.Out);
-            if (options.ShowProgram) PrintProgramToConsole(compilation);
+            if (options.ShowProgram) compilation.PrintProgram(Console.Out);
 
-            EvaluationResult result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
+            var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
+
             if (result.Diagnostics.Length == 0)
             {
                 ConsoleExt.WriteLine("Program executed successfully", ConsoleColor.Green);
@@ -145,18 +146,5 @@ namespace VSharpO
 
             Console.WriteLine();
         }
-
-        #region Console helpers
-
-        private static void PrintProgramToConsole(Compilation compilation)
-        {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-
-            compilation.PrintProgram(Console.Out);
-
-            Console.ResetColor();
-        }
-
-        #endregion Console helpers
     }
 }

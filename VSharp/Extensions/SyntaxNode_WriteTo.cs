@@ -18,7 +18,7 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
+using VSharp.Extensions.Util;
 
 namespace VSharp.Syntax
 {
@@ -53,45 +53,6 @@ namespace VSharp.Syntax
 
             foreach (var child in node.GetChildren())
                 child.WriteTo(writer, indent, child == lastChild);
-        }
-
-        private static readonly Regex _kindMatch = new Regex("([A-Za-z]*)(Expression|Statement|Token|Keyword)");
-
-        private static void WriteSyntaxKind(this TextWriter writer, SyntaxKind kind)
-        {
-            if (writer != Console.Out)
-            {
-                writer.Write(kind);
-                return;
-            }
-
-            var kindStr = kind.ToString();
-            var match = _kindMatch.Match(kindStr);
-            if (!match.Success)
-            {
-                writer.WriteClr(kindStr, ConsoleColor.White);
-                return;
-            }
-
-            writer.WriteClr(match.Groups[1], ConsoleColor.White);
-            writer.WriteClr(match.Groups[2], ConsoleColor.DarkGray);
-        }
-
-        private static void WriteClr(this TextWriter writer, object? value, ConsoleColor color)
-        {
-            if (writer == Console.Out)
-            {
-                var oldColor = Console.ForegroundColor;
-                Console.ForegroundColor = color;
-
-                writer.Write(value);
-
-                Console.ForegroundColor = oldColor;
-            }
-            else
-            {
-                writer.Write(value);
-            }
         }
     }
 }
