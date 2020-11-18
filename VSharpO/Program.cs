@@ -101,7 +101,7 @@ namespace VSharpO
             SyntaxTree syntaxTree = SyntaxTree.Parse(code);
             Compilation compilation = new Compilation(syntaxTree);
 
-            if (options.ShowTree) PrintTreeToConsole(syntaxTree);
+            if (options.ShowTree) syntaxTree.PrintTree(Console.Out);
             if (options.ShowProgram) PrintProgramToConsole(compilation);
 
             EvaluationResult result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
@@ -147,15 +147,6 @@ namespace VSharpO
         }
 
         #region Console helpers
-
-        private static void PrintTreeToConsole(SyntaxTree tree)
-        {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-
-            tree.PrintTree(Console.Out);
-
-            Console.ResetColor();
-        }
 
         private static void PrintProgramToConsole(Compilation compilation)
         {
