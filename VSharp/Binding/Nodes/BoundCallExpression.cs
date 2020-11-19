@@ -16,9 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Symbols;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using VSharp.Symbols;
 
 namespace VSharp.Binding
 {

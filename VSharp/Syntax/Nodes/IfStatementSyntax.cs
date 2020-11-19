@@ -50,7 +50,7 @@ namespace VSharp.Syntax
             yield return ThenStatement;
 
             if (ElseClause != null)
-            yield return ElseClause;
+                yield return ElseClause;
         }
 
         #endregion Methods

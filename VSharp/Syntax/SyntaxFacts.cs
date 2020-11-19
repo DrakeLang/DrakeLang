@@ -74,18 +74,18 @@ namespace VSharp.Syntax
         /// Returns a value indicating if the given syntax kind is an unary operator (+, -, ++, --, !).
         /// </summary>
         public static bool IsUnaryOperator(this SyntaxKind kind) => kind is
-            SyntaxKind.PlusToken or 
-            SyntaxKind.PlusPlusToken or 
-            SyntaxKind.MinusToken or 
-            SyntaxKind.MinusMinusToken or 
-            SyntaxKind.BangToken or 
+            SyntaxKind.PlusToken or
+            SyntaxKind.PlusPlusToken or
+            SyntaxKind.MinusToken or
+            SyntaxKind.MinusMinusToken or
+            SyntaxKind.BangToken or
             SyntaxKind.TildeToken;
 
-        public static bool IsTypeKeyword(this SyntaxKind kind) => kind is 
-            SyntaxKind.BoolKeyword or 
-            SyntaxKind.IntKeyword or 
-            SyntaxKind.FloatKeyword or 
-            SyntaxKind.StringKeyword or 
+        public static bool IsTypeKeyword(this SyntaxKind kind) => kind is
+            SyntaxKind.BoolKeyword or
+            SyntaxKind.IntKeyword or
+            SyntaxKind.FloatKeyword or
+            SyntaxKind.StringKeyword or
             SyntaxKind.VarKeyword;
 
         public static string? GetText(this SyntaxKind kind) => kind switch

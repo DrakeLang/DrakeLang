@@ -288,7 +288,7 @@ namespace VSharp.Tests
             var result = compilation.Evaluate(variables);
 
             Assert.Empty(result.Diagnostics);
-            
+
             var resultVariable = variables.Keys.FirstOrDefault(v => v.Name == "result");
             Assert.NotNull(resultVariable);
 

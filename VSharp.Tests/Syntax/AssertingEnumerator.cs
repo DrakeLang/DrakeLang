@@ -16,10 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using VSharp.Syntax;
 using Xunit;
 
 namespace VSharp.Tests.Syntax

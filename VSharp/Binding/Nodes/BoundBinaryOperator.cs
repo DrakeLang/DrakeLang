@@ -16,9 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Linq;
 using VSharp.Symbols;
 using VSharp.Syntax;
-using System.Linq;
 
 namespace VSharp.Binding
 {

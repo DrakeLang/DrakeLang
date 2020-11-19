@@ -41,6 +41,6 @@ namespace VSharp.Text
 
         public override string ToString() => Text.ToString(Span);
 
-        #endregion
+        #endregion Methods
     }
 }

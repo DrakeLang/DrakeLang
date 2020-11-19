@@ -53,6 +53,7 @@ namespace VSharp.Syntax
         public SyntaxToken ConditionSemicolon { get; }
         public StatementSyntax UpdateStatement { get; }
         public SyntaxToken CloseParenthesisToken { get; }
+
         #endregion Properties
 
         #region Methods

@@ -29,7 +29,7 @@ namespace VSharp.Symbols
         public static IEnumerable<MethodSymbol> GetAll()
         {
             yield return Print;
-            yield return Input; 
+            yield return Input;
         }
     }
 }

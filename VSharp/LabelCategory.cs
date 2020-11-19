@@ -18,7 +18,6 @@
 
 #pragma warning disable CA1724 // on't have type named Compilation due to conflict with 'System.Web.Compilation'
 
-
 namespace VSharp
 {
     internal enum LabelCategory
