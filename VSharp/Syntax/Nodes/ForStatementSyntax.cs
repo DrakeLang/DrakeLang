@@ -25,8 +25,9 @@ namespace VSharp.Syntax
         public ForStatementSyntax(
             SyntaxToken forKeyword,
             SyntaxToken openParenthesisToken,
-            StatementSyntax initializationStatement, SyntaxToken initializationSemicolon,
-            ExpressionSyntax condition, SyntaxToken conditionSemicolon, StatementSyntax updateStatement,
+            StatementSyntax? initializationStatement, SyntaxToken initializationSemicolon,
+            ExpressionSyntax? condition, SyntaxToken conditionSemicolon,
+            StatementSyntax? updateStatement,
             SyntaxToken closeParenthesisToken,
             StatementSyntax body)
             : base(body)
@@ -47,11 +48,11 @@ namespace VSharp.Syntax
 
         public SyntaxToken ForKeyword { get; }
         public SyntaxToken OpenParenthesisToken { get; }
-        public StatementSyntax InitializationStatement { get; }
+        public StatementSyntax? InitializationStatement { get; }
         public SyntaxToken InitializationSemicolon { get; }
-        public ExpressionSyntax Condition { get; }
+        public ExpressionSyntax? Condition { get; }
         public SyntaxToken ConditionSemicolon { get; }
-        public StatementSyntax UpdateStatement { get; }
+        public StatementSyntax? UpdateStatement { get; }
         public SyntaxToken CloseParenthesisToken { get; }
 
         #endregion Properties
@@ -64,13 +65,11 @@ namespace VSharp.Syntax
 
             yield return OpenParenthesisToken;
 
-            yield return InitializationStatement;
+            if (InitializationStatement is not null) yield return InitializationStatement;
             yield return InitializationSemicolon;
-
-            yield return Condition;
+            if (Condition is not null) yield return Condition;
             yield return ConditionSemicolon;
-
-            yield return UpdateStatement;
+            if (UpdateStatement is not null) yield return UpdateStatement;
 
             yield return CloseParenthesisToken;
 

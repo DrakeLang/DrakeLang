@@ -202,18 +202,13 @@ namespace VSharp.Syntax
 
             var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
 
-            var initStatement = ParseStatement(requireSemicolon: false);
+            var initStatement = Current.Kind == SyntaxKind.SemicolonToken ? null : ParseStatement(requireSemicolon: false);
             var initSemicolon = MatchToken(SyntaxKind.SemicolonToken);
-            if (initStatement.Kind != SyntaxKind.VariableDeclarationStatement &&
-                (initStatement.Kind != SyntaxKind.ExpressionStatement || ((ExpressionStatementSyntax)initStatement).Expression.Kind != SyntaxKind.AssignmentExpression))
-            {
-                _diagnostics.ReportDeclarationOrAssignmentOnly(initStatement.Span, initStatement.Kind);
-            }
 
-            var condition = ParseExpression();
+            var condition = Current.Kind == SyntaxKind.SemicolonToken ? null : ParseExpression();
             var conditionSemicolon = MatchToken(SyntaxKind.SemicolonToken);
 
-            var updateStatement = ParseStatement(requireSemicolon: false);
+            var updateStatement = Current.Kind == SyntaxKind.CloseParenthesisToken ? null : ParseStatement(requireSemicolon: false);
 
             var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 

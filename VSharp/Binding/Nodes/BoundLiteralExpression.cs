@@ -25,6 +25,9 @@ namespace VSharp.Binding
 {
     internal class BoundLiteralExpression : BoundExpression
     {
+        public static readonly BoundLiteralExpression True = new BoundLiteralExpression(true);
+        public static readonly BoundLiteralExpression False = new BoundLiteralExpression(false);
+
         public BoundLiteralExpression(object value)
         {
             Value = value;

@@ -223,11 +223,11 @@ namespace VSharp.Lowering
 
             // Create the inner while statement (condition, body, update).
             var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
-            var whileBlock = new BoundBlockStatement(ImmutableArray.Create(node.Body, continueLabelStatement, node.UpdateStatement));
-            var whileStatement = new BoundWhileStatement(node.Condition, whileBlock, _labelGenerator.GenerateLabel(LabelCategory.Continue), node.BreakLabel);
+            var whileBlock = new BoundBlockStatement(ImmutableArray.Create(node.Body, continueLabelStatement, node.UpdateStatement ?? BoundNoOpStatement.Instance));
+            var whileStatement = new BoundWhileStatement(node.Condition ?? BoundLiteralExpression.True, whileBlock, _labelGenerator.GenerateLabel(LabelCategory.Continue), node.BreakLabel);
 
             // Create the outer block statement (init, while).
-            var result = new BoundBlockStatement(ImmutableArray.Create(node.InitializationStatement, whileStatement));
+            var result = new BoundBlockStatement(ImmutableArray.Create(node.InitializationStatement ?? BoundNoOpStatement.Instance, whileStatement));
 
             return RewriteStatement(result);
         }

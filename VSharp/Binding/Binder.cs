@@ -276,9 +276,9 @@ namespace VSharp.Binding
 
         private BoundStatement BindForStatement(ForStatementSyntax syntax, LabelSymbol continueLabel, LabelSymbol breakLabel)
         {
-            var initStatement = BindStatement(syntax.InitializationStatement);
-            var condition = BindExpression(syntax.Condition, TypeSymbol.Boolean);
-            var updateStatement = BindStatement(syntax.UpdateStatement);
+            var initStatement = syntax.InitializationStatement is null ? null : BindStatement(syntax.InitializationStatement);
+            var condition = syntax.Condition is null ? null : BindExpression(syntax.Condition, TypeSymbol.Boolean);
+            var updateStatement = syntax.UpdateStatement is null ? null : BindStatement(syntax.UpdateStatement);
             var body = BindStatement(syntax.Body);
 
             return new BoundForStatement(initStatement, condition, updateStatement, body, continueLabel, breakLabel);

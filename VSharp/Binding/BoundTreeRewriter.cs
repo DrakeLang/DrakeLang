@@ -195,9 +195,9 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteForStatement(BoundForStatement node)
         {
-            var initializationStatement = RewriteStatement(node.InitializationStatement);
-            var condition = RewriteExpression(node.Condition);
-            var updateStatement = RewriteStatement(node.UpdateStatement);
+            var initializationStatement = node.InitializationStatement is null ? null : RewriteStatement(node.InitializationStatement);
+            var condition = node.Condition is null ? null : RewriteExpression(node.Condition);
+            var updateStatement = node.UpdateStatement is null ? null : RewriteStatement(node.UpdateStatement);
             var body = RewriteStatement(node.Body);
 
             if (initializationStatement == node.InitializationStatement &&

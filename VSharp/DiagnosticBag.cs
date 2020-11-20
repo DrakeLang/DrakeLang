@@ -188,12 +188,6 @@ namespace VSharp
             Report(span, message);
         }
 
-        public void ReportDeclarationOrAssignmentOnly(TextSpan span, SyntaxKind kind)
-        {
-            string message = $"Expected variable declaration or assignment, got <{kind}> instead.";
-            Report(span, message);
-        }
-
         public void ReportCanOnlyPipeToMethods(TextSpan span)
         {
             string message = $"Expressions can only be piped into methods.";

@@ -23,9 +23,9 @@ namespace VSharp.Binding
 {
     internal sealed class BoundForStatement : BoundLoopStatement
     {
-        public BoundForStatement(BoundStatement initializationStatement,
-                                 BoundExpression condition,
-                                 BoundStatement updateStatement,
+        public BoundForStatement(BoundStatement? initializationStatement,
+                                 BoundExpression? condition,
+                                 BoundStatement? updateStatement,
                                  BoundStatement body,
                                  LabelSymbol continueLabel,
                                  LabelSymbol breakLabel)
@@ -40,17 +40,17 @@ namespace VSharp.Binding
 
         public override BoundNodeKind Kind => BoundNodeKind.ForStatement;
 
-        public BoundStatement InitializationStatement { get; }
-        public BoundExpression Condition { get; }
-        public BoundStatement UpdateStatement { get; }
+        public BoundStatement? InitializationStatement { get; }
+        public BoundExpression? Condition { get; }
+        public BoundStatement? UpdateStatement { get; }
 
         #endregion Properties
 
         public override IEnumerable<BoundNode> GetChildren()
         {
-            yield return InitializationStatement;
-            yield return Condition;
-            yield return UpdateStatement;
+            if (InitializationStatement is not null) yield return InitializationStatement;
+            if (Condition is not null) yield return Condition;
+            if (UpdateStatement is not null) yield return UpdateStatement;
             yield return Body;
         }
     }
