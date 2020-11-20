@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using VSharp.Symbols;
 
 namespace VSharp.Binding
@@ -37,11 +38,14 @@ namespace VSharp.Binding
         protected Dictionary<VariableSymbol, HashSet<BoundExpression>> VariableUsage { get; } = new Dictionary<VariableSymbol, HashSet<BoundExpression>>();
 
         /// <summary>
-        /// Mapping of variables replaced by constants.
+        /// Keeps track of variables that are reassigned after initialization.
         /// </summary>
-        protected Dictionary<VariableSymbol, ConstantSymbol> ConstantMap { get; } = new Dictionary<VariableSymbol, ConstantSymbol>();
+        protected HashSet<VariableSymbol> ReassignedVariables { get; } = new HashSet<VariableSymbol>();
 
-        public ImmutableDictionary<VariableSymbol, ConstantSymbol> GetConstantMap() => ConstantMap.ToImmutableDictionary();
+        /// <summary>
+        /// Mapping of updated variables.
+        /// </summary>
+        protected Dictionary<VariableSymbol, VariableSymbol> UpdatedVariables { get; } = new Dictionary<VariableSymbol, VariableSymbol>();
 
         #endregion Properties
 
@@ -113,19 +117,22 @@ namespace VSharp.Binding
         protected virtual BoundStatement RewriteVariableDeclarationStatement(BoundVariableDeclarationStatement node)
         {
             var initializer = RewriteExpression(node.Initializer);
-            if (node.Variable.IsReadOnly && initializer is BoundLiteralExpression literalExpression)
+
+            var variable = GetActiveVariable(node.Variable);
+            VariableUsage[variable] = new HashSet<BoundExpression>();
+
+            if (variable.IsReadOnly && initializer is BoundLiteralExpression literalExpression)
             {
-                var constant = new ConstantSymbol(node.Variable.Name, literalExpression.Value);
-                ConstantMap[node.Variable] = constant;
+                var constant = new ConstantSymbol(variable.Name, literalExpression.Value);
+                UpdateVariable(variable, constant);
 
                 return BoundNoOpStatement.Instance;
             }
 
-            VariableUsage.Add(node.Variable, new HashSet<BoundExpression>());
             if (initializer == node.Initializer)
                 return node;
 
-            return new BoundVariableDeclarationStatement(node.Variable, initializer);
+            return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
         protected virtual BoundStatement RewriteMethodDeclarationStatement(BoundMethodDeclarationStatement node)
@@ -314,32 +321,46 @@ namespace VSharp.Binding
 
         protected virtual BoundExpression RewriteVariableExpression(BoundVariableExpression node, BoundExpression rootExpression)
         {
-            if (ConstantMap.TryGetValue(node.Variable, out var constant))
+            if (TryGetConstant(node.Variable, out var constant))
             {
                 var result = new BoundLiteralExpression(constant);
                 return RewriteExpression(result, rootExpression);
             }
 
-            VariableUsage[node.Variable].Add(rootExpression);
+            var variable = GetActiveVariable(node.Variable);
+            VariableUsage[variable].Add(rootExpression);
             return node;
         }
 
         protected virtual BoundExpression RewriteAssignmentExpression(BoundAssignmentExpression node, BoundExpression rootExpression)
         {
+            var variable = GetActiveVariable(node.Variable);
+            ReassignedVariables.Add(variable);
+
             var expression = RewriteExpression(node.Expression, rootExpression);
             if (expression == node.Expression)
                 return node;
 
-            return new BoundAssignmentExpression(node.Variable, expression);
+            return new BoundAssignmentExpression(variable, expression);
         }
 
         protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node, BoundExpression rootExpression)
         {
-            var operand = RewriteExpression(node.Operand, rootExpression);
-            if (operand.Kind == BoundNodeKind.LiteralExpression)
+            // Handle unary expressions that modify the value of the variable.
+            if (node.Operand is BoundVariableExpression variableExpression &&
+                node.Op.Kind is
+                    BoundUnaryOperatorKind.PreDecrement or
+                    BoundUnaryOperatorKind.PreIncrement or
+                    BoundUnaryOperatorKind.PostDecrement or
+                    BoundUnaryOperatorKind.PostIncrement)
             {
-                BoundLiteralExpression literalOperand = (BoundLiteralExpression)node.Operand;
+                var variable = GetActiveVariable(variableExpression.Variable);
+                ReassignedVariables.Add(variable);
+            }
 
+            var operand = RewriteExpression(node.Operand, rootExpression);
+            if (operand is BoundLiteralExpression literalOperand)
+            {
                 var value = LiteralEvaluator.EvaluateUnaryExpression(node.Op, literalOperand.Value);
                 if (value == literalOperand.Value)
                     return literalOperand;
@@ -407,5 +428,47 @@ namespace VSharp.Binding
         }
 
         #endregion RewriteExpression
+
+        #region Helpers
+
+        /// <summary>
+        /// Returns the same variable OR the variable that has replaced the given one.
+        /// </summary>
+        protected VariableSymbol GetActiveVariable(VariableSymbol variable)
+        {
+            while (UpdatedVariables.TryGetValue(variable, out var updatedVariable))
+                variable = updatedVariable;
+
+            return variable;
+        }
+
+        protected bool TryGetConstant(VariableSymbol variable, [NotNullWhen(true)] out ConstantSymbol? constant)
+        {
+            if (GetActiveVariable(variable) is ConstantSymbol result)
+            {
+                constant = result;
+                return true;
+            }
+            else
+            {
+                constant = null;
+                return false;
+            }
+        }
+
+        protected void UpdateVariable(VariableSymbol oldVar, VariableSymbol newVar)
+        {
+            var activeOld = GetActiveVariable(oldVar);
+
+            VariableUsage.Add(newVar, VariableUsage[activeOld]);
+            VariableUsage.Remove(activeOld);
+
+            if (ReassignedVariables.Remove(activeOld))
+                ReassignedVariables.Add(newVar);
+
+            UpdatedVariables.Add(activeOld, newVar);
+        }
+
+        #endregion Helpers
     }
 }

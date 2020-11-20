@@ -44,7 +44,18 @@ namespace VSharp.Lowering
                 return methods;
 
             return rewrittenMethods.Value
-                .SelectMany(m => lowerer.FlattenAndClean(m).Statements)
+                .SelectMany(m =>
+                {
+                    bool reRunLowering;
+                    BoundBlockStatement result;
+
+                    do
+                    {
+                        result = lowerer.FlattenAndClean(m, out reRunLowering);
+                    } while (reRunLowering);
+
+                    return result.Statements;
+                })
                 .Cast<BoundMethodDeclarationStatement>()
                 .ToImmutableArray();
         }
@@ -58,8 +69,16 @@ namespace VSharp.Lowering
 
         private BoundBlockStatement Lower(BoundStatement statement)
         {
-            var result = RewriteStatement(statement);
-            return FlattenAndClean(result);
+            bool reRunLowering;
+            BoundBlockStatement flattenedResult;
+
+            do
+            {
+                var result = RewriteStatement(statement);
+                flattenedResult = FlattenAndClean(result, out reRunLowering);
+            } while (reRunLowering);
+
+            return flattenedResult;
         }
 
         #region RewriteStatement
@@ -220,8 +239,11 @@ namespace VSharp.Lowering
         /// <summary>
         /// Flattens into a single block statement, removing unused labels and similar statements.
         /// </summary>
-        private BoundBlockStatement FlattenAndClean(BoundStatement statement)
+        /// <param name="reRunLowering">True if the lowering have to be re-run due to changed state.</param>
+        private BoundBlockStatement FlattenAndClean(BoundStatement statement, out bool reRunLowering)
         {
+            reRunLowering = false;
+
             var statements = new List<BoundStatement>();
 
             var statementStack = new Stack<BoundStatement>();
@@ -266,6 +288,31 @@ namespace VSharp.Lowering
                 }
             }
             while (removedVariables);
+
+            // Convert single-init variables to read-only -or- constants.
+            bool updatedVariables;
+            do
+            {
+                updatedVariables = false;
+
+                for (int i = 0; i < statements.Count; i++)
+                {
+                    if (statements[i] is BoundVariableDeclarationStatement variableDeclaration)
+                    {
+                        var oldVariable = GetActiveVariable(variableDeclaration.Variable);
+                        if (!ReassignedVariables.Contains(oldVariable))
+                        {
+                            updatedVariables = true;
+                            reRunLowering = true;
+
+                            var newVariable = new VariableSymbol(oldVariable.Name, isReadOnly: true, oldVariable.Type);
+                            UpdateVariable(oldVariable, newVariable);
+
+                            statements[i] = RewriteStatement(new BoundVariableDeclarationStatement(newVariable, variableDeclaration.Initializer));
+                        }
+                    }
+                }
+            } while (updatedVariables);
 
             // Remove unused labels, no-op statements.
             var labels = new HashSet<LabelSymbol>();

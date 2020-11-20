@@ -28,5 +28,10 @@ namespace VSharp.Symbols
         }
 
         public object Value { get; }
+
+        public override string ToString()
+        {
+            return "const " + base.ToString();
+        }
     }
 }
