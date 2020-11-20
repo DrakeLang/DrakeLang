@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Linq;
 
 namespace VSharp.Binding
 {
@@ -29,7 +30,6 @@ namespace VSharp.Binding
             BoundNodeKind.GotoStatement => StringifyGotoStatement((BoundGotoStatement)node),
             BoundNodeKind.ConditionalGotoStatement => StringifyConditionalGotoStatement((BoundConditionalGotoStatement)node),
             BoundNodeKind.ReturnStatement => StringifyReturnStatement((BoundReturnStatement)node),
-            BoundNodeKind.NoOpStatement => StringifyNoOpStatement((BoundNoOpStatement)node),
             BoundNodeKind.ExpressionStatement => StringifyExpressionStatement((BoundExpressionStatement)node),
 
             BoundNodeKind.ErrorExpression => StringifyErrorExpression((BoundErrorExpression)node),
@@ -70,11 +70,6 @@ namespace VSharp.Binding
                 return "return";
             else
                 return "return " + ToFriendlyString(statement.Expression);
-        }
-
-        private static string StringifyNoOpStatement(BoundNoOpStatement statement)
-        {
-            return "no-op";
         }
 
         private static string StringifyExpressionStatement(BoundExpressionStatement statement)
@@ -148,7 +143,12 @@ namespace VSharp.Binding
 
         private static string StringifyCallExpression(BoundCallExpression node)
         {
-            return node.Method.ToString(showParamName: false);
+            var method = node.Method;
+            var arguments = method.Parameters.Zip(node.Arguments, (parameterSymbol, argument) => (parameterSymbol, argument))
+                .Select(pair => pair.parameterSymbol.Type + ": " + pair.argument.ToFriendlyString());
+            var formattedArguments = string.Join(", ", arguments);
+
+            return $"{method.Name}({formattedArguments})";
         }
 
         private static string StringifyExplicitCastExpression(BoundExplicitCastExpression node)
