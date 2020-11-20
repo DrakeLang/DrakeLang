@@ -76,6 +76,7 @@ namespace VSharp.Syntax
         FloatKeyword,
         StringKeyword,
         VarKeyword,
+        SetKeyword,
         TrueKeyword,
         FalseKeyword,
         DefKeyword,

@@ -510,9 +510,9 @@ namespace VSharp.Syntax
             {
                 _diagnostics.ReportTypeExpected(Current.Span, Current.Kind);
             }
-            else if (Current.Kind == SyntaxKind.VarKeyword)
+            else if (Current.Kind is SyntaxKind.VarKeyword or SyntaxKind.SetKeyword)
             {
-                _diagnostics.ReportUnexpectedVarKeyword(Current.Span);
+                _diagnostics.ReportUnexpectedVarOrSetKeyword(Current.Span);
             }
 
             var typeToken = NextToken();

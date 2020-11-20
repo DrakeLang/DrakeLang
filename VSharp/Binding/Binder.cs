@@ -160,12 +160,12 @@ namespace VSharp.Binding
         {
             string name = syntax.Identifier.Text ?? "?";
             bool declare = syntax.Identifier.Text != null;
-            bool isReadOnly = false; // TODO: introduce readonly values and compile-time constants.
+            bool isReadOnly = syntax.Keyword.Kind == SyntaxKind.SetKeyword;
 
             var initializer = BindExpression(syntax.Initializer);
 
             // Don't allow void assignment
-            if (initializer.Type == TypeSymbol.Void && syntax.Keyword.Kind == SyntaxKind.VarKeyword)
+            if (initializer.Type == TypeSymbol.Void && syntax.Keyword.Kind is SyntaxKind.VarKeyword or SyntaxKind.SetKeyword)
             {
                 TextSpan span = TextSpan.FromBounds(syntax.Identifier.Span.Start, syntax.Initializer.Span.End);
                 Diagnostics.ReportCannotAssignVoid(span);

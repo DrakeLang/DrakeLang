@@ -86,7 +86,8 @@ namespace VSharp.Syntax
             SyntaxKind.IntKeyword or
             SyntaxKind.FloatKeyword or
             SyntaxKind.StringKeyword or
-            SyntaxKind.VarKeyword;
+            SyntaxKind.VarKeyword or
+            SyntaxKind.SetKeyword;
 
         public static string? GetText(this SyntaxKind kind) => kind switch
         {
@@ -133,6 +134,7 @@ namespace VSharp.Syntax
             SyntaxKind.FloatKeyword => "float",
             SyntaxKind.StringKeyword => "string",
             SyntaxKind.VarKeyword => "var",
+            SyntaxKind.SetKeyword => "set",
             SyntaxKind.TrueKeyword => "true",
             SyntaxKind.FalseKeyword => "false",
             SyntaxKind.DefKeyword => "def",
@@ -160,6 +162,7 @@ namespace VSharp.Syntax
                 "float" => SyntaxKind.FloatKeyword,
                 "string" => SyntaxKind.StringKeyword,
                 "var" => SyntaxKind.VarKeyword,
+                "set" => SyntaxKind.SetKeyword,
 
                 "true" => SyntaxKind.TrueKeyword,
                 "false" => SyntaxKind.FalseKeyword,

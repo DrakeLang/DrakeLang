@@ -74,9 +74,9 @@ namespace VSharp
             Report(span, message);
         }
 
-        public void ReportUnexpectedVarKeyword(TextSpan span)
+        public void ReportUnexpectedVarOrSetKeyword(TextSpan span)
         {
-            string message = "The contextual keyword 'var' may only appear within a local variable declaration.";
+            string message = "The contextual keyword 'var' or 'set' may only appear within a local variable declaration.";
             Report(span, message);
         }
 
