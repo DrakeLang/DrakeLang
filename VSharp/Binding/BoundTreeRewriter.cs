@@ -262,11 +262,7 @@ namespace VSharp.Binding
                     BoundVariableExpression or
                     BoundBinaryExpression or
                     BoundExplicitCastExpression:
-                case BoundUnaryExpression unaryExpression when unaryExpression.Op.Kind is not
-                    BoundUnaryOperatorKind.PreDecrement and not
-                    BoundUnaryOperatorKind.PreIncrement and not
-                    BoundUnaryOperatorKind.PostDecrement and not
-                    BoundUnaryOperatorKind.PostIncrement:
+                case BoundUnaryExpression unaryExpression when !unaryExpression.Op.Kind.IsIncrementOrDecrement():
                     {
                         // Removed expressions may affect variable usage.
                         foreach (var set in VariableUsage)
@@ -373,11 +369,7 @@ namespace VSharp.Binding
         protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node)
         {
             if (node.Operand is BoundVariableExpression variableExpression &&
-                node.Op.Kind is
-                    BoundUnaryOperatorKind.PreDecrement or
-                    BoundUnaryOperatorKind.PreIncrement or
-                    BoundUnaryOperatorKind.PostDecrement or
-                    BoundUnaryOperatorKind.PostIncrement)
+                node.Op.Kind.IsIncrementOrDecrement())
             {
                 // Handle unary expressions that modify the value of the variable.
                 var variable = GetActiveVariable(variableExpression.Variable);

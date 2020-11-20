@@ -402,7 +402,6 @@ namespace VSharp.Binding
         private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax)
         {
             var boundOperand = BindExpression(syntax.Operand);
-
             if (boundOperand.Type.IsError())
                 return BoundErrorExpression.Instance;
 
@@ -411,6 +410,20 @@ namespace VSharp.Binding
             {
                 Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundOperand.Type);
                 return BoundErrorExpression.Instance;
+            }
+
+            if (boundOp.Kind.IsIncrementOrDecrement())
+            {
+                if (boundOperand is not BoundVariableExpression variableExpression)
+                {
+                    Diagnostics.ReportIncrementOperandMustBeVariable(syntax.Span);
+                    return BoundErrorExpression.Instance;
+                }
+                else if (variableExpression.Variable.IsReadOnly)
+                {
+                    Diagnostics.ReportCannotAssignReadOnly(syntax.Span, variableExpression.Variable.Name);
+                    return BoundErrorExpression.Instance;
+                }
             }
 
             return new BoundUnaryExpression(boundOp, boundOperand);

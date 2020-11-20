@@ -113,6 +113,28 @@ namespace VSharp.Tests
             AssertDiagnostics(text, diagnostics);
         }
 
+        [Fact]
+        public void Evaluator_Reassign_Readonly_Reports_Illegal()
+        {
+            var text = "set a = 0; a [=] 1;";
+            string diagnostics = @"
+                Variable 'a' is read-only and cannot be modified.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Unary_Mutate_Readonly_Reports_Illegal()
+        {
+            var text = "set a = 0; [a++];";
+            string diagnostics = @"
+                Variable 'a' is read-only and cannot be modified.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
         #endregion Reports
 
         public static IEnumerable<object[]> GetStatementsData()

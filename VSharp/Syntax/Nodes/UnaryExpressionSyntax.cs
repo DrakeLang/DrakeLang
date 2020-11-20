@@ -43,8 +43,16 @@ namespace VSharp.Syntax
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return OperatorToken;
-            yield return Operand;
+            if (UnaryType == UnaryType.Pre)
+            {
+                yield return OperatorToken;
+                yield return Operand;
+            }
+            else
+            {
+                yield return Operand;
+                yield return OperatorToken;
+            }
         }
 
         #endregion Methods

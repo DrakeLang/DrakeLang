@@ -164,6 +164,12 @@ namespace VSharp
             Report(span, message);
         }
 
+        public void ReportIncrementOperandMustBeVariable(TextSpan span)
+        {
+            string message = "The operand of an increment or decrement operation must be variable.";
+            Report(span, message);
+        }
+
         public void ReportIllegalExplicitType(TextSpan span)
         {
             string message = $"Explicit types cannot be used in this context (it can only be used in combination with the 'set' keyword).";
@@ -172,7 +178,7 @@ namespace VSharp
 
         public void ReportCannotAssignReadOnly(TextSpan span, string? name)
         {
-            string message = $"Variable '{name}' is read-only and cannot be assigned.";
+            string message = $"Variable '{name}' is read-only and cannot be modified.";
             Report(span, message);
         }
 

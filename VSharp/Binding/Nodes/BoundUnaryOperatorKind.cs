@@ -31,4 +31,13 @@ namespace VSharp.Binding
         LogicalNegation,
         OnesComplement,
     }
+
+    internal static class BoundUnaryOperatorKindExpression
+    {
+        public static bool IsIncrementOrDecrement(this BoundUnaryOperatorKind kind) => kind is
+            BoundUnaryOperatorKind.PreDecrement or
+            BoundUnaryOperatorKind.PreIncrement or
+            BoundUnaryOperatorKind.PostDecrement or
+            BoundUnaryOperatorKind.PostIncrement;
+    }
 }
