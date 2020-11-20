@@ -36,6 +36,10 @@ namespace VSharp.Binding
 
         private readonly LabelGenerator _labelGenerator;
         private readonly Stack<MethodSymbol> _callStack = new Stack<MethodSymbol>();
+        private readonly Stack<IEnumerable<MethodDeclarationStatementSyntax>> _methodDeclarations = new Stack<IEnumerable<MethodDeclarationStatementSyntax>>();
+
+        private readonly Dictionary<MethodDeclarationStatementSyntax, BoundMethodDeclarationStatement> _methodDeclarationMap =
+            new Dictionary<MethodDeclarationStatementSyntax, BoundMethodDeclarationStatement>();
 
         private BoundScope _scope;
 
@@ -86,27 +90,29 @@ namespace VSharp.Binding
 
         private ImmutableArray<BoundStatement> BindStatements(IEnumerable<StatementSyntax> statements)
         {
-            // Declare methods.
-            foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.MethodDeclarationStatement))
+            _methodDeclarations.Push(statements.OfType<MethodDeclarationStatementSyntax>());
+            try
             {
-                DeclareMethod((MethodDeclarationStatementSyntax)statement);
-            }
+                // Declare labels.
+                foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.LabelStatement))
+                {
+                    DeclareLabel((LabelStatementSyntax)statement);
+                }
 
-            // Declare labels.
-            foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.LabelStatement))
+                // Bind remaining statements.
+                var statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>();
+                foreach (var statement in statements)
+                {
+                    var boundStatement = BindStatement(statement);
+                    statementBuilder.Add(boundStatement);
+                }
+
+                return statementBuilder.ToImmutable();
+            }
+            finally
             {
-                DeclareLabel((LabelStatementSyntax)statement);
+                _methodDeclarations.Pop();
             }
-
-            // Bind remaining statements.
-            var statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>();
-            foreach (var statement in statements)
-            {
-                var boundStatement = BindStatement(statement);
-                statementBuilder.Add(boundStatement);
-            }
-
-            return statementBuilder.ToImmutable();
         }
 
         #endregion Constructors
@@ -193,8 +199,24 @@ namespace VSharp.Binding
 
         private BoundStatement BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax)
         {
-            if (!_scope.TryLookupMethod(syntax.Identifier.Text, out var method))
+            if (_methodDeclarationMap.TryGetValue(syntax, out var boundMethodDeclaration))
+                return boundMethodDeclaration;
+
+            if (syntax.Identifier.Text is null)
                 return BoundNoOpStatement.Instance;
+
+            string name = syntax.Identifier.Text;
+            var parameters = BindParameters(syntax.Parameters);
+            var returnType = syntax.TypeOrDefKeyword.Kind == SyntaxKind.DefKeyword
+                ? TypeSymbol.Void
+                : ResolveType(syntax.TypeOrDefKeyword.Kind) ?? TypeSymbol.Error;
+
+            var method = new MethodSymbol(name, parameters, returnType);
+            if (!_scope.TryDeclareMethod(method))
+            {
+                Diagnostics.ReportMethodAlreadyDeclared(syntax.Identifier.Span, name);
+                return BoundNoOpStatement.Instance;
+            }
 
             PushMethodScope(method);
             try
@@ -227,7 +249,9 @@ namespace VSharp.Binding
                 if (method.ReturnType != TypeSymbol.Void && !new ControlFlowGraph(boundDeclaration).AllPathsReturn())
                     Diagnostics.ReportMethodNotAllPathsReturnValue(syntax.Identifier.Span);
 
-                return new BoundMethodDeclarationStatement(method, boundDeclaration);
+                var result = new BoundMethodDeclarationStatement(method, boundDeclaration);
+                _methodDeclarationMap.Add(syntax, result);
+                return result;
             }
             finally
             {
@@ -523,8 +547,29 @@ namespace VSharp.Binding
 
         private BoundExpression BindCallExpression(CallExpressionSyntax syntax, ExpressionSyntax? pipedParameter = null)
         {
+            if (syntax.Identifier.Text is null)
+                return BoundErrorExpression.Instance;
+
             // Locate method.
-            if (!TryFindMethod(syntax.Identifier, out MethodSymbol? method) || method.ReturnType.IsError())
+            var methodName = syntax.Identifier.Text;
+            if (!_scope.TryLookupMethod(methodName, out var method))
+            {
+                var methodDeclaration = _methodDeclarations
+                    .SelectMany(declarations => declarations)
+                    .FirstOrDefault(declaration => declaration.Identifier.Text == syntax.Identifier.Text);
+                if (methodDeclaration is null)
+                {
+                    Diagnostics.ReportUndefinedSymbol(syntax.Identifier.Span, methodName);
+                    return BoundErrorExpression.Instance;
+                }
+
+                BindMethodDeclarationStatement(methodDeclaration);
+                if (!TryFindMethod(syntax.Identifier, out method))
+                    return BoundErrorExpression.Instance;
+            }
+
+            // Locate method.
+            if (method.ReturnType.IsError())
                 return BoundErrorExpression.Instance;
 
             var parameterCount = syntax.Arguments.Count + (pipedParameter is null ? 0 : 1);
@@ -658,24 +703,6 @@ namespace VSharp.Binding
             var label = new LabelSymbol(name);
             if (!_scope.TryDeclareLabel(label))
                 Diagnostics.ReportLabelAlreadyDeclared(syntax.Identifier.Span, name);
-        }
-
-        private void DeclareMethod(MethodDeclarationStatementSyntax syntax)
-        {
-            string name = syntax.Identifier.Text ?? "?";
-            bool declare = syntax.Identifier.Text != null;
-            if (!declare)
-                return;
-
-            var parameters = BindParameters(syntax.Parameters);
-            var type = syntax.TypeOrDefKeyword.Kind == SyntaxKind.DefKeyword
-                ? TypeSymbol.Void
-                : ResolveType(syntax.TypeOrDefKeyword.Kind) ?? TypeSymbol.Error;
-
-            var method = new MethodSymbol(name, parameters, type);
-
-            if (!_scope.TryDeclareMethod(method))
-                Diagnostics.ReportMethodAlreadyDeclared(syntax.Identifier.Span, name);
         }
 
         private ImmutableArray<ParameterSymbol> BindParameters(SeparatedSyntaxCollection<ParameterSyntax> parameters)
