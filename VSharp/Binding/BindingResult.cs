@@ -16,19 +16,52 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System;
 using System.Collections.Immutable;
+using System.IO;
 
 namespace VSharp.Binding
 {
-    internal sealed class BindingResult
+    public sealed class BindingResult
     {
-        public BindingResult(ImmutableArray<BoundMethodDeclarationStatement> methods, ImmutableArray<Diagnostic> diagnostics)
+        internal BindingResult(ImmutableArray<BoundMethodDeclarationStatement> methods, ImmutableArray<Diagnostic> diagnostics)
         {
             Methods = methods;
             Diagnostics = diagnostics;
         }
 
         public ImmutableArray<Diagnostic> Diagnostics { get; }
-        public ImmutableArray<BoundMethodDeclarationStatement> Methods { get; }
+        internal ImmutableArray<BoundMethodDeclarationStatement> Methods { get; }
+
+        #region Methods
+
+        public void PrintProgram(TextWriter writer)
+        {
+            foreach (var method in Methods)
+            {
+                method.WriteTo(writer);
+            }
+        }
+
+
+        public delegate TextWriter ControlFlowGraphWriterFactory(string methodName);
+        public void GenerateControlFlowGraphs(ControlFlowGraphWriterFactory writerFactory, Action<TextWriter>? cleanup = null)
+        {
+            if (writerFactory is null)
+                throw new ArgumentNullException(nameof(writerFactory));
+
+            foreach (var method in Methods)
+            {
+                var writer = writerFactory(method.Method.Name);
+                if (writer is null)
+                    throw new ArgumentException("Factory returned null", nameof(writerFactory));
+
+                new ControlFlowGraph(method.Declaration).WriteTo(writer);
+
+                cleanup?.Invoke(writer);
+            }
+        }
+
+        #endregion Methods
     }
 }

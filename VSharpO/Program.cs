@@ -21,7 +21,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
-using System.Linq;
 using System.Text;
 using VSharp;
 using VSharp.Symbols;
@@ -30,18 +29,6 @@ using VSharp.Text;
 
 namespace VSharpO
 {
-    public class Options
-    {
-        [Option('t', "tree", Default = false, HelpText = "Show the syntax tree")]
-        public bool ShowTree { get; set; }
-
-        [Option('p', "program", Default = false, HelpText = "Show the program")]
-        public bool ShowProgram { get; set; }
-
-        [Option('s', "source", HelpText = "The path to the source to compile", Required = true, Min = 1, Separator = ',')]
-        public IEnumerable<string> Source { get; set; } = Enumerable.Empty<string>();
-    }
-
     internal static class Program
     {
         private static void Main(string[] args)
@@ -52,7 +39,15 @@ namespace VSharpO
             };
             try
             {
-                Parser.Default.ParseArguments<Options>(args)
+                new Parser(options =>
+                {
+                    options.AutoHelp = true;
+                    options.AutoVersion = true;
+
+                    options.CaseInsensitiveEnumValues = true;
+                    options.CaseSensitive = false;
+                    options.HelpWriter = Console.Out;
+                }).ParseArguments<Options>(args)
                     .WithParsed(Run);
             }
             catch (Exception ex)
@@ -101,8 +96,10 @@ namespace VSharpO
             var syntaxTree = SyntaxTree.Parse(code);
             var compilation = new Compilation(syntaxTree);
 
-            if (options.ShowTree) syntaxTree.PrintTree(Console.Out);
-            if (options.ShowProgram) compilation.PrintProgram(Console.Out);
+            var debugOutput = options.GetAggregatedDebugValues();
+            if (debugOutput.HasFlag(DebugOutput.ShowTree)) syntaxTree.PrintTree(Console.Out);
+            if (debugOutput.HasFlag(DebugOutput.ShowProgram)) compilation.BindingResult.PrintProgram(Console.Out);
+            if (debugOutput.HasFlag(DebugOutput.PrintControlFlowGraph)) PrintControlFlowGraph(compilation);
 
             var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
 
@@ -114,6 +111,35 @@ namespace VSharpO
             {
                 HandleDiagonstics(syntaxTree.Text, result.Diagnostics);
             }
+        }
+
+        private static void PrintControlFlowGraph(Compilation compilation)
+        {
+            var appPath = typeof(Program).Assembly.Location;
+            var workingDirectory = Path.GetDirectoryName(appPath);
+            if (workingDirectory is null)
+                throw new Exception("Failed to resolve working directory.");
+
+            var outputDir = Path.Combine(workingDirectory, "ControlFlowGraphs");
+
+            if (Directory.Exists(outputDir)) Directory.Delete(outputDir, recursive: true);
+            Directory.CreateDirectory(outputDir);
+
+            int generatedGraphs = 0;
+            compilation.BindingResult.GenerateControlFlowGraphs(methodName =>
+            {
+                generatedGraphs++;
+
+                var fileName = $"{methodName}.dot";
+                var filepath = Path.Combine(outputDir, fileName);
+
+                return new StreamWriter(filepath);
+            }, writer => writer.Dispose());
+
+            ConsoleExt.Write($"Printed {generatedGraphs} control flow graph(s) to ", ConsoleColor.Green);
+            ConsoleExt.Write(outputDir, ConsoleColor.Cyan);
+            ConsoleExt.Write(".", ConsoleColor.Green);
+            Console.WriteLine();
         }
 
         private static void HandleDiagonstics(SourceText text, ImmutableArray<Diagnostic> diagnostics)

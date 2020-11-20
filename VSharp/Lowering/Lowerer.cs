@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using VSharp.Binding;
+using VSharp.Symbols;
 
 namespace VSharp.Lowering
 {
@@ -41,7 +42,7 @@ namespace VSharp.Lowering
                 return methods;
 
             return rewrittenMethods.Value
-                .SelectMany(m => Flatten(m).Statements)
+                .SelectMany(m => FlattenAndClean(m).Statements)
                 .Cast<BoundMethodDeclarationStatement>()
                 .ToImmutableArray();
         }
@@ -54,7 +55,7 @@ namespace VSharp.Lowering
         private BoundBlockStatement Lower(BoundStatement statement)
         {
             var result = RewriteStatement(statement);
-            return Flatten(result);
+            return FlattenAndClean(result);
         }
 
         #region RewriteStatement
@@ -212,12 +213,12 @@ namespace VSharp.Lowering
 
         #region Helpers
 
-        private static BoundBlockStatement Flatten(BoundStatement statement)
+        /// <summary>
+        /// Flattens into a single block statement, removing unused labels and similar statements.
+        /// </summary>
+        private static BoundBlockStatement FlattenAndClean(BoundStatement statement)
         {
-            if (!(statement is BoundBlockStatement))
-                return new BoundBlockStatement(ImmutableArray.Create(statement));
-
-            var statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>();
+            var statements = new List<BoundStatement>();
 
             var statementStack = new Stack<BoundStatement>();
             statementStack.Push(statement);
@@ -233,11 +234,29 @@ namespace VSharp.Lowering
                 }
                 else
                 {
-                    statementBuilder.Add(current);
+                    statements.Add(current);
                 }
             }
 
-            return new BoundBlockStatement(statementBuilder.ToImmutable());
+            // Remove unused labels, no-op statements.
+            var labels = new HashSet<LabelSymbol>();
+            foreach (var s in statements)
+            {
+                switch (s)
+                {
+                    case BoundGotoStatement gs:
+                        labels.Add(gs.Label);
+                        break;
+
+                    case BoundConditionalGotoStatement cgs:
+                        labels.Add(cgs.Label);
+                        break;
+                }
+            }
+            statements.RemoveAll(s => s is BoundNoOpStatement ||
+                                      s is BoundLabelStatement labelStatement && !labels.Remove(labelStatement.Label));
+
+            return new BoundBlockStatement(statements.ToImmutableArray());
         }
 
         #endregion Helpers

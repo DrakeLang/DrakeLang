@@ -20,7 +20,6 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using VSharp.Binding;
@@ -42,7 +41,7 @@ namespace VSharp
 
         public SyntaxTree SyntaxTree { get; }
 
-        internal BindingResult BindingResult
+        public BindingResult BindingResult
         {
             get
             {
@@ -71,14 +70,6 @@ namespace VSharp
 
             evaluator.Evaluate(BindingResult.Methods, variables);
             return new EvaluationResult(ImmutableArray<Diagnostic>.Empty);
-        }
-
-        public void PrintProgram(TextWriter writer)
-        {
-            foreach (var method in BindingResult.Methods)
-            {
-                method.WriteTo(writer);
-            }
         }
 
         #endregion Methods

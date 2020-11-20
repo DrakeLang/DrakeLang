@@ -18,18 +18,22 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
     internal sealed class ControlFlowGraph
     {
-        private readonly GraphBlock _start = new GraphBlock();
-        private readonly GraphBlock _end = new GraphBlock();
+        private readonly GraphBlock _start = new GraphBlock(isStart: true);
+        private readonly GraphBlock _end = new GraphBlock(isStart: false);
+        private readonly List<GraphBlock> _blocks;
+        private readonly List<GraphBranch> _branches;
 
         public ControlFlowGraph(BoundBlockStatement block)
         {
-            BuildGraph(block);
+            (_blocks, _branches) = BuildGraph(block);
         }
 
         #region Methods
@@ -37,6 +41,34 @@ namespace VSharp.Binding
         public bool AllPathsReturn()
         {
             return _end.Incoming.All(branch => branch.From.Statements[^1].Kind == BoundNodeKind.ReturnStatement);
+        }
+
+        public void WriteTo(TextWriter writer)
+        {
+            writer.WriteLine("digraph G {");
+
+            var blockIds = _blocks.Select((block, index) => (block, index)).ToDictionary(pair => pair.block, (pair) => $"N{pair.index}");
+            foreach (var blockPair in blockIds)
+            {
+                var block = blockPair.Key;
+                var id = blockPair.Value;
+
+                var statements = block.ToString();
+                writer.WriteLine($"    {id} [label = \"{quote(statements)}\" shape = box]");
+            }
+
+            foreach (var branch in _branches)
+            {
+                var condition = branch.Condition?.ToFriendlyString() ?? string.Empty;
+                writer.WriteLine($"    {blockIds[branch.From]} -> {blockIds[branch.To]} [label = \"{quote(condition)}\"]");
+            }
+
+            writer.WriteLine("}");
+
+            string quote(string s)
+            {
+                return s.Replace("\"", "\\\"");
+            }
         }
 
         #endregion Methods
@@ -47,93 +79,90 @@ namespace VSharp.Binding
 
         private (List<GraphBlock>, List<GraphBranch>) BuildGraph(BoundBlockStatement block)
         {
+            var blocks = CreateGraphBlocks(block);
             var branches = new List<GraphBranch>();
+
             if (block.Statements.Length == 0)
             {
                 ConnectBlocks(_start, _end);
-                return (new List<GraphBlock>(), branches);
+                return (blocks, branches);
             }
 
-            var blocks = CreateGraphBlocks(block);
-            var labelTable = blocks.Select(block => (block, label: block.Statements[0] as BoundLabelStatement))
+            var labelTable = blocks.Select(block => (block, label: block.Statements.FirstOrDefault() as BoundLabelStatement))
                 .Where(pair => pair.label is not null)
                 .ToDictionary(pair => pair.label!.Label, pair => pair.block);
 
-            for (int i = 0; i < blocks.Count; i++)
+            for (int i = 0; i < blocks.Count - 1; i++)
             {
                 var current = blocks[i];
-                var next = i < blocks.Count - 1 ? blocks[i + 1] : _end;
+                var next = blocks[i + 1];
 
-                foreach (var statement in current.Statements)
+                if (current.Statements.Count == 0)
+                    ConnectBlocks(current, next);
+                else
                 {
-                    switch (statement.Kind)
+                    for (int j = 0; j < current.Statements.Count; j++)
                     {
-                        case BoundNodeKind.VariableDeclarationStatement:
-                        case BoundNodeKind.NoOpStatement:
-                        case BoundNodeKind.ExpressionStatement:
-                            break;
+                        var statement = current.Statements[j];
+                        var isLastStatememt = j == current.Statements.Count - 1;
 
-                        case BoundNodeKind.LabelStatement:
-                            ConnectBlocks(current, next);
-                            break;
+                        switch (statement.Kind)
+                        {
+                            case BoundNodeKind.VariableDeclarationStatement:
+                            case BoundNodeKind.NoOpStatement:
+                            case BoundNodeKind.ExpressionStatement:
+                            case BoundNodeKind.LabelStatement:
+                                if (isLastStatememt)
+                                    ConnectBlocks(current, next);
+                                break;
 
-                        case BoundNodeKind.GotoStatement:
-                            var gs = (BoundGotoStatement)statement;
-                            var gsBlock = labelTable[gs.Label];
-                            ConnectBlocks(current, gsBlock);
-                            break;
+                            case BoundNodeKind.GotoStatement:
+                                var gs = (BoundGotoStatement)statement;
+                                var gsBlock = labelTable[gs.Label];
+                                ConnectBlocks(current, gsBlock);
+                                break;
 
-                        case BoundNodeKind.ConditionalGotoStatement:
-                            var cgs = (BoundConditionalGotoStatement)statement;
-                            var cgsBlock = labelTable[cgs.Label];
+                            case BoundNodeKind.ConditionalGotoStatement:
+                                var cgs = (BoundConditionalGotoStatement)statement;
+                                var cgsBlock = labelTable[cgs.Label];
 
-                            ConnectBlocks(current, cgsBlock);
-                            ConnectBlocks(current, next);
-                            break;
+                                var condition = cgs.Condition;
+                                var negatedCondition = NegateCondition(condition);
 
-                        case BoundNodeKind.ReturnStatement:
-                            ConnectBlocks(current, _end);
-                            break;
+                                ConnectBlocks(current, cgsBlock, cgs.JumpIfFalse ? negatedCondition : condition);
+                                ConnectBlocks(current, next, cgs.JumpIfFalse ? condition : negatedCondition);
+                                break;
 
-                        default:
-                            throw new Exception($"Unexpected statement kind '{statement.Kind}'.");
+                            case BoundNodeKind.ReturnStatement:
+                                ConnectBlocks(current, _end);
+                                break;
+
+                            default:
+                                throw new Exception($"Unexpected statement kind '{statement.Kind}'.");
+                        }
                     }
                 }
             }
 
-            ClearUnreachableBlocks(blocks);
+            ClearUnreachableBlocks(blocks, branches);
             return (blocks, branches);
 
-            void ConnectBlocks(GraphBlock start, GraphBlock end)
+            void ConnectBlocks(GraphBlock start, GraphBlock end, BoundExpression? condition = null)
             {
-                var branch = new GraphBranch(start, end);
+                var branch = new GraphBranch(start, end, condition);
 
                 start.Outgoing.Add(branch);
                 end.Incoming.Add(branch);
                 branches.Add(branch);
             }
-        }
 
-        private static void ClearUnreachableBlocks(List<GraphBlock> blocks)
-        {
-            var removedBlocks = new HashSet<GraphBlock>();
-            while (true)
+            BoundExpression NegateCondition(BoundExpression condition)
             {
-                foreach (var block in blocks)
-                {
-                    if (block.Incoming.Count == 0)
-                    {
-                        removedBlocks.Add(block);
-                        foreach (var outgoingBranches in block.Outgoing)
-                        {
-                            outgoingBranches.To.Incoming.Remove(outgoingBranches);
-                        }
-                    }
-                }
-                if (removedBlocks.Count == 0)
-                    break;
+                var negation = BoundUnaryOperator.Bind(Syntax.SyntaxKind.BangToken, Syntax.UnaryType.Pre, TypeSymbol.Boolean);
+                if (negation is null)
+                    throw new Exception($"Failed to negate condition " + condition.ToFriendlyString());
 
-                blocks.RemoveAll(block => removedBlocks.Remove(block));
+                return new BoundUnaryExpression(negation, condition);
             }
         }
 
@@ -141,9 +170,9 @@ namespace VSharp.Binding
 
         #region Helpers
 
-        private static List<GraphBlock> CreateGraphBlocks(BoundBlockStatement block)
+        private List<GraphBlock> CreateGraphBlocks(BoundBlockStatement block)
         {
-            var blocks = new List<GraphBlock>();
+            var blocks = new List<GraphBlock> { _start };
 
             var statements = new List<BoundStatement>();
             foreach (var statement in block.Statements)
@@ -175,6 +204,7 @@ namespace VSharp.Binding
 
             nextBlock();
 
+            blocks.Add(_end);
             return blocks;
 
             void nextBlock()
@@ -190,6 +220,33 @@ namespace VSharp.Binding
             }
         }
 
+        private static void ClearUnreachableBlocks(List<GraphBlock> blocks, List<GraphBranch> branches)
+        {
+            var removedBlocks = new HashSet<GraphBlock>();
+            while (true)
+            {
+                foreach (var block in blocks)
+                {
+                    if (block.IsStart is true)
+                        continue;
+
+                    if (block.Incoming.Count == 0)
+                    {
+                        removedBlocks.Add(block);
+                        foreach (var outgoingBranche in block.Outgoing)
+                        {
+                            outgoingBranche.To.Incoming.Remove(outgoingBranche);
+                            branches.Remove(outgoingBranche);
+                        }
+                    }
+                }
+                if (removedBlocks.Count == 0)
+                    break;
+
+                blocks.RemoveAll(block => removedBlocks.Remove(block));
+            }
+        }
+
         #endregion Helpers
 
         #endregion Private members
@@ -202,7 +259,15 @@ namespace VSharp.Binding
             {
             }
 
+            public GraphBlock(bool isStart)
+            {
+                IsStart = isStart;
+            }
+
             #region Properties
+
+            public bool? IsStart { get; }
+            public bool? IsEnd => !IsStart;
 
             public HashSet<GraphBranch> Incoming { get; } = new HashSet<GraphBranch>();
             public HashSet<GraphBranch> Outgoing { get; } = new HashSet<GraphBranch>();
@@ -210,20 +275,36 @@ namespace VSharp.Binding
             public List<BoundStatement> Statements { get; } = new List<BoundStatement>();
 
             #endregion Properties
+
+            #region Method
+
+            public override string ToString()
+            {
+                if (IsStart is true)
+                    return "<start>";
+                else if (IsEnd is true)
+                    return "<end>";
+                else
+                    return Statements.Select(s => s.ToFriendlyString()).Aggregate((s1, s2) => s1 + "\\l" + s2) + "\\l";
+            }
+
+            #endregion Method
         }
 
         private sealed class GraphBranch
         {
-            public GraphBranch(GraphBlock from, GraphBlock to)
+            public GraphBranch(GraphBlock from, GraphBlock to, BoundExpression? condition = null)
             {
                 From = from;
                 To = to;
+                Condition = condition;
             }
 
             #region Properties
 
             public GraphBlock From { get; }
             public GraphBlock To { get; }
+            public BoundExpression? Condition { get; }
 
             #endregion Properties
         }
