@@ -272,18 +272,24 @@ namespace VSharp.Lowering
 
                 for (int i = 0; i < statements.Count; i++)
                 {
-                    if (statements[i] is BoundVariableDeclarationStatement variableDeclaration &&
-                        VariableUsage[variableDeclaration.Variable].Count == 0)
+                    if (statements[i] is BoundVariableDeclarationStatement variableDeclaration)
                     {
-                        removedVariables = true;
-                        statements[i] = RewriteStatement(new BoundExpressionStatement(variableDeclaration.Initializer));
+                        var variable = GetActiveVariable(variableDeclaration.Variable);
+                        if (VariableUsage.TryGetValue(variable, out var variableUsage) && variableUsage.Count == 0)
+                        {
+                            removedVariables = true;
+                            statements[i] = RewriteStatement(new BoundExpressionStatement(variableDeclaration.Initializer));
+                        }
                     }
                     else if (statements[i] is BoundExpressionStatement expressionStatement &&
-                        expressionStatement.Expression is BoundAssignmentExpression assignmentExpression &&
-                        VariableUsage[assignmentExpression.Variable].Count == 0)
+                       expressionStatement.Expression is BoundAssignmentExpression assignmentExpression)
                     {
-                        removedVariables = true;
-                        statements[i] = RewriteStatement(new BoundExpressionStatement(assignmentExpression.Expression));
+                        var variable = GetActiveVariable(assignmentExpression.Variable);
+                        if (VariableUsage.TryGetValue(variable, out var variableUsage) && variableUsage.Count == 0)
+                        {
+                            removedVariables = true;
+                            statements[i] = RewriteStatement(new BoundExpressionStatement(assignmentExpression.Expression));
+                        }
                     }
                 }
             }

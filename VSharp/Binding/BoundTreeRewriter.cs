@@ -328,7 +328,9 @@ namespace VSharp.Binding
             }
 
             var variable = GetActiveVariable(node.Variable);
-            VariableUsage[variable].Add(rootExpression);
+            if (VariableUsage.TryGetValue(variable, out var variableUsage))
+                variableUsage.Add(rootExpression);
+
             return node;
         }
 
