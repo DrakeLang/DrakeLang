@@ -68,15 +68,9 @@ namespace VSharp
             Report(span, message);
         }
 
-        public void ReportTypeExpected(TextSpan span, SyntaxKind actualKind)
+        public void ReportExplicitTypeExpected(TextSpan span, SyntaxKind actualKind)
         {
-            string message = $"Unexpected token <{actualKind}>, expected type.";
-            Report(span, message);
-        }
-
-        public void ReportUnexpectedVarOrSetKeyword(TextSpan span)
-        {
-            string message = "The contextual keyword 'var' or 'set' may only appear within a local variable declaration.";
+            string message = $"Unexpected token <{actualKind}>, expected explicit type.";
             Report(span, message);
         }
 
@@ -167,6 +161,12 @@ namespace VSharp
         public void ReportCannotAssignVoid(TextSpan span)
         {
             string message = "Cannot assign void to an implicitly-typed variable.";
+            Report(span, message);
+        }
+
+        public void ReportIllegalExplicitType(TextSpan span)
+        {
+            string message = $"Explicit types cannot be used in this context (it can only be used in combination with the 'set' keyword).";
             Report(span, message);
         }
 

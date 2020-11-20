@@ -147,15 +147,13 @@ namespace VSharp.Syntax
         private VariableDeclarationStatementSyntax ParseVariableDeclarationStatement(bool requireSemicolon)
         {
             var keyword = NextToken();
+            var explicitType = Current.Kind.IsExplicitTypeKeyword() ? NextToken() : null;
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
             var equals = MatchToken(SyntaxKind.EqualsToken);
             var initializer = ParseExpression();
+            var semicolonToken = requireSemicolon ? MatchToken(SyntaxKind.SemicolonToken) : null;
 
-            SyntaxToken? semicolonToken = null;
-            if (requireSemicolon)
-                semicolonToken = MatchToken(SyntaxKind.SemicolonToken);
-
-            return new VariableDeclarationStatementSyntax(keyword, identifier, equals, initializer, semicolonToken);
+            return new VariableDeclarationStatementSyntax(keyword, explicitType, identifier, equals, initializer, semicolonToken);
         }
 
         private IfStatementSyntax ParseIfStatement()
@@ -506,13 +504,9 @@ namespace VSharp.Syntax
 
         private TypeExpressionSyntax ParseTypeExpression()
         {
-            if (!Current.Kind.IsTypeKeyword())
+            if (!Current.Kind.IsExplicitTypeKeyword())
             {
-                _diagnostics.ReportTypeExpected(Current.Span, Current.Kind);
-            }
-            else if (Current.Kind is SyntaxKind.VarKeyword or SyntaxKind.SetKeyword)
-            {
-                _diagnostics.ReportUnexpectedVarOrSetKeyword(Current.Span);
+                _diagnostics.ReportExplicitTypeExpected(Current.Span, Current.Kind);
             }
 
             var typeToken = NextToken();

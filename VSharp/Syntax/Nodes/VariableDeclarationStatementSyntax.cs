@@ -22,9 +22,10 @@ namespace VSharp.Syntax
 {
     public sealed class VariableDeclarationStatementSyntax : StatementSyntax
     {
-        public VariableDeclarationStatementSyntax(SyntaxToken keyword, SyntaxToken identifier, SyntaxToken equalsToken, ExpressionSyntax initializer, SyntaxToken? semicolonToken)
+        public VariableDeclarationStatementSyntax(SyntaxToken keyword, SyntaxToken? explicitType, SyntaxToken identifier, SyntaxToken equalsToken, ExpressionSyntax initializer, SyntaxToken? semicolonToken)
         {
             Keyword = keyword;
+            ExplicitType = explicitType;
             Identifier = identifier;
             EqualsToken = equalsToken;
             Initializer = initializer;
@@ -36,6 +37,7 @@ namespace VSharp.Syntax
         public override SyntaxKind Kind => SyntaxKind.VariableDeclarationStatement;
 
         public SyntaxToken Keyword { get; }
+        public SyntaxToken? ExplicitType { get; }
         public SyntaxToken Identifier { get; }
         public SyntaxToken EqualsToken { get; }
         public ExpressionSyntax Initializer { get; }
@@ -48,11 +50,14 @@ namespace VSharp.Syntax
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             yield return Keyword;
+            if (ExplicitType is not null)
+                yield return ExplicitType;
+
             yield return Identifier;
             yield return EqualsToken;
             yield return Initializer;
 
-            if (SemicolonToken != null)
+            if (SemicolonToken is not null)
                 yield return SemicolonToken;
         }
 

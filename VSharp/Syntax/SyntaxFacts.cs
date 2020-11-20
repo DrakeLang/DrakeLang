@@ -89,6 +89,16 @@ namespace VSharp.Syntax
             SyntaxKind.VarKeyword or
             SyntaxKind.SetKeyword;
 
+        public static bool IsExplicitTypeKeyword(this SyntaxKind kind) => kind is
+            SyntaxKind.BoolKeyword or
+            SyntaxKind.IntKeyword or
+            SyntaxKind.FloatKeyword or
+            SyntaxKind.StringKeyword;
+
+        public static bool IsImplicitTypeKeyword(this SyntaxKind kind) => kind is
+            SyntaxKind.VarKeyword or
+            SyntaxKind.SetKeyword;
+
         public static string? GetText(this SyntaxKind kind) => kind switch
         {
             SyntaxKind.PlusToken => "+",

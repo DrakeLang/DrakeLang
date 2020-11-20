@@ -164,10 +164,16 @@ namespace VSharp.Binding
 
             var initializer = BindExpression(syntax.Initializer);
 
-            // Don't allow void assignment
-            if (initializer.Type == TypeSymbol.Void && syntax.Keyword.Kind is SyntaxKind.VarKeyword or SyntaxKind.SetKeyword)
+            // Only allow explicit type in combination with 'set'
+            if (syntax.ExplicitType is not null && syntax.Keyword.Kind is not SyntaxKind.SetKeyword)
             {
-                TextSpan span = TextSpan.FromBounds(syntax.Identifier.Span.Start, syntax.Initializer.Span.End);
+                Diagnostics.ReportIllegalExplicitType(syntax.ExplicitType.Span);
+            }
+
+            // Don't allow void assignment
+            if (initializer.Type == TypeSymbol.Void && syntax.Keyword.Kind.IsImplicitTypeKeyword())
+            {
+                var span = TextSpan.FromBounds(syntax.Identifier.Span.Start, syntax.Initializer.Span.End);
                 Diagnostics.ReportCannotAssignVoid(span);
             }
 
