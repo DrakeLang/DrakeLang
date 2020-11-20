@@ -293,6 +293,10 @@ namespace VSharp.Tests
                 yield return ("var a = 3; var result = nameof(a); // gets the name of result\n", "a");
                 yield return ("var result = 5; //nameof(a); \n", 5);
 
+                // Method declarations
+                yield return ("string Ret() => \"a\"; var result = Ret();", "a");
+                yield return ("def Ret() => \"a\"; var result = Ret();", "a");
+
                 // Piping
                 yield return ("string Ret(string s) => s; var result = \"a\" |> Ret();", "a");
                 yield return ("string Ret(string s) => s; var result = \"a\" |> Ret(_);", "a");

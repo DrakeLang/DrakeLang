@@ -35,11 +35,10 @@ namespace VSharp.Binding
         private static readonly MethodSymbol _mainMethodSymbol = new MethodSymbol(MainMethodName, ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void);
 
         private readonly LabelGenerator _labelGenerator;
-        private readonly Stack<MethodSymbol> _callStack = new Stack<MethodSymbol>();
-        private readonly Stack<IEnumerable<MethodDeclarationStatementSyntax>> _methodDeclarations = new Stack<IEnumerable<MethodDeclarationStatementSyntax>>();
+        private readonly Stack<MethodSymbol> _callStack = new();
+        private readonly Stack<(IEnumerable<MethodDeclarationStatementSyntax> declarations, BoundScope scope)> _methodDeclarations = new();
 
-        private readonly Dictionary<MethodDeclarationStatementSyntax, BoundMethodDeclarationStatement> _methodDeclarationMap =
-            new Dictionary<MethodDeclarationStatementSyntax, BoundMethodDeclarationStatement>();
+        private readonly Dictionary<MethodDeclarationStatementSyntax, BoundMethodDeclarationStatement> _methodDeclarationMap = new();
 
         private BoundScope _scope;
 
@@ -90,7 +89,7 @@ namespace VSharp.Binding
 
         private ImmutableArray<BoundStatement> BindStatements(IEnumerable<StatementSyntax> statements)
         {
-            _methodDeclarations.Push(statements.OfType<MethodDeclarationStatementSyntax>());
+            _methodDeclarations.Push((statements.OfType<MethodDeclarationStatementSyntax>(), _scope));
             try
             {
                 // Declare labels.
@@ -197,8 +196,14 @@ namespace VSharp.Binding
             return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
-        private BoundStatement BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax)
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="scope">The scope to declare in.</param>
+        private BoundStatement BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax, BoundScope? scope = null)
         {
+            scope ??= _scope;
+
             if (_methodDeclarationMap.TryGetValue(syntax, out var boundMethodDeclaration))
                 return boundMethodDeclaration;
 
@@ -212,7 +217,7 @@ namespace VSharp.Binding
                 : ResolveType(syntax.TypeOrDefKeyword.Kind) ?? TypeSymbol.Error;
 
             var method = new MethodSymbol(name, parameters, returnType);
-            if (!_scope.TryDeclareMethod(method))
+            if (!scope.TryDeclareMethod(method))
             {
                 Diagnostics.ReportMethodAlreadyDeclared(syntax.Identifier.Span, name);
                 return BoundNoOpStatement.Instance;
@@ -555,15 +560,15 @@ namespace VSharp.Binding
             if (!_scope.TryLookupMethod(methodName, out var method))
             {
                 var methodDeclaration = _methodDeclarations
-                    .SelectMany(declarations => declarations)
-                    .FirstOrDefault(declaration => declaration.Identifier.Text == syntax.Identifier.Text);
-                if (methodDeclaration is null)
+                    .SelectMany(pair => pair.declarations, (pair, declarations) => (declarations, pair.scope))
+                    .FirstOrDefault(pair => pair.declarations.Identifier.Text == syntax.Identifier.Text);
+                if (methodDeclaration == default)
                 {
                     Diagnostics.ReportUndefinedSymbol(syntax.Identifier.Span, methodName);
                     return BoundErrorExpression.Instance;
                 }
 
-                BindMethodDeclarationStatement(methodDeclaration);
+                BindMethodDeclarationStatement(methodDeclaration.declarations, methodDeclaration.scope);
                 if (!TryFindMethod(syntax.Identifier, out method))
                     return BoundErrorExpression.Instance;
             }
