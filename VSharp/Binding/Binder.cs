@@ -177,7 +177,8 @@ namespace VSharp.Binding
                 Diagnostics.ReportCannotAssignVoid(span);
             }
 
-            var type = ResolveType(syntax.Keyword.Kind);
+            var typeToken = syntax.ExplicitType ?? syntax.Keyword;
+            var type = ResolveType(typeToken.Kind);
             if (type is null)
                 type = initializer.Type;
             else
