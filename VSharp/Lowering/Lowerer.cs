@@ -306,7 +306,7 @@ namespace VSharp.Lowering
                     if (statements[i] is BoundVariableDeclarationStatement variableDeclaration)
                     {
                         var oldVariable = GetActiveVariable(variableDeclaration.Variable);
-                        if (!ReassignedVariables.Contains(oldVariable))
+                        if (!oldVariable.IsReadOnly && !ReassignedVariables.Contains(oldVariable))
                         {
                             updatedVariables = true;
                             reRunLowering = true;

@@ -118,166 +118,166 @@ namespace VSharp.Tests
         public static IEnumerable<object[]> GetStatementsData()
         {
             foreach ((string statement, object result) in GetStatements())
-                yield return new object[] { statement, result };
-        }
+                yield return new object[] { statement + "var resultX = result; result = resultX;", result };
 
-        private static IEnumerable<(string statement, object result)> GetStatements()
-        {
-            // Bool statements
-            yield return ("var result = true;", true);
-            yield return ("var result = false;", false);
-            yield return ("var result = !true;", false);
-            yield return ("var result = !false;", true);
-            yield return ("var result = true || true;", true);
-            yield return ("var result = true || false;", true);
-            yield return ("var result = false || true;", true);
-            yield return ("var result = false || false;", false);
-            yield return ("var result = true && true;", true);
-            yield return ("var result = true && false;", false);
-            yield return ("var result = false && true;", false);
-            yield return ("var result = false && false;", false);
+            static IEnumerable<(string statement, object result)> GetStatements()
+            {
+                // Bool statements
+                yield return ("var result = true;", true);
+                yield return ("var result = false;", false);
+                yield return ("var result = !true;", false);
+                yield return ("var result = !false;", true);
+                yield return ("var result = true || true;", true);
+                yield return ("var result = true || false;", true);
+                yield return ("var result = false || true;", true);
+                yield return ("var result = false || false;", false);
+                yield return ("var result = true && true;", true);
+                yield return ("var result = true && false;", false);
+                yield return ("var result = false && true;", false);
+                yield return ("var result = false && false;", false);
 
-            // Bool comparisons
-            yield return ("var result = false == false;", true);
-            yield return ("var result = true == false;", false);
-            yield return ("var result = false != false;", false);
-            yield return ("var result = true != false;", true);
+                // Bool comparisons
+                yield return ("var result = false == false;", true);
+                yield return ("var result = true == false;", false);
+                yield return ("var result = false != false;", false);
+                yield return ("var result = true != false;", true);
 
-            // Bool bitwise operations
-            yield return ("var result = false | false;", false);
-            yield return ("var result = false | true;", true);
-            yield return ("var result = true | false;", true);
-            yield return ("var result = true | true;", true);
-            yield return ("var result = false & false;", false);
-            yield return ("var result = false & true;", false);
-            yield return ("var result = true & false;", false);
-            yield return ("var result = true & true;", true);
-            yield return ("var result = false ^ false;", false);
-            yield return ("var result = false ^ true;", true);
-            yield return ("var result = true ^ false;", true);
-            yield return ("var result = true ^ true;", false);
+                // Bool bitwise operations
+                yield return ("var result = false | false;", false);
+                yield return ("var result = false | true;", true);
+                yield return ("var result = true | false;", true);
+                yield return ("var result = true | true;", true);
+                yield return ("var result = false & false;", false);
+                yield return ("var result = false & true;", false);
+                yield return ("var result = true & false;", false);
+                yield return ("var result = true & true;", true);
+                yield return ("var result = false ^ false;", false);
+                yield return ("var result = false ^ true;", true);
+                yield return ("var result = true ^ false;", true);
+                yield return ("var result = true ^ true;", false);
 
-            // Int statements
-            yield return ("var result = 1;", 1);
-            yield return ("var result = +1;", 1);
-            yield return ("var result = -1;", -1);
-            yield return ("var result = ~1;", ~1);
-            yield return ("var result = 14 + 12;", 26);
-            yield return ("var result = 12 - 3;", 9);
-            yield return ("var result = 4 * 2;", 8);
-            yield return ("var result = 9 / 3;", 3);
-            yield return ("var result = (10);", 10);
+                // Int statements
+                yield return ("var result = 1;", 1);
+                yield return ("var result = +1;", 1);
+                yield return ("var result = -1;", -1);
+                yield return ("var result = ~1;", ~1);
+                yield return ("var result = 14 + 12;", 26);
+                yield return ("var result = 12 - 3;", 9);
+                yield return ("var result = 4 * 2;", 8);
+                yield return ("var result = 9 / 3;", 3);
+                yield return ("var result = (10);", 10);
 
-            // Int comparisons
-            yield return ("var result = 12 == 3;", false);
-            yield return ("var result = 3 == 3;", true);
-            yield return ("var result = 12 != 3;", true);
-            yield return ("var result = 3 != 3;", false);
-            yield return ("var result = 3 < 4;", true);
-            yield return ("var result = 5 < 4;", false);
-            yield return ("var result = 4 <= 4;", true);
-            yield return ("var result = 4 <= 5;", true);
-            yield return ("var result = 5 <= 4;", false);
-            yield return ("var result = 4 > 3;", true);
-            yield return ("var result = 4 > 5;", false);
-            yield return ("var result = 4 >= 4;", true);
-            yield return ("var result = 5 >= 4;", true);
-            yield return ("var result = 4 >= 5;", false);
+                // Int comparisons
+                yield return ("var result = 12 == 3;", false);
+                yield return ("var result = 3 == 3;", true);
+                yield return ("var result = 12 != 3;", true);
+                yield return ("var result = 3 != 3;", false);
+                yield return ("var result = 3 < 4;", true);
+                yield return ("var result = 5 < 4;", false);
+                yield return ("var result = 4 <= 4;", true);
+                yield return ("var result = 4 <= 5;", true);
+                yield return ("var result = 5 <= 4;", false);
+                yield return ("var result = 4 > 3;", true);
+                yield return ("var result = 4 > 5;", false);
+                yield return ("var result = 4 >= 4;", true);
+                yield return ("var result = 5 >= 4;", true);
+                yield return ("var result = 4 >= 5;", false);
 
-            // Int bitwise operations
-            yield return ("var result = 1 | 2;", 3);
-            yield return ("var result = 1 | 0;", 1);
-            yield return ("var result = 1 & 2;", 0);
-            yield return ("var result = 1 & 1;", 1);
-            yield return ("var result = 1 & 0;", 0);
-            yield return ("var result = 1 ^ 0;", 1);
-            yield return ("var result = 0 ^ 1;", 1);
-            yield return ("var result = 1 ^ 3;", 2);
+                // Int bitwise operations
+                yield return ("var result = 1 | 2;", 3);
+                yield return ("var result = 1 | 0;", 1);
+                yield return ("var result = 1 & 2;", 0);
+                yield return ("var result = 1 & 1;", 1);
+                yield return ("var result = 1 & 0;", 0);
+                yield return ("var result = 1 ^ 0;", 1);
+                yield return ("var result = 0 ^ 1;", 1);
+                yield return ("var result = 1 ^ 3;", 2);
 
-            // Int variable & assignment
-            yield return ("var a = 0; var result = (a = 10) * a;", 100);
-            yield return ("var a = 11; var result = ++a;", 12);
-            yield return ("var a = 11; var result = --a;", 10);
-            yield return ("var a = 11; var result = a++;", 11);
-            yield return ("var a = 11; var result = a--;", 11);
-            yield return ("var a = 11; ++a; var result = a;", 12);
-            yield return ("var a = 11; --a; var result = a;", 10);
-            yield return ("var a = 11; a++; var result = a;", 12);
-            yield return ("var a = 11; a--; var result = a;", 10);
-            yield return ("var a = 11; var result = a += -1;", 10);
-            yield return ("var a = 11; var result = a -= 1;", 10);
-            yield return ("var a = 10; var result = a *= 2;", 20);
-            yield return ("var a = 10; var result = a /= 2;", 5);
+                // Int variable & assignment
+                yield return ("var a = 0; var result = (a = 10) * a;", 100);
+                yield return ("var a = 11; var result = ++a;", 12);
+                yield return ("var a = 11; var result = --a;", 10);
+                yield return ("var a = 11; var result = a++;", 11);
+                yield return ("var a = 11; var result = a--;", 11);
+                yield return ("var a = 11; ++a; var result = a;", 12);
+                yield return ("var a = 11; --a; var result = a;", 10);
+                yield return ("var a = 11; a++; var result = a;", 12);
+                yield return ("var a = 11; a--; var result = a;", 10);
+                yield return ("var a = 11; var result = a += -1;", 10);
+                yield return ("var a = 11; var result = a -= 1;", 10);
+                yield return ("var a = 10; var result = a *= 2;", 20);
+                yield return ("var a = 10; var result = a /= 2;", 5);
 
-            // Float statements
-            yield return ("var result = 1f;", 1d);
-            yield return ("var result = +1f;", 1d);
-            yield return ("var result = -1f;", -1d);
-            yield return ("var result = 14f + 12f;", 26d);
-            yield return ("var result = 12f - 3f;", 9d);
-            yield return ("var result = 4f * 2f;", 8d);
-            yield return ("var result = 9f / 3f;", 3d);
-            yield return ("var result = (10f);", 10d);
+                // Float statements
+                yield return ("var result = 1f;", 1d);
+                yield return ("var result = +1f;", 1d);
+                yield return ("var result = -1f;", -1d);
+                yield return ("var result = 14f + 12f;", 26d);
+                yield return ("var result = 12f - 3f;", 9d);
+                yield return ("var result = 4f * 2f;", 8d);
+                yield return ("var result = 9f / 3f;", 3d);
+                yield return ("var result = (10f);", 10d);
 
-            // Float comparisons
-            yield return ("var result = 12f == 3f;", false);
-            yield return ("var result = 3f == 3f;", true);
-            yield return ("var result = 12f != 3f;", true);
-            yield return ("var result = 3f != 3f;", false);
-            yield return ("var result = 3f < 4f;", true);
-            yield return ("var result = 5f < 4f;", false);
-            yield return ("var result = 4f <= 4f;", true);
-            yield return ("var result = 4f <= 5f;", true);
-            yield return ("var result = 5f <= 4f;", false);
-            yield return ("var result = 4f > 3f;", true);
-            yield return ("var result = 4f > 5f;", false);
-            yield return ("var result = 4f >= 4f;", true);
-            yield return ("var result = 5f >= 4f;", true);
-            yield return ("var result = 4f >= 5f;", false);
+                // Float comparisons
+                yield return ("var result = 12f == 3f;", false);
+                yield return ("var result = 3f == 3f;", true);
+                yield return ("var result = 12f != 3f;", true);
+                yield return ("var result = 3f != 3f;", false);
+                yield return ("var result = 3f < 4f;", true);
+                yield return ("var result = 5f < 4f;", false);
+                yield return ("var result = 4f <= 4f;", true);
+                yield return ("var result = 4f <= 5f;", true);
+                yield return ("var result = 5f <= 4f;", false);
+                yield return ("var result = 4f > 3f;", true);
+                yield return ("var result = 4f > 5f;", false);
+                yield return ("var result = 4f >= 4f;", true);
+                yield return ("var result = 5f >= 4f;", true);
+                yield return ("var result = 4f >= 5f;", false);
 
-            // Float variable & assignment
-            yield return ("var a = 0f; var result = (a = 10f) * a;", 100d);
-            yield return ("var a = 11f; var result = ++a;", 12d);
-            yield return ("var a = 11f; var result = --a;", 10d);
-            yield return ("var a = 11f; var result = a++;", 11d);
-            yield return ("var a = 11f; var result = a--;", 11d);
-            yield return ("var a = 11f; ++a; var result = a;", 12d);
-            yield return ("var a = 11f; --a; var result = a;", 10d);
-            yield return ("var a = 11f; a++; var result = a;", 12d);
-            yield return ("var a = 11f; a--; var result = a;", 10d);
-            yield return ("var a = 11f; var result = a += -1f;", 10d);
-            yield return ("var a = 11f; var result = a -= 1f;", 10d);
-            yield return ("var a = 10f; var result = a *= 2f;", 20d);
-            yield return ("var a = 10f; var result = a /= 2f;", 5d);
+                // Float variable & assignment
+                yield return ("var a = 0f; var result = (a = 10f) * a;", 100d);
+                yield return ("var a = 11f; var result = ++a;", 12d);
+                yield return ("var a = 11f; var result = --a;", 10d);
+                yield return ("var a = 11f; var result = a++;", 11d);
+                yield return ("var a = 11f; var result = a--;", 11d);
+                yield return ("var a = 11f; ++a; var result = a;", 12d);
+                yield return ("var a = 11f; --a; var result = a;", 10d);
+                yield return ("var a = 11f; a++; var result = a;", 12d);
+                yield return ("var a = 11f; a--; var result = a;", 10d);
+                yield return ("var a = 11f; var result = a += -1f;", 10d);
+                yield return ("var a = 11f; var result = a -= 1f;", 10d);
+                yield return ("var a = 10f; var result = a *= 2f;", 20d);
+                yield return ("var a = 10f; var result = a /= 2f;", 5d);
 
-            // If-else-statement
-            yield return ("var a = 0; if (a == 0) a = 10; var result = a;", 10);
-            yield return ("var a = 4; if (a == 0) a = 10; var result = a;", 4);
-            yield return ("var a = 0; if (a == 0) a = 10; else a = 34; var result = a;", 10);
-            yield return ("var a = 4; if (a == 0) a = 10; else a = 32; var result = a;", 32);
+                // If-else-statement
+                yield return ("var a = 0; if (a == 0) a = 10; var result = a;", 10);
+                yield return ("var a = 4; if (a == 0) a = 10; var result = a;", 4);
+                yield return ("var a = 0; if (a == 0) a = 10; else a = 34; var result = a;", 10);
+                yield return ("var a = 4; if (a == 0) a = 10; else a = 32; var result = a;", 32);
 
-            // While, for statement
-            yield return ("var a = 0; while (a < 10) a = a + 1; var result = a;", 10);
-            yield return ("var result = 0; for (var i = 0; i <= 10; ++i) result = result + i;", 55);
+                // While, for statement
+                yield return ("var a = 0; while (a < 10) a = a + 1; var result = a;", 10);
+                yield return ("var result = 0; for (var i = 0; i <= 10; ++i) result = result + i;", 55);
 
-            // Typeof
-            yield return ("var result = typeof(string);", TypeSymbol.String.Name);
-            yield return ("var result = typeof(int);", TypeSymbol.Int.Name);
-            yield return ("var result = typeof(bool);", TypeSymbol.Boolean.Name);
+                // Typeof
+                yield return ("var result = typeof(string);", TypeSymbol.String.Name);
+                yield return ("var result = typeof(int);", TypeSymbol.Int.Name);
+                yield return ("var result = typeof(bool);", TypeSymbol.Boolean.Name);
 
-            // Nameof
-            yield return ("var a = 0; var result = nameof(a);", "a");
+                // Nameof
+                yield return ("var a = 0; var result = nameof(a);", "a");
 
-            // Line comment
-            yield return ("var a = 3; var result = nameof(a); // gets the name of result\n", "a");
-            yield return ("var result = 5; //nameof(a); \n", 5);
+                // Line comment
+                yield return ("var a = 3; var result = nameof(a); // gets the name of result\n", "a");
+                yield return ("var result = 5; //nameof(a); \n", 5);
 
-            // Piping
-            yield return ("string Ret(string s) => s; var result = \"a\" |> Ret();", "a");
-            yield return ("string Ret(string s) => s; var result = \"a\" |> Ret(_);", "a");
-            yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\");", "ba");
-            yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\", _);", "ba");
-            yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(_, \"b\");", "ab");
+                // Piping
+                yield return ("string Ret(string s) => s; var result = \"a\" |> Ret();", "a");
+                yield return ("string Ret(string s) => s; var result = \"a\" |> Ret(_);", "a");
+                yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\");", "ba");
+                yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\", _);", "ba");
+                yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(_, \"b\");", "ab");
+            }
         }
 
         private static void AssertValue(string text, object expectedValue)

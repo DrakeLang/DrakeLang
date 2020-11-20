@@ -20,17 +20,26 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
     internal abstract class BoundTreeRewriter
     {
+        private readonly List<BoundStatement> _statementStack = new List<BoundStatement>();
+        private readonly List<BoundExpression> _expressionStack = new List<BoundExpression>();
+
         public BoundTreeRewriter()
         {
         }
 
         #region Properties
+
+        protected BoundStatement? RootStatement => _statementStack.FirstOrDefault();
+        protected BoundStatement? CurrentStatement => _statementStack.LastOrDefault();
+
+        protected BoundExpression? RootExpression => _expressionStack.FirstOrDefault();
 
         /// <summary>
         /// Keeps track of what expression uses what variables.
@@ -79,23 +88,31 @@ namespace VSharp.Binding
 
         public virtual BoundStatement RewriteStatement(BoundStatement node)
         {
-            return node.Kind switch
+            _statementStack.Add(node);
+            try
             {
-                BoundNodeKind.BlockStatement => RewriteBlockStatement((BoundBlockStatement)node),
-                BoundNodeKind.VariableDeclarationStatement => RewriteVariableDeclarationStatement((BoundVariableDeclarationStatement)node),
-                BoundNodeKind.MethodDeclarationStatement => RewriteMethodDeclarationStatement((BoundMethodDeclarationStatement)node),
-                BoundNodeKind.IfStatement => RewriteIfStatement((BoundIfStatement)node),
-                BoundNodeKind.WhileStatement => RewriteWhileStatement((BoundWhileStatement)node),
-                BoundNodeKind.ForStatement => RewriteForStatement((BoundForStatement)node),
-                BoundNodeKind.LabelStatement => RewriteLabelStatement((BoundLabelStatement)node),
-                BoundNodeKind.GotoStatement => RewriteGotoStatement((BoundGotoStatement)node),
-                BoundNodeKind.ConditionalGotoStatement => RewriteConditionalGotoStatement((BoundConditionalGotoStatement)node),
-                BoundNodeKind.ReturnStatement => RewriteReturnStatement((BoundReturnStatement)node),
-                BoundNodeKind.ExpressionStatement => RewriteExpressionStatement((BoundExpressionStatement)node),
-                BoundNodeKind.NoOpStatement => node,
+                return node.Kind switch
+                {
+                    BoundNodeKind.BlockStatement => RewriteBlockStatement((BoundBlockStatement)node),
+                    BoundNodeKind.VariableDeclarationStatement => RewriteVariableDeclarationStatement((BoundVariableDeclarationStatement)node),
+                    BoundNodeKind.MethodDeclarationStatement => RewriteMethodDeclarationStatement((BoundMethodDeclarationStatement)node),
+                    BoundNodeKind.IfStatement => RewriteIfStatement((BoundIfStatement)node),
+                    BoundNodeKind.WhileStatement => RewriteWhileStatement((BoundWhileStatement)node),
+                    BoundNodeKind.ForStatement => RewriteForStatement((BoundForStatement)node),
+                    BoundNodeKind.LabelStatement => RewriteLabelStatement((BoundLabelStatement)node),
+                    BoundNodeKind.GotoStatement => RewriteGotoStatement((BoundGotoStatement)node),
+                    BoundNodeKind.ConditionalGotoStatement => RewriteConditionalGotoStatement((BoundConditionalGotoStatement)node),
+                    BoundNodeKind.ReturnStatement => RewriteReturnStatement((BoundReturnStatement)node),
+                    BoundNodeKind.ExpressionStatement => RewriteExpressionStatement((BoundExpressionStatement)node),
+                    BoundNodeKind.NoOpStatement => node,
 
-                _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
-            };
+                    _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
+                };
+            }
+            finally
+            {
+                _statementStack.RemoveAt(_statementStack.Count - 1);
+            }
         }
 
         protected virtual BoundStatement RewriteBlockStatement(BoundBlockStatement node)
@@ -296,57 +313,64 @@ namespace VSharp.Binding
             return builder.MoveToImmutable();
         }
 
-        public virtual BoundExpression RewriteExpression(BoundExpression node, BoundExpression? rootExpression = null)
+        public virtual BoundExpression RewriteExpression(BoundExpression node)
         {
-            rootExpression ??= node;
-            return node.Kind switch
+            _expressionStack.Add(node);
+            try
             {
-                BoundNodeKind.ErrorExpression => node,
-                BoundNodeKind.LiteralExpression => RewriteLiteralExpression((BoundLiteralExpression)node, rootExpression),
-                BoundNodeKind.VariableExpression => RewriteVariableExpression((BoundVariableExpression)node, rootExpression),
-                BoundNodeKind.AssignmentExpression => RewriteAssignmentExpression((BoundAssignmentExpression)node, rootExpression),
-                BoundNodeKind.UnaryExpression => RewriteUnaryExpression((BoundUnaryExpression)node, rootExpression),
-                BoundNodeKind.BinaryExpression => RewriteBinaryExpression((BoundBinaryExpression)node, rootExpression),
-                BoundNodeKind.CallExpression => RewriteCallExpression((BoundCallExpression)node, rootExpression),
-                BoundNodeKind.ExplicitCastExpression => RewriteExplicitCastExpression((BoundExplicitCastExpression)node, rootExpression),
+                return node.Kind switch
+                {
+                    BoundNodeKind.ErrorExpression => node,
+                    BoundNodeKind.LiteralExpression => RewriteLiteralExpression((BoundLiteralExpression)node),
+                    BoundNodeKind.VariableExpression => RewriteVariableExpression((BoundVariableExpression)node),
+                    BoundNodeKind.AssignmentExpression => RewriteAssignmentExpression((BoundAssignmentExpression)node),
+                    BoundNodeKind.UnaryExpression => RewriteUnaryExpression((BoundUnaryExpression)node),
+                    BoundNodeKind.BinaryExpression => RewriteBinaryExpression((BoundBinaryExpression)node),
+                    BoundNodeKind.CallExpression => RewriteCallExpression((BoundCallExpression)node),
+                    BoundNodeKind.ExplicitCastExpression => RewriteExplicitCastExpression((BoundExplicitCastExpression)node),
 
-                _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
-            };
+                    _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
+                };
+            }
+            finally
+            {
+                _expressionStack.RemoveAt(_expressionStack.Count - 1);
+            }
         }
 
-        protected virtual BoundExpression RewriteLiteralExpression(BoundLiteralExpression node, BoundExpression rootExpression)
+        protected virtual BoundExpression RewriteLiteralExpression(BoundLiteralExpression node)
         {
             return node;
         }
 
-        protected virtual BoundExpression RewriteVariableExpression(BoundVariableExpression node, BoundExpression rootExpression)
+        protected virtual BoundExpression RewriteVariableExpression(BoundVariableExpression node)
         {
             if (TryGetConstant(node.Variable, out var constant))
             {
                 var result = new BoundLiteralExpression(constant);
-                return RewriteExpression(result, rootExpression);
+                return RewriteExpression(result);
             }
 
             var variable = GetActiveVariable(node.Variable);
             if (VariableUsage.TryGetValue(variable, out var variableUsage))
-                variableUsage.Add(rootExpression);
+                variableUsage.Add(RootExpression ?? node);
 
             return node;
         }
 
-        protected virtual BoundExpression RewriteAssignmentExpression(BoundAssignmentExpression node, BoundExpression rootExpression)
+        protected virtual BoundExpression RewriteAssignmentExpression(BoundAssignmentExpression node)
         {
             var variable = GetActiveVariable(node.Variable);
             ReassignedVariables.Add(variable);
 
-            var expression = RewriteExpression(node.Expression, rootExpression);
+            var expression = RewriteExpression(node.Expression);
             if (expression == node.Expression)
                 return node;
 
             return new BoundAssignmentExpression(variable, expression);
         }
 
-        protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node, BoundExpression rootExpression)
+        protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node)
         {
             if (node.Operand is BoundVariableExpression variableExpression &&
                 node.Op.Kind is
@@ -359,8 +383,8 @@ namespace VSharp.Binding
                 var variable = GetActiveVariable(variableExpression.Variable);
                 ReassignedVariables.Add(variable);
 
-                // Convert to pre dec or -inc if not a part of a larger expression.
-                if (node == rootExpression)
+                // Convert to pre dec or -inc only if it's not part of a statement other than expression statement and not a part of a larger expression.
+                if (CurrentStatement is BoundExpressionStatement && RootExpression == node)
                 {
                     if (node.Op.Kind == BoundUnaryOperatorKind.PostDecrement)
                         node = new BoundUnaryExpression(BoundUnaryOperator.Operators[(BoundUnaryOperatorKind.PreDecrement, node.Op.OperandType)], node.Operand);
@@ -369,7 +393,7 @@ namespace VSharp.Binding
                 }
             }
 
-            var operand = RewriteExpression(node.Operand, rootExpression);
+            var operand = RewriteExpression(node.Operand);
             if (operand is BoundLiteralExpression literalOperand)
             {
                 var value = LiteralEvaluator.EvaluateUnaryExpression(node.Op, literalOperand.Value);
@@ -377,7 +401,7 @@ namespace VSharp.Binding
                     return literalOperand;
 
                 var result = new BoundLiteralExpression(value);
-                return RewriteExpression(result, rootExpression);
+                return RewriteExpression(result);
             }
 
             if (operand == node.Operand)
@@ -386,10 +410,10 @@ namespace VSharp.Binding
             return new BoundUnaryExpression(node.Op, operand);
         }
 
-        protected virtual BoundExpression RewriteBinaryExpression(BoundBinaryExpression node, BoundExpression rootExpression)
+        protected virtual BoundExpression RewriteBinaryExpression(BoundBinaryExpression node)
         {
-            var left = RewriteExpression(node.Left, rootExpression);
-            var right = RewriteExpression(node.Right, rootExpression);
+            var left = RewriteExpression(node.Left);
+            var right = RewriteExpression(node.Right);
 
             if (left is BoundLiteralExpression literalLeft && right is BoundLiteralExpression literalRight)
             {
@@ -403,7 +427,7 @@ namespace VSharp.Binding
                 else
                     result = new BoundLiteralExpression(value);
 
-                return RewriteExpression(result, rootExpression);
+                return RewriteExpression(result);
             }
 
             if (left == node.Left && right == node.Right)
@@ -412,7 +436,7 @@ namespace VSharp.Binding
             return new BoundBinaryExpression(left, node.Op, right);
         }
 
-        protected virtual BoundExpression RewriteCallExpression(BoundCallExpression node, BoundExpression rootExpression)
+        protected virtual BoundExpression RewriteCallExpression(BoundCallExpression node)
         {
             var arguments = RewriteExpressions(node.Arguments);
             if (arguments == node.Arguments)
@@ -421,15 +445,15 @@ namespace VSharp.Binding
             return new BoundCallExpression(node.Method, arguments);
         }
 
-        protected virtual BoundExpression RewriteExplicitCastExpression(BoundExplicitCastExpression node, BoundExpression rootExpression)
+        protected virtual BoundExpression RewriteExplicitCastExpression(BoundExplicitCastExpression node)
         {
-            var expression = RewriteExpression(node.Expression, rootExpression);
+            var expression = RewriteExpression(node.Expression);
             if (expression is BoundLiteralExpression literalExpression)
             {
                 var value = LiteralEvaluator.EvaluateExplicitCastExpression(node.Type, literalExpression.Value);
                 var result = new BoundLiteralExpression(value);
 
-                return RewriteExpression(result, rootExpression);
+                return RewriteExpression(result);
             }
 
             if (expression == node.Expression)
