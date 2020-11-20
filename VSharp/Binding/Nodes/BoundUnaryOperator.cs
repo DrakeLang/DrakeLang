@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Collections.Immutable;
 using VSharp.Symbols;
 using VSharp.Syntax;
 
@@ -47,7 +48,7 @@ namespace VSharp.Binding
 
         #endregion Properties
 
-        #region Public statics
+        #region Statics
 
         public static BoundUnaryOperator? Bind(SyntaxKind syntaxKind, UnaryType unaryType, TypeSymbol operandType)
         {
@@ -63,10 +64,6 @@ namespace VSharp.Binding
 
             return null;
         }
-
-        #endregion Public statics
-
-        #region Private statics
 
         private static readonly BoundUnaryOperator[] _operators =
         {
@@ -94,6 +91,8 @@ namespace VSharp.Binding
             new BoundUnaryOperator(SyntaxKind.MinusMinusToken, UnaryType.Post, BoundUnaryOperatorKind.PostDecrement, TypeSymbol.Float),
         };
 
-        #endregion Private statics
+        public static ImmutableDictionary<(BoundUnaryOperatorKind, TypeSymbol), BoundUnaryOperator> Operators = _operators.ToImmutableDictionary(o => (o.Kind, o.OperandType));
+
+        #endregion Statics
     }
 }

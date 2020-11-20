@@ -65,7 +65,7 @@ namespace VSharp.Binding
 
             writer.WriteLine("}");
 
-            string quote(string s)
+            static string quote(string s)
             {
                 return s.Replace("\"", "\\\"");
             }
@@ -158,10 +158,7 @@ namespace VSharp.Binding
 
             BoundExpression NegateCondition(BoundExpression condition)
             {
-                var negation = BoundUnaryOperator.Bind(Syntax.SyntaxKind.BangToken, Syntax.UnaryType.Pre, TypeSymbol.Boolean);
-                if (negation is null)
-                    throw new Exception($"Failed to negate condition " + condition.ToFriendlyString());
-
+                var negation = BoundUnaryOperator.Operators[(BoundUnaryOperatorKind.LogicalNegation, TypeSymbol.Boolean)];
                 return new BoundUnaryExpression(negation, condition);
             }
         }

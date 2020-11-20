@@ -53,7 +53,7 @@ namespace VSharp.Binding
 
         #endregion Properties
 
-        #region Public statics
+        #region Statics
 
         public static BoundBinaryOperator? Bind(SyntaxKind syntaxKind, TypeSymbol leftType, TypeSymbol rightType)
         {
@@ -64,10 +64,6 @@ namespace VSharp.Binding
         {
             return _operators.SingleOrDefault(op => op.Kind == operatorKind && op.LeftType == leftType && op.RightType == rightType);
         }
-
-        #endregion Public statics
-
-        #region Private statics
 
         private static readonly BoundBinaryOperator[] _operators =
         {
@@ -123,6 +119,6 @@ namespace VSharp.Binding
             new BoundBinaryOperator(SyntaxKind.BangEqualsToken, BoundBinaryOperatorKind.NotEquals, TypeSymbol.String, TypeSymbol.Boolean),
         };
 
-        #endregion Private statics
+        #endregion Statics
     }
 }

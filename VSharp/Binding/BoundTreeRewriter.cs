@@ -346,7 +346,6 @@ namespace VSharp.Binding
 
         protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node, BoundExpression rootExpression)
         {
-            // Handle unary expressions that modify the value of the variable.
             if (node.Operand is BoundVariableExpression variableExpression &&
                 node.Op.Kind is
                     BoundUnaryOperatorKind.PreDecrement or
@@ -354,8 +353,18 @@ namespace VSharp.Binding
                     BoundUnaryOperatorKind.PostDecrement or
                     BoundUnaryOperatorKind.PostIncrement)
             {
+                // Handle unary expressions that modify the value of the variable.
                 var variable = GetActiveVariable(variableExpression.Variable);
                 ReassignedVariables.Add(variable);
+
+                // Convert to pre dec or -inc if not a part of a larger expression.
+                if (node == rootExpression)
+                {
+                    if (node.Op.Kind == BoundUnaryOperatorKind.PostDecrement)
+                        node = new BoundUnaryExpression(BoundUnaryOperator.Operators[(BoundUnaryOperatorKind.PreDecrement, node.Op.OperandType)], node.Operand);
+                    else if (node.Op.Kind == BoundUnaryOperatorKind.PostIncrement)
+                        node = new BoundUnaryExpression(BoundUnaryOperator.Operators[(BoundUnaryOperatorKind.PreIncrement, node.Op.OperandType)], node.Operand);
+                }
             }
 
             var operand = RewriteExpression(node.Operand, rootExpression);
