@@ -23,8 +23,8 @@ namespace VSharp.Binding
         Identity,
         Negation,
 
-        PreIncrement,
         PreDecrement,
+        PreIncrement,
         PostDecrement,
         PostIncrement,
 

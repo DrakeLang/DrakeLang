@@ -32,6 +32,11 @@ namespace VSharp.Binding
         #region Properties
 
         /// <summary>
+        /// Keeps track of what expression uses what variables.
+        /// </summary>
+        protected Dictionary<VariableSymbol, HashSet<BoundExpression>> VariableUsage { get; } = new Dictionary<VariableSymbol, HashSet<BoundExpression>>();
+
+        /// <summary>
         /// Mapping of variables replaced by constants.
         /// </summary>
         protected Dictionary<VariableSymbol, ConstantSymbol> ConstantMap { get; } = new Dictionary<VariableSymbol, ConstantSymbol>();
@@ -116,6 +121,7 @@ namespace VSharp.Binding
                 return BoundNoOpStatement.Instance;
             }
 
+            VariableUsage.Add(node.Variable, new HashSet<BoundExpression>());
             if (initializer == node.Initializer)
                 return node;
 
@@ -225,6 +231,27 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
         {
+            // Remove expression statements with no side effects.
+            switch (node.Expression)
+            {
+                case BoundLiteralExpression or
+                    BoundVariableExpression or
+                    BoundBinaryExpression or
+                    BoundExplicitCastExpression:
+                case BoundUnaryExpression unaryExpression when unaryExpression.Op.Kind is not
+                    BoundUnaryOperatorKind.PreDecrement and not
+                    BoundUnaryOperatorKind.PreIncrement and not
+                    BoundUnaryOperatorKind.PostDecrement and not
+                    BoundUnaryOperatorKind.PostIncrement:
+                    {
+                        // Removed expressions may affect variable usage.
+                        foreach (var set in VariableUsage)
+                            set.Value.Remove(node.Expression);
+
+                        return BoundNoOpStatement.Instance;
+                    }
+            }
+
             var expression = RewriteExpression(node.Expression);
             if (expression == node.Expression)
                 return node;
@@ -262,48 +289,53 @@ namespace VSharp.Binding
             return builder.MoveToImmutable();
         }
 
-        public virtual BoundExpression RewriteExpression(BoundExpression node)
+        public virtual BoundExpression RewriteExpression(BoundExpression node, BoundExpression? rootExpression = null)
         {
+            rootExpression ??= node;
             return node.Kind switch
             {
                 BoundNodeKind.ErrorExpression => node,
-                BoundNodeKind.LiteralExpression => RewriteLiteralExpression((BoundLiteralExpression)node),
-                BoundNodeKind.VariableExpression => RewriteVariableExpression((BoundVariableExpression)node),
-                BoundNodeKind.AssignmentExpression => RewriteAssignmentExpression((BoundAssignmentExpression)node),
-                BoundNodeKind.UnaryExpression => RewriteUnaryExpression((BoundUnaryExpression)node),
-                BoundNodeKind.BinaryExpression => RewriteBinaryExpression((BoundBinaryExpression)node),
-                BoundNodeKind.CallExpression => RewriteCallExpression((BoundCallExpression)node),
-                BoundNodeKind.ExplicitCastExpression => RewriteExplicitCastExpression((BoundExplicitCastExpression)node),
+                BoundNodeKind.LiteralExpression => RewriteLiteralExpression((BoundLiteralExpression)node, rootExpression),
+                BoundNodeKind.VariableExpression => RewriteVariableExpression((BoundVariableExpression)node, rootExpression),
+                BoundNodeKind.AssignmentExpression => RewriteAssignmentExpression((BoundAssignmentExpression)node, rootExpression),
+                BoundNodeKind.UnaryExpression => RewriteUnaryExpression((BoundUnaryExpression)node, rootExpression),
+                BoundNodeKind.BinaryExpression => RewriteBinaryExpression((BoundBinaryExpression)node, rootExpression),
+                BoundNodeKind.CallExpression => RewriteCallExpression((BoundCallExpression)node, rootExpression),
+                BoundNodeKind.ExplicitCastExpression => RewriteExplicitCastExpression((BoundExplicitCastExpression)node, rootExpression),
 
                 _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
             };
         }
 
-        protected virtual BoundExpression RewriteLiteralExpression(BoundLiteralExpression node)
+        protected virtual BoundExpression RewriteLiteralExpression(BoundLiteralExpression node, BoundExpression rootExpression)
         {
             return node;
         }
 
-        protected virtual BoundExpression RewriteVariableExpression(BoundVariableExpression node)
+        protected virtual BoundExpression RewriteVariableExpression(BoundVariableExpression node, BoundExpression rootExpression)
         {
             if (ConstantMap.TryGetValue(node.Variable, out var constant))
-                return new BoundLiteralExpression(constant);
+            {
+                var result = new BoundLiteralExpression(constant);
+                return RewriteExpression(result, rootExpression);
+            }
 
+            VariableUsage[node.Variable].Add(rootExpression);
             return node;
         }
 
-        protected virtual BoundExpression RewriteAssignmentExpression(BoundAssignmentExpression node)
+        protected virtual BoundExpression RewriteAssignmentExpression(BoundAssignmentExpression node, BoundExpression rootExpression)
         {
-            var expression = RewriteExpression(node.Expression);
+            var expression = RewriteExpression(node.Expression, rootExpression);
             if (expression == node.Expression)
                 return node;
 
             return new BoundAssignmentExpression(node.Variable, expression);
         }
 
-        protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node)
+        protected virtual BoundExpression RewriteUnaryExpression(BoundUnaryExpression node, BoundExpression rootExpression)
         {
-            var operand = RewriteExpression(node.Operand);
+            var operand = RewriteExpression(node.Operand, rootExpression);
             if (operand.Kind == BoundNodeKind.LiteralExpression)
             {
                 BoundLiteralExpression literalOperand = (BoundLiteralExpression)node.Operand;
@@ -313,7 +345,7 @@ namespace VSharp.Binding
                     return literalOperand;
 
                 var result = new BoundLiteralExpression(value);
-                return RewriteExpression(result);
+                return RewriteExpression(result, rootExpression);
             }
 
             if (operand == node.Operand)
@@ -322,10 +354,10 @@ namespace VSharp.Binding
             return new BoundUnaryExpression(node.Op, operand);
         }
 
-        protected virtual BoundExpression RewriteBinaryExpression(BoundBinaryExpression node)
+        protected virtual BoundExpression RewriteBinaryExpression(BoundBinaryExpression node, BoundExpression rootExpression)
         {
-            var left = RewriteExpression(node.Left);
-            var right = RewriteExpression(node.Right);
+            var left = RewriteExpression(node.Left, rootExpression);
+            var right = RewriteExpression(node.Right, rootExpression);
 
             if (left is BoundLiteralExpression literalLeft && right is BoundLiteralExpression literalRight)
             {
@@ -339,7 +371,7 @@ namespace VSharp.Binding
                 else
                     result = new BoundLiteralExpression(value);
 
-                return RewriteExpression(result);
+                return RewriteExpression(result, rootExpression);
             }
 
             if (left == node.Left && right == node.Right)
@@ -348,7 +380,7 @@ namespace VSharp.Binding
             return new BoundBinaryExpression(left, node.Op, right);
         }
 
-        protected virtual BoundExpression RewriteCallExpression(BoundCallExpression node)
+        protected virtual BoundExpression RewriteCallExpression(BoundCallExpression node, BoundExpression rootExpression)
         {
             var arguments = RewriteExpressions(node.Arguments);
             if (arguments == node.Arguments)
@@ -357,15 +389,15 @@ namespace VSharp.Binding
             return new BoundCallExpression(node.Method, arguments);
         }
 
-        protected virtual BoundExpression RewriteExplicitCastExpression(BoundExplicitCastExpression node)
+        protected virtual BoundExpression RewriteExplicitCastExpression(BoundExplicitCastExpression node, BoundExpression rootExpression)
         {
-            var expression = RewriteExpression(node.Expression);
+            var expression = RewriteExpression(node.Expression, rootExpression);
             if (expression is BoundLiteralExpression literalExpression)
             {
                 var value = LiteralEvaluator.EvaluateExplicitCastExpression(node.Type, literalExpression.Value);
                 var result = new BoundLiteralExpression(value);
 
-                return RewriteExpression(result);
+                return RewriteExpression(result, rootExpression);
             }
 
             if (expression == node.Expression)

@@ -33,6 +33,8 @@ namespace VSharp.Lowering
             _labelGenerator = labelGenerator;
         }
 
+        #region Methods
+
         public static ImmutableArray<BoundMethodDeclarationStatement> Lower(ImmutableArray<BoundMethodDeclarationStatement> methods, LabelGenerator labelGenerator)
         {
             var lowerer = new Lowerer(labelGenerator);
@@ -42,7 +44,7 @@ namespace VSharp.Lowering
                 return methods;
 
             return rewrittenMethods.Value
-                .SelectMany(m => FlattenAndClean(m).Statements)
+                .SelectMany(m => lowerer.FlattenAndClean(m).Statements)
                 .Cast<BoundMethodDeclarationStatement>()
                 .ToImmutableArray();
         }
@@ -51,6 +53,8 @@ namespace VSharp.Lowering
         {
             return new Lowerer(labelGenerator).Lower(statement);
         }
+
+        #endregion Methods
 
         private BoundBlockStatement Lower(BoundStatement statement)
         {
@@ -216,7 +220,7 @@ namespace VSharp.Lowering
         /// <summary>
         /// Flattens into a single block statement, removing unused labels and similar statements.
         /// </summary>
-        private static BoundBlockStatement FlattenAndClean(BoundStatement statement)
+        private BoundBlockStatement FlattenAndClean(BoundStatement statement)
         {
             var statements = new List<BoundStatement>();
 
@@ -237,6 +241,31 @@ namespace VSharp.Lowering
                     statements.Add(current);
                 }
             }
+
+            // Remove unused variables
+            bool removedVariables;
+            do
+            {
+                removedVariables = false;
+
+                for (int i = 0; i < statements.Count; i++)
+                {
+                    if (statements[i] is BoundVariableDeclarationStatement variableDeclaration &&
+                        VariableUsage[variableDeclaration.Variable].Count == 0)
+                    {
+                        removedVariables = true;
+                        statements[i] = RewriteStatement(new BoundExpressionStatement(variableDeclaration.Initializer));
+                    }
+                    else if (statements[i] is BoundExpressionStatement expressionStatement &&
+                        expressionStatement.Expression is BoundAssignmentExpression assignmentExpression &&
+                        VariableUsage[assignmentExpression.Variable].Count == 0)
+                    {
+                        removedVariables = true;
+                        statements[i] = RewriteStatement(new BoundExpressionStatement(assignmentExpression.Expression));
+                    }
+                }
+            }
+            while (removedVariables);
 
             // Remove unused labels, no-op statements.
             var labels = new HashSet<LabelSymbol>();
