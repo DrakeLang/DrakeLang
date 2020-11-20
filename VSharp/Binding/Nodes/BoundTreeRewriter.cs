@@ -51,34 +51,21 @@ namespace VSharp.Binding
                 var oldStatement = statements[i];
                 var newStatement = RewriteStatement(oldStatement);
 
-                if (builder is null && (newStatement != oldStatement || ignore(oldStatement)))
+                if (builder is null && (newStatement != oldStatement))
                 {
                     // There's at least one different element, so we initialize the builder and copy all ignored lines over.
                     builder = ImmutableArray.CreateBuilder<BoundStatement>(statements.Count);
                     for (int j = 0; j < i; j++)
                     {
-                        tryAdd(statements[j]);
+                        builder.Add(statements[j]);
                     }
                 }
 
-                if (builder != null)
-                    tryAdd(newStatement);
+                if (builder is not null)
+                    builder.Add(newStatement);
             }
 
-            return builder?.ToImmutable();
-
-            void tryAdd(BoundStatement statement)
-            {
-                if (!ignore(statement))
-                {
-                    builder.Add(statement);
-                }
-            }
-
-            static bool ignore(BoundStatement statement)
-            {
-                return statement.Kind == BoundNodeKind.NoOpStatement;
-            }
+            return builder?.MoveToImmutable();
         }
 
         public virtual BoundStatement RewriteStatement(BoundStatement node)
@@ -104,11 +91,18 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteBlockStatement(BoundBlockStatement node)
         {
-            var statements = RewriteStatements(node.Statements);
-            if (statements is null)
-                return node;
+            switch (node.Statements.Length)
+            {
+                case 0:
+                    return BoundNoOpStatement.Instance;
 
-            return new BoundBlockStatement(statements.Value);
+                case 1:
+                    return RewriteStatement(node.Statements[0]);
+
+                default:
+                    var statements = RewriteStatements(node.Statements);
+                    return statements is null ? node : new BoundBlockStatement(statements.Value);
+            }
         }
 
         protected virtual BoundStatement RewriteVariableDeclarationStatement(BoundVariableDeclarationStatement node)
@@ -200,14 +194,15 @@ namespace VSharp.Binding
         protected virtual BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
         {
             var condition = RewriteExpression(node.Condition);
-            if (condition.Kind == BoundNodeKind.LiteralExpression)
+            if (condition is BoundLiteralExpression literalCondition)
             {
-                var literalCondition = (BoundLiteralExpression)condition;
-
                 if (node.JumpIfFalse.Equals(literalCondition.Value))
                     return BoundNoOpStatement.Instance;
                 else
-                    return new BoundGotoStatement(node.Label);
+                {
+                    var result = new BoundGotoStatement(node.Label);
+                    return RewriteStatement(result);
+                }
             }
 
             if (condition == node.Condition)
@@ -317,7 +312,8 @@ namespace VSharp.Binding
                 if (value == literalOperand.Value)
                     return literalOperand;
 
-                return new BoundLiteralExpression(value);
+                var result = new BoundLiteralExpression(value);
+                return RewriteExpression(result);
             }
 
             if (operand == node.Operand)
@@ -331,18 +327,19 @@ namespace VSharp.Binding
             var left = RewriteExpression(node.Left);
             var right = RewriteExpression(node.Right);
 
-            if (left.Kind == BoundNodeKind.LiteralExpression && right.Kind == BoundNodeKind.LiteralExpression)
+            if (left is BoundLiteralExpression literalLeft && right is BoundLiteralExpression literalRight)
             {
-                var literalLeft = (BoundLiteralExpression)left;
-                var literalRight = (BoundLiteralExpression)right;
-
                 var value = LiteralEvaluator.EvaluateBinaryExpression(node.Op, literalLeft.Value, literalRight.Value);
-                if (value == literalLeft.Value)
-                    return literalLeft;
-                else if (value == literalRight.Value)
-                    return literalRight;
 
-                return new BoundLiteralExpression(value);
+                BoundLiteralExpression result;
+                if (value == literalLeft.Value)
+                    result = literalLeft;
+                else if (value == literalRight.Value)
+                    result = literalRight;
+                else
+                    result = new BoundLiteralExpression(value);
+
+                return RewriteExpression(result);
             }
 
             if (left == node.Left && right == node.Right)
@@ -363,12 +360,12 @@ namespace VSharp.Binding
         protected virtual BoundExpression RewriteExplicitCastExpression(BoundExplicitCastExpression node)
         {
             var expression = RewriteExpression(node.Expression);
-            if (expression.Kind == BoundNodeKind.LiteralExpression)
+            if (expression is BoundLiteralExpression literalExpression)
             {
-                var literalExpression = (BoundLiteralExpression)expression;
                 var value = LiteralEvaluator.EvaluateExplicitCastExpression(node.Type, literalExpression.Value);
+                var result = new BoundLiteralExpression(value);
 
-                return new BoundLiteralExpression(value);
+                return RewriteExpression(result);
             }
 
             if (expression == node.Expression)

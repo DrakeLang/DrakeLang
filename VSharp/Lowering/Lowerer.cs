@@ -223,7 +223,7 @@ namespace VSharp.Lowering
             var statementStack = new Stack<BoundStatement>();
             statementStack.Push(statement);
 
-            // Remove all block statements.
+            // Remove nested block statements.
             while (statementStack.Count > 0)
             {
                 var current = statementStack.Pop();
