@@ -22,7 +22,7 @@ using VSharp.Binding;
 using VSharp.Symbols;
 using VSharp.Syntax;
 
-namespace VSharp.Extensions.Util
+namespace VSharp.Utils
 {
     internal static class TreePrintingUtil
     {

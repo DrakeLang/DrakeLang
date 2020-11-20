@@ -19,11 +19,27 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
     internal abstract class BoundTreeRewriter
     {
+        public BoundTreeRewriter()
+        {
+        }
+
+        #region Properties
+
+        /// <summary>
+        /// Mapping of variables replaced by constants.
+        /// </summary>
+        protected Dictionary<VariableSymbol, ConstantSymbol> ConstantMap { get; } = new Dictionary<VariableSymbol, ConstantSymbol>();
+
+        public ImmutableDictionary<VariableSymbol, ConstantSymbol> GetConstantMap() => ConstantMap.ToImmutableDictionary();
+
+        #endregion Properties
+
         #region RewriteStatement
 
         protected ImmutableArray<BoundStatement>? RewriteStatements(IReadOnlyList<BoundStatement> statements)
@@ -98,6 +114,14 @@ namespace VSharp.Binding
         protected virtual BoundStatement RewriteVariableDeclarationStatement(BoundVariableDeclarationStatement node)
         {
             var initializer = RewriteExpression(node.Initializer);
+            if (node.Variable.IsReadOnly && initializer is BoundLiteralExpression literalExpression)
+            {
+                var constant = new ConstantSymbol(node.Variable.Name, literalExpression.Value);
+                ConstantMap[node.Variable] = constant;
+
+                return BoundNoOpStatement.Instance;
+            }
+
             if (initializer == node.Initializer)
                 return node;
 
@@ -267,6 +291,9 @@ namespace VSharp.Binding
 
         protected virtual BoundExpression RewriteVariableExpression(BoundVariableExpression node)
         {
+            if (ConstantMap.TryGetValue(node.Variable, out var constant))
+                return new BoundLiteralExpression(constant);
+
             return node;
         }
 

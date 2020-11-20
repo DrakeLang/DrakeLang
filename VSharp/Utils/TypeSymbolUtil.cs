@@ -15,40 +15,38 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
-
-using System.Collections.Generic;
-using System.Linq;
+using System;
 using VSharp.Symbols;
-using VSharp.Utils;
 
-namespace VSharp.Binding
+namespace VSharp.Utils
 {
-    internal class BoundLiteralExpression : BoundExpression
+    internal static class TypeSymbolUtil
     {
-        public BoundLiteralExpression(object value)
+        public static TypeSymbol FromClrType(Type type)
         {
-            Value = value;
-            Type = TypeSymbolUtil.FromValue(value);
+            if (type == typeof(bool))
+                return TypeSymbol.Boolean;
+            else if (type == typeof(int))
+                return TypeSymbol.Int;
+            else if (type == typeof(string))
+                return TypeSymbol.String;
+            else if (type == typeof(double))
+                return TypeSymbol.Float;
+
+            throw new Exception($"Clr type '{type}' is illegal.");
         }
 
-        public BoundLiteralExpression(ConstantSymbol constant)
+        public static TypeSymbol FromValue(object value)
         {
-            Value = constant.Value;
-            Type = constant.Type;
-        }
+            return value switch
+            {
+                bool _ => TypeSymbol.Boolean,
+                int _ => TypeSymbol.Int,
+                string _ => TypeSymbol.String,
+                double _ => TypeSymbol.Float,
 
-        #region Properties
-
-        public override BoundNodeKind Kind => BoundNodeKind.LiteralExpression;
-        public override TypeSymbol Type { get; }
-
-        public object Value { get; }
-
-        #endregion Properties
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            return Enumerable.Empty<BoundNode>();
+                _ => throw new Exception($"Value '{value}' of type '{value.GetType()}' is illegal."),
+            };
         }
     }
 }

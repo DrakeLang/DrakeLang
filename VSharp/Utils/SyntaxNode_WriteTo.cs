@@ -18,7 +18,7 @@
 using System;
 using System.IO;
 using System.Linq;
-using VSharp.Extensions.Util;
+using VSharp.Utils;
 
 namespace VSharp.Syntax
 {

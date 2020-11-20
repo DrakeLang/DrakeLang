@@ -16,39 +16,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-using System.Linq;
-using VSharp.Symbols;
 using VSharp.Utils;
 
-namespace VSharp.Binding
+namespace VSharp.Symbols
 {
-    internal class BoundLiteralExpression : BoundExpression
+    public sealed class ConstantSymbol : VariableSymbol
     {
-        public BoundLiteralExpression(object value)
+        internal ConstantSymbol(string name, object value) : base(name, isReadOnly: true, TypeSymbolUtil.FromValue(value))
         {
             Value = value;
-            Type = TypeSymbolUtil.FromValue(value);
         }
-
-        public BoundLiteralExpression(ConstantSymbol constant)
-        {
-            Value = constant.Value;
-            Type = constant.Type;
-        }
-
-        #region Properties
-
-        public override BoundNodeKind Kind => BoundNodeKind.LiteralExpression;
-        public override TypeSymbol Type { get; }
 
         public object Value { get; }
-
-        #endregion Properties
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            return Enumerable.Empty<BoundNode>();
-        }
     }
 }

@@ -160,7 +160,7 @@ namespace VSharp.Binding
         {
             string name = syntax.Identifier.Text ?? "?";
             bool declare = syntax.Identifier.Text != null;
-            bool isReadOnly = syntax.Keyword.Kind == SyntaxKind.SetKeyword;
+            var isReadOnly = syntax.Keyword.Kind is SyntaxKind.SetKeyword;
 
             var initializer = BindExpression(syntax.Initializer);
 
@@ -177,13 +177,13 @@ namespace VSharp.Binding
                 Diagnostics.ReportCannotAssignVoid(span);
             }
 
-            var variableType = ResolveType(syntax.Keyword.Kind);
-            if (variableType is null)
-                variableType = initializer.Type;
+            var type = ResolveType(syntax.Keyword.Kind);
+            if (type is null)
+                type = initializer.Type;
             else
-                initializer = BindConvertion(syntax.Initializer.Span, initializer, variableType);
+                initializer = BindConvertion(syntax.Initializer.Span, initializer, type);
 
-            var variable = new VariableSymbol(name, isReadOnly, variableType);
+            var variable = new VariableSymbol(name, isReadOnly, type);
             if (declare && !_scope.TryDeclareVariable(variable))
                 Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
 
@@ -729,7 +729,7 @@ namespace VSharp.Binding
             {
                 Diagnostics.ReportUndefinedSymbol(identifierToken.Span, name);
 
-                _scope.TryDeclareVariable(new VariableSymbol(name, isReadOnly: true, TypeSymbol.Error));
+                _scope.TryDeclareVariable(new VariableSymbol(name, isReadOnly: false, TypeSymbol.Error));
                 return false;
             }
 
