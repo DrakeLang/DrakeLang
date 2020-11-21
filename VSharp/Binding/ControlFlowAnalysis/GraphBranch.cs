@@ -16,29 +16,23 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Text;
-
-namespace VSharp
+namespace VSharp.Binding.CFA
 {
-    public sealed record Diagnostic
+    internal sealed class GraphBranch
     {
-        public Diagnostic(TextSpan span, string message)
+        public GraphBranch(GraphBlock from, GraphBlock to, BoundExpression? condition = null)
         {
-            Span = span;
-            Message = message;
+            From = from;
+            To = to;
+            Condition = condition;
         }
 
         #region Properties
 
-        public TextSpan Span { get; }
-        public string Message { get; }
+        public GraphBlock From { get; }
+        public GraphBlock To { get; }
+        public BoundExpression? Condition { get; }
 
         #endregion Properties
-
-        #region Methods
-
-        public override string ToString() => Message;
-
-        #endregion Methods
     }
 }

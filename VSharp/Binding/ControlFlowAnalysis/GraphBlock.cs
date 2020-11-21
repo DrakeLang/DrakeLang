@@ -16,29 +16,46 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using VSharp.Text;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace VSharp
+namespace VSharp.Binding.CFA
 {
-    public sealed record Diagnostic
+    internal sealed class GraphBlock
     {
-        public Diagnostic(TextSpan span, string message)
+        public GraphBlock()
         {
-            Span = span;
-            Message = message;
+        }
+
+        public GraphBlock(bool isStart)
+        {
+            IsStart = isStart;
         }
 
         #region Properties
 
-        public TextSpan Span { get; }
-        public string Message { get; }
+        public bool? IsStart { get; }
+        public bool? IsEnd => !IsStart;
+
+        public HashSet<GraphBranch> Incoming { get; } = new HashSet<GraphBranch>();
+        public HashSet<GraphBranch> Outgoing { get; } = new HashSet<GraphBranch>();
+
+        public List<BoundStatement> Statements { get; } = new List<BoundStatement>();
 
         #endregion Properties
 
-        #region Methods
+        #region Method
 
-        public override string ToString() => Message;
+        public override string ToString()
+        {
+            if (IsStart is true)
+                return "<start>";
+            else if (IsEnd is true)
+                return "<end>";
+            else
+                return Statements.Select(s => s.ToFriendlyString()).Aggregate((s1, s2) => s1 + "\\l" + s2) + "\\l";
+        }
 
-        #endregion Methods
+        #endregion Method
     }
 }

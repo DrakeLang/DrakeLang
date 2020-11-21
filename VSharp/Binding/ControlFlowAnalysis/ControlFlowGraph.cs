@@ -22,7 +22,7 @@ using System.IO;
 using System.Linq;
 using VSharp.Symbols;
 
-namespace VSharp.Binding
+namespace VSharp.Binding.CFA
 {
     internal sealed class ControlFlowGraph
     {
@@ -38,10 +38,7 @@ namespace VSharp.Binding
 
         #region Methods
 
-        public bool AllPathsReturn()
-        {
-            return _end.Incoming.All(branch => branch.From.Statements[^1].Kind == BoundNodeKind.ReturnStatement);
-        }
+        public bool AllPathsReturn() => _end.Incoming.All(branch => branch.From.Statements[^1].Kind == BoundNodeKind.ReturnStatement);
 
         public void WriteTo(TextWriter writer)
         {
@@ -247,65 +244,5 @@ namespace VSharp.Binding
         #endregion Helpers
 
         #endregion Private members
-
-        #region Utility classes
-
-        private sealed class GraphBlock
-        {
-            public GraphBlock()
-            {
-            }
-
-            public GraphBlock(bool isStart)
-            {
-                IsStart = isStart;
-            }
-
-            #region Properties
-
-            public bool? IsStart { get; }
-            public bool? IsEnd => !IsStart;
-
-            public HashSet<GraphBranch> Incoming { get; } = new HashSet<GraphBranch>();
-            public HashSet<GraphBranch> Outgoing { get; } = new HashSet<GraphBranch>();
-
-            public List<BoundStatement> Statements { get; } = new List<BoundStatement>();
-
-            #endregion Properties
-
-            #region Method
-
-            public override string ToString()
-            {
-                if (IsStart is true)
-                    return "<start>";
-                else if (IsEnd is true)
-                    return "<end>";
-                else
-                    return Statements.Select(s => s.ToFriendlyString()).Aggregate((s1, s2) => s1 + "\\l" + s2) + "\\l";
-            }
-
-            #endregion Method
-        }
-
-        private sealed class GraphBranch
-        {
-            public GraphBranch(GraphBlock from, GraphBlock to, BoundExpression? condition = null)
-            {
-                From = from;
-                To = to;
-                Condition = condition;
-            }
-
-            #region Properties
-
-            public GraphBlock From { get; }
-            public GraphBlock To { get; }
-            public BoundExpression? Condition { get; }
-
-            #endregion Properties
-        }
-
-        #endregion Utility classes
     }
 }

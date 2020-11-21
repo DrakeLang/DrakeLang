@@ -135,6 +135,29 @@ namespace VSharp.Tests
             AssertDiagnostics(text, diagnostics);
         }
 
+        [Fact]
+        public void Evaluator_Implicit_Recursive_Method_Return_Type_Reports_Unable_To_Infer()
+        {
+            var text = @"
+                def Main() { }
+                def [A](bool b) => B(b);
+                def [B](bool b)
+                {
+                    if (b)
+                        return A(b);
+                    else
+                        return A(!b);
+                }
+            ";
+
+            string diagnostics = @"
+                Implicit return type of method 'A' cannot be infered.
+                Implicit return type of method 'B' cannot be infered.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
         #endregion Reports
 
         public static IEnumerable<object[]> GetStatementsData()
@@ -296,6 +319,7 @@ namespace VSharp.Tests
                 // Method declarations
                 yield return ("string Ret() => \"a\"; var result = Ret();", "a");
                 yield return ("def Ret() => \"a\"; var result = Ret();", "a");
+                yield return ("def Ret(bool b) { if (b) return \"a\"; else return \"b\"; } var result = Ret(true);", "a");
 
                 // Piping
                 yield return ("string Ret(string s) => s; var result = \"a\" |> Ret();", "a");

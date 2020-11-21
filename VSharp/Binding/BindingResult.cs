@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Immutable;
 using System.IO;
+using VSharp.Binding.CFA;
 
 namespace VSharp.Binding
 {
@@ -43,8 +44,8 @@ namespace VSharp.Binding
             }
         }
 
-
         public delegate TextWriter ControlFlowGraphWriterFactory(string methodName);
+
         public void GenerateControlFlowGraphs(ControlFlowGraphWriterFactory writerFactory, Action<TextWriter>? cleanup = null)
         {
             if (writerFactory is null)

@@ -26,7 +26,7 @@ namespace VSharp
 {
     internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
     {
-        private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
+        private readonly HashSet<Diagnostic> _diagnostics = new HashSet<Diagnostic>();
 
         public DiagnosticBag()
         {
@@ -36,7 +36,10 @@ namespace VSharp
 
         public void AddRange(IEnumerable<Diagnostic> diagnostics)
         {
-            _diagnostics.AddRange(diagnostics);
+            foreach (var diagnostic in diagnostics)
+            {
+                _diagnostics.Add(diagnostic);
+            }
         }
 
         #endregion Methods
@@ -137,6 +140,12 @@ namespace VSharp
         public void ReportMethodAlreadyDeclared(TextSpan span, string? name)
         {
             string message = $"A method with the name '{name}' is already declared in this scope.";
+            Report(span, message);
+        }
+
+        internal void ReportCannotInferReturnType(TextSpan span, string? name)
+        {
+            string message = $"Implicit return type of method '{name}' cannot be infered.";
             Report(span, message);
         }
 

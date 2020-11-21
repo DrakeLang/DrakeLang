@@ -22,6 +22,7 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
+using VSharp.Binding.CFA;
 using VSharp.Lowering;
 using VSharp.Symbols;
 using VSharp.Syntax;
@@ -35,10 +36,7 @@ namespace VSharp.Binding
         private static readonly MethodSymbol _mainMethodSymbol = new MethodSymbol(MainMethodName, ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void);
 
         private readonly LabelGenerator _labelGenerator;
-        private readonly Stack<MethodSymbol> _callStack = new();
-        private readonly Stack<(IEnumerable<MethodDeclarationStatementSyntax> declarations, BoundScope scope)> _methodDeclarations = new();
-
-        private readonly Dictionary<MethodDeclarationStatementSyntax, BoundMethodDeclarationStatement> _methodDeclarationMap = new();
+        private readonly Stack<MethodSymbol> _callStack = new(new[] { _mainMethodSymbol });
 
         private BoundScope _scope;
 
@@ -89,28 +87,54 @@ namespace VSharp.Binding
 
         private ImmutableArray<BoundStatement> BindStatements(IEnumerable<StatementSyntax> statements)
         {
-            _methodDeclarations.Push((statements.OfType<MethodDeclarationStatementSyntax>(), _scope));
-            try
+            DeclareMethods(statements.OfType<MethodDeclarationStatementSyntax>());
+
+            // Declare labels.
+            foreach (var statement in statements.OfType<LabelStatementSyntax>())
             {
-                // Declare labels.
-                foreach (var statement in statements.Where(s => s.Kind == SyntaxKind.LabelStatement))
-                {
-                    DeclareLabel((LabelStatementSyntax)statement);
-                }
-
-                // Bind remaining statements.
-                var statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>();
-                foreach (var statement in statements)
-                {
-                    var boundStatement = BindStatement(statement);
-                    statementBuilder.Add(boundStatement);
-                }
-
-                return statementBuilder.ToImmutable();
+                DeclareLabel(statement);
             }
-            finally
+
+            // Bind remaining statements.
+            var statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>();
+            foreach (var statement in statements)
             {
-                _methodDeclarations.Pop();
+                var boundStatement = BindStatement(statement);
+                statementBuilder.Add(boundStatement);
+            }
+
+            return statementBuilder.ToImmutable();
+        }
+
+        private void DeclareMethods(IEnumerable<MethodDeclarationStatementSyntax> methodDeclarations)
+        {
+            var methodsToDeclare = methodDeclarations.ToHashSet();
+            var declaredMethods = new HashSet<MethodDeclarationStatementSyntax>();
+
+            // Keep declaring methods in a loop until no new methods are delcared.
+            while (methodsToDeclare.Count > 0)
+            {
+                foreach (var methodDeclaration in methodsToDeclare)
+                {
+                    var result = TryDeclareMethod(methodDeclaration);
+                    if (result is not MethodDeclarationResult.CannotInferReturnType)
+                    {
+                        declaredMethods.Add(methodDeclaration);
+                    }
+                }
+
+                // No methods were declared in this loop. Escape.
+                if (declaredMethods.Count == 0)
+                    break;
+
+                methodsToDeclare.ExceptWith(declaredMethods);
+                declaredMethods.Clear();
+            }
+
+            foreach (var methodDeclaration in methodsToDeclare)
+            {
+                TryDeclareMethod(methodDeclaration, declareImplicitReturnTypesAsError: true);
+                Diagnostics.ReportCannotInferReturnType(methodDeclaration.Identifier.Span, methodDeclaration.Identifier.Text);
             }
         }
 
@@ -120,7 +144,15 @@ namespace VSharp.Binding
 
         public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
-        private MethodSymbol? CurrentMethod => _callStack.TryPeek(out var method) ? method : null;
+        /// <summary>
+        /// The return value of the current method. Null if method is implicit.
+        /// </summary>
+        private MethodSymbol CurrentMethod => _callStack.Peek();
+
+        /// <summary>
+        /// Used for binding statements for analysis, without commitment.
+        /// </summary>
+        private bool EnableAnalysisMode { get; set; }
 
         #endregion Properties
 
@@ -196,32 +228,10 @@ namespace VSharp.Binding
             return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="scope">The scope to declare in.</param>
-        private BoundStatement BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax, BoundScope? scope = null)
+        private BoundStatement BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax)
         {
-            scope ??= _scope;
-
-            if (_methodDeclarationMap.TryGetValue(syntax, out var boundMethodDeclaration))
-                return boundMethodDeclaration;
-
-            if (syntax.Identifier.Text is null)
+            if (!_scope.TryLookupMethod(syntax.Identifier.Text, out var method))
                 return BoundNoOpStatement.Instance;
-
-            string name = syntax.Identifier.Text;
-            var parameters = BindParameters(syntax.Parameters);
-            var returnType = syntax.TypeOrDefKeyword.Kind == SyntaxKind.DefKeyword
-                ? TypeSymbol.Void
-                : ResolveType(syntax.TypeOrDefKeyword.Kind) ?? TypeSymbol.Error;
-
-            var method = new MethodSymbol(name, parameters, returnType);
-            if (!scope.TryDeclareMethod(method))
-            {
-                Diagnostics.ReportMethodAlreadyDeclared(syntax.Identifier.Span, name);
-                return BoundNoOpStatement.Instance;
-            }
 
             PushMethodScope(method);
             try
@@ -231,32 +241,11 @@ namespace VSharp.Binding
                     _scope.TryDeclareVariable(parameter);
                 }
 
-                BoundBlockStatement boundDeclaration;
-                if (syntax.TypeOrDefKeyword.Kind != SyntaxKind.DefKeyword && syntax.Declaration is ExpressionBodyStatementSyntax expressionBody)
-                {
-                    if (expressionBody.Statement is not ExpressionStatementSyntax expressionStatement)
-                    {
-                        Diagnostics.ReportMethodNotAllPathsReturnValue(syntax.Identifier.Span);
-                        return BoundNoOpStatement.Instance;
-                    }
-
-                    var expression = BindExpression(expressionStatement.Expression);
-                    var returnStatement = new BoundReturnStatement(expression);
-                    boundDeclaration = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(returnStatement));
-                }
-                else
-                {
-                    var statements = BindStatements(syntax.Declaration.Statements);
-                    boundDeclaration = new BoundBlockStatement(statements);
-                }
-
-                boundDeclaration = Lowerer.Lower(boundDeclaration, _labelGenerator);
+                var boundDeclaration = BindBody(syntax);
                 if (method.ReturnType != TypeSymbol.Void && !new ControlFlowGraph(boundDeclaration).AllPathsReturn())
                     Diagnostics.ReportMethodNotAllPathsReturnValue(syntax.Identifier.Span);
 
-                var result = new BoundMethodDeclarationStatement(method, boundDeclaration);
-                _methodDeclarationMap.Add(syntax, result);
-                return result;
+                return new BoundMethodDeclarationStatement(method, boundDeclaration);
             }
             finally
             {
@@ -323,13 +312,19 @@ namespace VSharp.Binding
 
         private BoundStatement BindReturnStatement(ReturnStatementSyntax syntax)
         {
-            if (CurrentMethod is null || CurrentMethod.ReturnType == TypeSymbol.Void)
+            if (EnableAnalysisMode)
+            {
+                if (syntax.Expression is null)
+                    return new BoundReturnStatement();
+
+                var expression = BindExpression(syntax.Expression);
+                return new BoundReturnStatement(expression);
+            }
+
+            if (CurrentMethod.ReturnType == TypeSymbol.Void)
             {
                 if (syntax.Expression is not null)
-                {
-                    Diagnostics.ReportInvalidReturnInVoidMethod(syntax.Span);
-                    return BoundNoOpStatement.Instance;
-                }
+                    Diagnostics.ReportInvalidReturnInVoidMethod(syntax.Expression.Span);
 
                 return new BoundReturnStatement();
             }
@@ -556,24 +551,11 @@ namespace VSharp.Binding
                 return BoundErrorExpression.Instance;
 
             // Locate method.
-            var methodName = syntax.Identifier.Text;
-            if (!_scope.TryLookupMethod(methodName, out var method))
-            {
-                var methodDeclaration = _methodDeclarations
-                    .SelectMany(pair => pair.declarations, (pair, declarations) => (declarations, pair.scope))
-                    .FirstOrDefault(pair => pair.declarations.Identifier.Text == syntax.Identifier.Text);
-                if (methodDeclaration == default)
-                {
-                    Diagnostics.ReportUndefinedSymbol(syntax.Identifier.Span, methodName);
-                    return BoundErrorExpression.Instance;
-                }
+            if (EnableAnalysisMode && !_scope.TryLookupMethod(syntax.Identifier.Text, out var method))
+                return BoundErrorExpression.Instance;
+            else if (!TryFindMethod(syntax.Identifier, out method))
+                return BoundErrorExpression.Instance;
 
-                BindMethodDeclarationStatement(methodDeclaration.declarations, methodDeclaration.scope);
-                if (!TryFindMethod(syntax.Identifier, out method))
-                    return BoundErrorExpression.Instance;
-            }
-
-            // Locate method.
             if (method.ReturnType.IsError())
                 return BoundErrorExpression.Instance;
 
@@ -696,6 +678,112 @@ namespace VSharp.Binding
             PopScope();
             _callStack.Pop();
         }
+
+        #region DeclareMethod
+
+        private enum MethodDeclarationResult { Success, CannotInferReturnType, Error }
+
+        private MethodDeclarationResult TryDeclareMethod(MethodDeclarationStatementSyntax syntax, bool declareImplicitReturnTypesAsError = false)
+        {
+            if (syntax.Identifier.Text is null)
+                return MethodDeclarationResult.Error;
+
+            string name = syntax.Identifier.Text;
+            var parameters = BindParameters(syntax.Parameters);
+
+            var hasImplicitReturnType = syntax.TypeOrDefKeyword.Kind == SyntaxKind.DefKeyword;
+
+            MethodSymbol? method;
+            if (!hasImplicitReturnType)
+            {
+                var returnType = ResolveType(syntax.TypeOrDefKeyword.Kind) ?? TypeSymbol.Error;
+                method = new MethodSymbol(name, parameters, returnType);
+            }
+            else if (declareImplicitReturnTypesAsError)
+            {
+                method = new MethodSymbol(name, parameters, TypeSymbol.Error);
+            }
+            else
+            {
+                PushScope();
+                EnableAnalysisMode = true;
+                try
+                {
+                    // Resolve implicit return type
+                    foreach (var parameter in parameters)
+                    {
+                        _scope.TryDeclareVariable(parameter);
+                    }
+
+                    // Bind a primitive body for analyzis to infer the return type.
+                    var boundDeclaration = BindBody(syntax);
+
+                    var returnStatements = boundDeclaration.Statements.OfType<BoundReturnStatement>();
+                    var returnType = ResolveImplicitType(this, returnStatements);
+
+                    if (returnType is null)
+                        return MethodDeclarationResult.CannotInferReturnType;
+
+                    method = new MethodSymbol(name, parameters, returnType);
+                }
+                finally
+                {
+                    EnableAnalysisMode = false;
+                    PopScope();
+                }
+            }
+
+            if (!_scope.TryDeclareMethod(method))
+            {
+                Diagnostics.ReportMethodAlreadyDeclared(syntax.Identifier.Span, name);
+                return MethodDeclarationResult.Error;
+            }
+
+            return MethodDeclarationResult.Success;
+
+            static TypeSymbol? ResolveImplicitType(Binder @this, IEnumerable<BoundReturnStatement> returnStatements)
+            {
+                if (!returnStatements.Any())
+                    return TypeSymbol.Void;
+
+                return returnStatements.FirstOrDefault(r => r.Expression is not null && r.Expression.Type != TypeSymbol.Error)?.Expression?.Type;
+            }
+        }
+
+        private BoundBlockStatement BindBody(MethodDeclarationStatementSyntax syntax)
+        {
+            if (syntax.Declaration is ExpressionBodyStatementSyntax expressionBody)
+            {
+                var expression = BindExpression(syntax, expressionBody);
+                var returnStatement = new BoundReturnStatement(expression);
+                var body = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(returnStatement));
+
+                return Lowerer.Lower(body, _labelGenerator);
+            }
+            else
+            {
+                var statements = BindStatements(syntax.Declaration.Statements);
+                var body = new BoundBlockStatement(statements);
+
+                return Lowerer.Lower(body, _labelGenerator);
+            }
+        }
+
+        private BoundExpression BindExpression(MethodDeclarationStatementSyntax syntax, ExpressionBodyStatementSyntax expressionBody)
+        {
+            if (expressionBody.Statement is ExpressionStatementSyntax expressionStatement)
+            {
+                return BindExpression(expressionStatement.Expression);
+            }
+
+            if (!EnableAnalysisMode)
+            {
+                Diagnostics.ReportMethodNotAllPathsReturnValue(syntax.Identifier.Span);
+            }
+            return BoundErrorExpression.Instance;
+        }
+
+        #endregion DeclareMethod
 
         private void DeclareLabel(LabelStatementSyntax syntax)
         {

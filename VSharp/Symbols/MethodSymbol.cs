@@ -23,9 +23,9 @@ namespace VSharp.Symbols
 {
     public sealed class MethodSymbol : Symbol
     {
-        public MethodSymbol(string name, ImmutableArray<ParameterSymbol> paramaters, TypeSymbol returnType) : base(name)
+        public MethodSymbol(string name, ImmutableArray<ParameterSymbol> parameters, TypeSymbol returnType) : base(name)
         {
-            Parameters = paramaters;
+            Parameters = parameters;
             ReturnType = returnType;
         }
 
