@@ -101,7 +101,7 @@ namespace VSharp.Binding.CFA
                     for (int j = 0; j < current.Statements.Count; j++)
                     {
                         var statement = current.Statements[j];
-                        var isLastStatememt = j == current.Statements.Count - 1;
+                        var isLastStatement = j == current.Statements.Count - 1;
 
                         switch (statement.Kind)
                         {
@@ -109,7 +109,7 @@ namespace VSharp.Binding.CFA
                             case BoundNodeKind.NoOpStatement:
                             case BoundNodeKind.ExpressionStatement:
                             case BoundNodeKind.LabelStatement:
-                                if (isLastStatememt)
+                                if (isLastStatement)
                                     ConnectBlocks(current, next);
                                 break;
 
