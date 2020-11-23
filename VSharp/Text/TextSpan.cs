@@ -23,7 +23,7 @@ namespace VSharp.Text
     /// <summary>
     /// Describes the position and length of a section of text.
     /// </summary>
-    public readonly struct TextSpan : IEquatable<TextSpan>
+    public readonly struct TextSpan : IEquatable<TextSpan>, IComparable<TextSpan>
     {
         #region Constructors
 
@@ -72,9 +72,22 @@ namespace VSharp.Text
 
         public override int GetHashCode() => HashCode.Combine(Start, Length);
 
+        public int CompareTo(TextSpan other)
+        {
+            return Start - other.Start;
+        }
+
         public static bool operator ==(TextSpan left, TextSpan right) => left.Equals(right);
 
         public static bool operator !=(TextSpan left, TextSpan right) => !(left == right);
+
+        public static bool operator >(TextSpan left, TextSpan right) => left.CompareTo(right) > 0;
+
+        public static bool operator <(TextSpan left, TextSpan right) => left.CompareTo(right) < 0;
+
+        public static bool operator >=(TextSpan left, TextSpan right) => left.CompareTo(right) >= 0;
+
+        public static bool operator <=(TextSpan left, TextSpan right) => left.CompareTo(right) <= 0;
 
         #endregion Operators
     }

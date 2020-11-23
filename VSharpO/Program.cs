@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Text;
 using VSharp;
 using VSharp.Symbols;
@@ -144,7 +145,7 @@ namespace VSharpO
 
         private static void HandleDiagonstics(SourceText text, ImmutableArray<Diagnostic> diagnostics)
         {
-            foreach (Diagnostic diagnostic in diagnostics)
+            foreach (Diagnostic diagnostic in diagnostics.OrderBy(d => d.Span))
             {
                 int lineIndex = text.GetLineIndex(diagnostic.Span.Start);
                 TextLine line = text.Lines[lineIndex];
