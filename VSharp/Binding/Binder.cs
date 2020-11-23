@@ -108,6 +108,7 @@ namespace VSharp.Binding
 
         private void DeclareMethods(IEnumerable<MethodDeclarationStatementSyntax> methodDeclarations)
         {
+
             var methodsToDeclare = methodDeclarations.ToHashSet();
             var declaredMethods = new HashSet<MethodDeclarationStatementSyntax>();
 

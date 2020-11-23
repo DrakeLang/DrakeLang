@@ -191,6 +191,9 @@ namespace VSharp.Binding.CFA
                         nextBlock();
                         break;
 
+                    case BoundNodeKind.MethodDeclarationStatement:
+                        break;
+
                     default:
                         throw new Exception($"Unexpected statement kind '{statement.Kind}'.");
                 }
