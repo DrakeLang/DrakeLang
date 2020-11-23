@@ -20,14 +20,6 @@ namespace VSharp.Symbols
 {
     public sealed class TypeSymbol : Symbol
     {
-        public static readonly TypeSymbol Error = new TypeSymbol("?");
-        public static readonly TypeSymbol Void = new TypeSymbol("void");
-
-        public static readonly TypeSymbol Boolean = new TypeSymbol("bool");
-        public static readonly TypeSymbol Int = new TypeSymbol("int");
-        public static readonly TypeSymbol Float = new TypeSymbol("float");
-        public static readonly TypeSymbol String = new TypeSymbol("string");
-
         internal TypeSymbol(string name) : base(name)
         {
         }

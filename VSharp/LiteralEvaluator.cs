@@ -20,6 +20,7 @@ using System;
 using System.Globalization;
 using VSharp.Binding;
 using VSharp.Symbols;
+using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp
 {
@@ -33,7 +34,7 @@ namespace VSharp
                     return operand;
 
                 case BoundUnaryOperatorKind.Negation:
-                    if (op.ResultType == TypeSymbol.Int)
+                    if (op.ResultType == Types.Int)
                         return -(int)operand;
                     else
                         return -(double)operand;
@@ -54,29 +55,29 @@ namespace VSharp
             switch (op.Kind)
             {
                 case BoundBinaryOperatorKind.Addition:
-                    if (op.ResultType == TypeSymbol.Int)
+                    if (op.ResultType == Types.Int)
                         return (int)left + (int)right;
-                    if (op.ResultType == TypeSymbol.Float)
+                    if (op.ResultType == Types.Float)
                         return (double)left + (double)right;
-                    if (op.LeftType == TypeSymbol.String)
+                    if (op.LeftType == Types.String)
                         return (string)left + right;
                     else
                         return left + (string)right;
 
                 case BoundBinaryOperatorKind.Subtraction:
-                    if (op.ResultType == TypeSymbol.Int)
+                    if (op.ResultType == Types.Int)
                         return (int)left - (int)right;
                     else
                         return (double)left - (double)right;
 
                 case BoundBinaryOperatorKind.Multiplication:
-                    if (op.ResultType == TypeSymbol.Int)
+                    if (op.ResultType == Types.Int)
                         return (int)left * (int)right;
                     else
                         return (double)left * (double)right;
 
                 case BoundBinaryOperatorKind.Division:
-                    if (op.ResultType == TypeSymbol.Int)
+                    if (op.ResultType == Types.Int)
                     {
                         if ((int)right == 0) return "ERR: Can't divide by zero";
                         return (int)left / (int)right;
@@ -91,19 +92,19 @@ namespace VSharp
                     return (int)left % (int)right;
 
                 case BoundBinaryOperatorKind.BitwiseAnd:
-                    if (op.ResultType == TypeSymbol.Int)
+                    if (op.ResultType == Types.Int)
                         return (int)left & (int)right;
                     else
                         return (bool)left & (bool)right;
 
                 case BoundBinaryOperatorKind.BitwiseOr:
-                    if (op.ResultType == TypeSymbol.Int)
+                    if (op.ResultType == Types.Int)
                         return (int)left | (int)right;
                     else
                         return (bool)left | (bool)right;
 
                 case BoundBinaryOperatorKind.BitwiseXor:
-                    if (op.ResultType == TypeSymbol.Int)
+                    if (op.ResultType == Types.Int)
                         return (int)left ^ (int)right;
                     else
                         return (bool)left ^ (bool)right;
@@ -121,25 +122,25 @@ namespace VSharp
                     return !Equals(left, right);
 
                 case BoundBinaryOperatorKind.LessThan:
-                    if (op.LeftType == TypeSymbol.Int)
+                    if (op.LeftType == Types.Int)
                         return (int)left < (int)right;
                     else
                         return (double)left < (double)right;
 
                 case BoundBinaryOperatorKind.LessThanOrEquals:
-                    if (op.LeftType == TypeSymbol.Int)
+                    if (op.LeftType == Types.Int)
                         return (int)left <= (int)right;
                     else
                         return (double)left <= (double)right;
 
                 case BoundBinaryOperatorKind.GreaterThan:
-                    if (op.LeftType == TypeSymbol.Int)
+                    if (op.LeftType == Types.Int)
                         return (int)left > (int)right;
                     else
                         return (double)left > (double)right;
 
                 case BoundBinaryOperatorKind.GreaterThanOrEquals:
-                    if (op.LeftType == TypeSymbol.Int)
+                    if (op.LeftType == Types.Int)
                         return (int)left >= (int)right;
                     else
                         return (double)left >= (double)right;
@@ -151,19 +152,19 @@ namespace VSharp
 
         public static object EvaluateExplicitCastExpression(TypeSymbol type, object value)
         {
-            if (type == TypeSymbol.Boolean)
+            if (type == Types.Boolean)
             {
                 return Convert.ToBoolean(value, CultureInfo.InvariantCulture);
             }
-            else if (type == TypeSymbol.Float)
+            else if (type == Types.Float)
             {
                 return Convert.ToDouble(value, CultureInfo.InvariantCulture);
             }
-            else if (type == TypeSymbol.Int)
+            else if (type == Types.Int)
             {
                 return Convert.ToInt32(value, CultureInfo.InvariantCulture);
             }
-            else if (type == TypeSymbol.String)
+            else if (type == Types.String)
             {
                 return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
             }

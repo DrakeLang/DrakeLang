@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using VSharp.Symbols;
+using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp.Binding
 {
@@ -48,13 +49,13 @@ namespace VSharp.Binding
             if (from == to)
                 return Identity;
 
-            if (from == TypeSymbol.Error || to == TypeSymbol.Error)
+            if (from == Types.Error || to == Types.Error)
                 return Identity;
 
-            if (from == TypeSymbol.Int && to == TypeSymbol.Float)
+            if (from == Types.Int && to == Types.Float)
                 return Explicit;
 
-            if (from == TypeSymbol.Float && to == TypeSymbol.Int)
+            if (from == Types.Float && to == Types.Int)
                 return Explicit;
 
             return None;

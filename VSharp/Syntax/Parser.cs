@@ -20,6 +20,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using VSharp.Symbols;
 using VSharp.Text;
+using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp.Syntax
 {
@@ -519,7 +520,7 @@ namespace VSharp.Syntax
         {
             var integerToken = MatchToken(SyntaxKind.IntegerToken);
             if (!int.TryParse(integerToken.Text, out int value))
-                _diagnostics.ReportInvalidValue(integerToken.Span, integerToken.Text, TypeSymbol.Int);
+                _diagnostics.ReportInvalidValue(integerToken.Span, integerToken.Text, Types.Int);
 
             return new LiteralExpressionSyntax(integerToken, value);
         }
@@ -531,7 +532,7 @@ namespace VSharp.Syntax
             // Remove eventual 'f' character.
             string? floatString = floatToken.Text?.Replace("f", "", ignoreCase: false, CultureInfo.InvariantCulture);
             if (!double.TryParse(floatString, out double value))
-                _diagnostics.ReportInvalidValue(floatToken.Span, floatToken.Text, TypeSymbol.Float);
+                _diagnostics.ReportInvalidValue(floatToken.Span, floatToken.Text, Types.Float);
 
             return new LiteralExpressionSyntax(floatToken, value);
         }

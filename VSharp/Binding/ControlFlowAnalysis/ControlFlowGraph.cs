@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using VSharp.Symbols;
+using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp.Binding.CFA
 {
@@ -155,7 +156,7 @@ namespace VSharp.Binding.CFA
 
             BoundExpression NegateCondition(BoundExpression condition)
             {
-                var negation = BoundUnaryOperator.Operators[(BoundUnaryOperatorKind.LogicalNegation, TypeSymbol.Boolean)];
+                var negation = BoundUnaryOperator.Operators[(BoundUnaryOperatorKind.LogicalNegation, Types.Boolean)];
                 return new BoundUnaryExpression(negation, condition);
             }
         }

@@ -23,6 +23,7 @@ using VSharp.Symbols;
 using VSharp.Syntax;
 using VSharp.Text;
 using Xunit;
+using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp.Tests
 {
@@ -305,9 +306,9 @@ namespace VSharp.Tests
                 yield return ("var result = 0; for (var i = 0; i <= 10; ++i) result = result + i;", 55);
 
                 // Typeof
-                yield return ("var result = typeof(string);", TypeSymbol.String.Name);
-                yield return ("var result = typeof(int);", TypeSymbol.Int.Name);
-                yield return ("var result = typeof(bool);", TypeSymbol.Boolean.Name);
+                yield return ("var result = typeof(string);", Types.String.Name);
+                yield return ("var result = typeof(int);", Types.Int.Name);
+                yield return ("var result = typeof(bool);", Types.Boolean.Name);
 
                 // Nameof
                 yield return ("var a = 0; var result = nameof(a);", "a");

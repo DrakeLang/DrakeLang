@@ -16,13 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using static VSharp.Symbols.SystemSymbols;
+
 namespace VSharp.Symbols
 {
     public static class TypeSymbolExtensions
     {
         public static bool IsError(this TypeSymbol typeSymbol)
         {
-            return typeSymbol == TypeSymbol.Error;
+            return typeSymbol == Types.Error;
         }
     }
 }

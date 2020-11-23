@@ -19,6 +19,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using VSharp.Symbols;
+using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp.Binding
 {
@@ -30,7 +31,7 @@ namespace VSharp.Binding
         {
         }
 
-        public override TypeSymbol Type => TypeSymbol.Error;
+        public override TypeSymbol Type => Types.Error;
 
         public override BoundNodeKind Kind => BoundNodeKind.ErrorExpression;
 

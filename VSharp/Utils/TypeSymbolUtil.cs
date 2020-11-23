@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 using System;
 using VSharp.Symbols;
+using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp.Utils
 {
@@ -25,13 +26,13 @@ namespace VSharp.Utils
         public static TypeSymbol FromClrType(Type type)
         {
             if (type == typeof(bool))
-                return TypeSymbol.Boolean;
+                return Types.Boolean;
             else if (type == typeof(int))
-                return TypeSymbol.Int;
+                return Types.Int;
             else if (type == typeof(string))
-                return TypeSymbol.String;
+                return Types.String;
             else if (type == typeof(double))
-                return TypeSymbol.Float;
+                return Types.Float;
 
             throw new Exception($"Clr type '{type}' is illegal.");
         }
@@ -40,10 +41,10 @@ namespace VSharp.Utils
         {
             return value switch
             {
-                bool _ => TypeSymbol.Boolean,
-                int _ => TypeSymbol.Int,
-                string _ => TypeSymbol.String,
-                double _ => TypeSymbol.Float,
+                bool _ => Types.Boolean,
+                int _ => Types.Int,
+                string _ => Types.String,
+                double _ => Types.Float,
 
                 _ => throw new Exception($"Value '{value}' of type '{value.GetType()}' is illegal."),
             };

@@ -22,6 +22,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using VSharp.Binding;
 using VSharp.Symbols;
+using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp
 {
@@ -181,7 +182,7 @@ namespace VSharp
                 {
                     var variableExpression = (BoundVariableExpression)node.Operand;
 
-                    if (node.Type == TypeSymbol.Int)
+                    if (node.Type == Types.Int)
                         _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
                     else
                         _variables[variableExpression.Variable] = (double)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PreIncrement ? 1 : -1);
@@ -193,7 +194,7 @@ namespace VSharp
                     var variableExpression = (BoundVariableExpression)node.Operand;
 
                     object value = _variables[variableExpression.Variable];
-                    if (node.Type == TypeSymbol.Int)
+                    if (node.Type == Types.Int)
                     {
                         _variables[variableExpression.Variable] = (int)_variables[variableExpression.Variable] + (node.Op.Kind == BoundUnaryOperatorKind.PostIncrement ? 1 : -1);
                     }
@@ -220,11 +221,11 @@ namespace VSharp
 
             public object EvaluateCallExpression(BoundCallExpression node)
             {
-                if (node.Method == BuiltinMethods.Input)
+                if (node.Method == Methods.Input)
                 {
                     return Console.ReadLine() ?? string.Empty;
                 }
-                else if (node.Method == BuiltinMethods.Print)
+                else if (node.Method == Methods.Print)
                 {
                     string message = (string)EvaluateExpression(node.Arguments[0]);
                     Console.WriteLine(message);

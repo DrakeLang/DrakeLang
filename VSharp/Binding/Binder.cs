@@ -27,13 +27,14 @@ using VSharp.Lowering;
 using VSharp.Symbols;
 using VSharp.Syntax;
 using VSharp.Text;
+using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp.Binding
 {
     internal sealed class Binder
     {
         public const string MainMethodName = "Main";
-        private static readonly MethodSymbol _mainMethodSymbol = new MethodSymbol(MainMethodName, ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Void);
+        private static readonly MethodSymbol _mainMethodSymbol = new MethodSymbol(MainMethodName, ImmutableArray<ParameterSymbol>.Empty, Types.Void);
 
         private readonly LabelGenerator _labelGenerator;
         private readonly Stack<MethodSymbol> _callStack = new(new[] { _mainMethodSymbol });
@@ -211,7 +212,7 @@ namespace VSharp.Binding
             }
 
             // Don't allow void assignment
-            if (initializer.Type == TypeSymbol.Void && syntax.Keyword.Kind.IsImplicitTypeKeyword())
+            if (initializer.Type == Types.Void && syntax.Keyword.Kind.IsImplicitTypeKeyword())
             {
                 var span = TextSpan.FromBounds(syntax.Identifier.Span.Start, syntax.Initializer.Span.End);
                 Diagnostics.ReportCannotAssignVoid(span);
@@ -245,7 +246,7 @@ namespace VSharp.Binding
                 }
 
                 var boundDeclaration = BindBody(syntax);
-                if (method.ReturnType != TypeSymbol.Void && !new ControlFlowGraph(boundDeclaration).AllPathsReturn())
+                if (method.ReturnType != Types.Void && !new ControlFlowGraph(boundDeclaration).AllPathsReturn())
                     Diagnostics.ReportMethodNotAllPathsReturnValue(syntax.Identifier.Span);
 
                 return new BoundMethodDeclarationStatement(method, boundDeclaration);
@@ -258,7 +259,7 @@ namespace VSharp.Binding
 
         private BoundStatement BindIfStatement(IfStatementSyntax syntax)
         {
-            var condition = BindExpression(syntax.Condition.Expression, TypeSymbol.Boolean);
+            var condition = BindExpression(syntax.Condition.Expression, Types.Boolean);
             var thenStatement = BindStatement(syntax.ThenStatement);
             var elseStatement = syntax.ElseClause is null ? null : BindStatement(syntax.ElseClause.ElseStatement);
 
@@ -289,7 +290,7 @@ namespace VSharp.Binding
 
         private BoundStatement BindWhileStatement(WhileStatementSyntax syntax, LabelSymbol continueLabel, LabelSymbol breakLabel)
         {
-            var condition = BindExpression(syntax.Condition.Expression, TypeSymbol.Boolean);
+            var condition = BindExpression(syntax.Condition.Expression, Types.Boolean);
             var body = BindStatement(syntax.Body);
 
             return new BoundWhileStatement(condition, body, continueLabel, breakLabel);
@@ -298,7 +299,7 @@ namespace VSharp.Binding
         private BoundStatement BindForStatement(ForStatementSyntax syntax, LabelSymbol continueLabel, LabelSymbol breakLabel)
         {
             var initStatement = syntax.InitializationStatement is null ? null : BindStatement(syntax.InitializationStatement);
-            var condition = syntax.Condition is null ? null : BindExpression(syntax.Condition, TypeSymbol.Boolean);
+            var condition = syntax.Condition is null ? null : BindExpression(syntax.Condition, Types.Boolean);
             var updateStatement = syntax.UpdateStatement is null ? null : BindStatement(syntax.UpdateStatement);
             var body = BindStatement(syntax.Body);
 
@@ -324,7 +325,10 @@ namespace VSharp.Binding
                 return new BoundReturnStatement(expression);
             }
 
-            if (CurrentMethod.ReturnType == TypeSymbol.Void)
+            if (CurrentMethod is null)
+                throw new Exception($"Unexpected return statement outside of method body.");
+
+            if (CurrentMethod.ReturnType == Types.Void)
             {
                 if (syntax.Expression is not null)
                     Diagnostics.ReportInvalidReturnInVoidMethod(syntax.Expression.Span);
@@ -493,7 +497,7 @@ namespace VSharp.Binding
 
         private static BoundExpression BindTypeofExpression(TypeofExpressionSyntax syntax)
         {
-            var type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? TypeSymbol.Error;
+            var type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? Types.Error;
             return new BoundLiteralExpression(type.Name);
         }
 
@@ -619,11 +623,11 @@ namespace VSharp.Binding
         private BoundExpression BindExplicitCastExpression(ExplicitCastExpressionSyntax syntax)
         {
             var expression = BindExpression(syntax.Expression);
-            if (expression.Type == TypeSymbol.Error)
+            if (expression.Type == Types.Error)
                 return BoundErrorExpression.Instance;
 
-            var type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? TypeSymbol.Error;
-            if (type == TypeSymbol.Error)
+            var type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? Types.Error;
+            if (type == Types.Error)
                 return BoundErrorExpression.Instance;
 
             var conversion = Conversion.Classify(expression.Type, type);
@@ -699,12 +703,12 @@ namespace VSharp.Binding
             MethodSymbol? method;
             if (!hasImplicitReturnType)
             {
-                var returnType = ResolveType(syntax.TypeOrDefKeyword.Kind) ?? TypeSymbol.Error;
+                var returnType = ResolveType(syntax.TypeOrDefKeyword.Kind) ?? Types.Error;
                 method = new MethodSymbol(name, parameters, returnType);
             }
             else if (declareImplicitReturnTypesAsError)
             {
-                method = new MethodSymbol(name, parameters, TypeSymbol.Error);
+                method = new MethodSymbol(name, parameters, Types.Error);
             }
             else
             {
@@ -747,9 +751,9 @@ namespace VSharp.Binding
             static TypeSymbol? ResolveImplicitType(Binder @this, IEnumerable<BoundReturnStatement> returnStatements)
             {
                 if (!returnStatements.Any())
-                    return TypeSymbol.Void;
+                    return Types.Void;
 
-                return returnStatements.FirstOrDefault(r => r.Expression is not null && r.Expression.Type != TypeSymbol.Error)?.Expression?.Type;
+                return returnStatements.FirstOrDefault(r => r.Expression is not null && r.Expression.Type != Types.Error)?.Expression?.Type;
             }
         }
 
@@ -821,7 +825,7 @@ namespace VSharp.Binding
         private static ParameterSymbol BindParameter(ParameterSyntax parameter)
         {
             var name = parameter.Identifier.Text ?? "?";
-            var type = ResolveType(parameter.TypeToken.TypeIdentifier.Kind) ?? TypeSymbol.Error;
+            var type = ResolveType(parameter.TypeToken.TypeIdentifier.Kind) ?? Types.Error;
 
             return new ParameterSymbol(name, type);
         }
@@ -866,7 +870,7 @@ namespace VSharp.Binding
             {
                 Diagnostics.ReportUndefinedSymbol(identifierToken.Span, name);
 
-                _scope.TryDeclareVariable(new VariableSymbol(name, isReadOnly: false, TypeSymbol.Error));
+                _scope.TryDeclareVariable(new VariableSymbol(name, isReadOnly: false, Types.Error));
                 return false;
             }
 
@@ -906,7 +910,7 @@ namespace VSharp.Binding
             {
                 Diagnostics.ReportUndefinedSymbol(identifierToken.Span, name);
 
-                _scope.TryDeclareMethod(new MethodSymbol(name, ImmutableArray<ParameterSymbol>.Empty, TypeSymbol.Error));
+                _scope.TryDeclareMethod(new MethodSymbol(name, ImmutableArray<ParameterSymbol>.Empty, Types.Error));
                 return false;
             }
 
@@ -921,10 +925,10 @@ namespace VSharp.Binding
 
         private static TypeSymbol? ResolveType(SyntaxKind typeKeyword) => typeKeyword switch
         {
-            SyntaxKind.BoolKeyword => TypeSymbol.Boolean,
-            SyntaxKind.IntKeyword => TypeSymbol.Int,
-            SyntaxKind.StringKeyword => TypeSymbol.String,
-            SyntaxKind.FloatKeyword => TypeSymbol.Float,
+            SyntaxKind.BoolKeyword => Types.Boolean,
+            SyntaxKind.IntKeyword => Types.Int,
+            SyntaxKind.StringKeyword => Types.String,
+            SyntaxKind.FloatKeyword => Types.Float,
 
             _ => null,
         };
@@ -936,7 +940,7 @@ namespace VSharp.Binding
             if (_rootScope is null)
             {
                 var rootScope = new BoundScope();
-                foreach (var method in BuiltinMethods.GetAll())
+                foreach (var method in SystemSymbols.Methods.GetAll())
                     rootScope.TryDeclareMethod(method);
 
                 Interlocked.CompareExchange(ref _rootScope, rootScope, null);
