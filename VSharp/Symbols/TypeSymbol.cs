@@ -24,6 +24,12 @@ namespace VSharp.Symbols
         {
         }
 
+        internal TypeSymbol(NamespaceSymbol? @namespace, string name) : base(name)
+        {
+            Namespace = @namespace;
+        }
+
         public override SymbolKind Kind => SymbolKind.Type;
+        public NamespaceSymbol? Namespace { get; }
     }
 }

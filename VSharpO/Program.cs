@@ -114,6 +114,8 @@ namespace VSharpO
             }
         }
 
+        private static readonly ImmutableHashSet<char> _invalidChars = Path.GetInvalidFileNameChars().ToImmutableHashSet();
+
         private static void PrintControlFlowGraph(Compilation compilation)
         {
             var appPath = typeof(Program).Assembly.Location;
@@ -131,7 +133,7 @@ namespace VSharpO
             {
                 generatedGraphs++;
 
-                var fileName = $"{methodName}.dot";
+                var fileName = $"{sanitizeFilename(methodName)}.dot";
                 var filepath = Path.Combine(outputDir, fileName);
 
                 return new StreamWriter(filepath);
@@ -141,6 +143,24 @@ namespace VSharpO
             ConsoleExt.Write(outputDir, ConsoleColor.Cyan);
             ConsoleExt.Write(".", ConsoleColor.Green);
             Console.WriteLine();
+
+            static string sanitizeFilename(string filename)
+            {
+                var rawFileName = filename.ToCharArray();
+                var hasIllegalChar = false;
+                for (int i = 0; i < rawFileName.Length; i++)
+                {
+                    if (!_invalidChars.Contains(rawFileName[i]))
+                        continue;
+
+                    hasIllegalChar = true;
+                    rawFileName[i] = '_';
+                }
+
+                return hasIllegalChar 
+                    ? new string(rawFileName) + Guid.NewGuid() 
+                    : filename;
+            }
         }
 
         private static void HandleDiagonstics(SourceText text, ImmutableArray<Diagnostic> diagnostics)

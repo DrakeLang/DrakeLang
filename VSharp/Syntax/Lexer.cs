@@ -233,6 +233,11 @@ namespace VSharp.Syntax
                     syntaxKind = SyntaxKind.CloseBraceToken;
                     return true;
 
+                case '.':
+                    Next();
+                    syntaxKind = SyntaxKind.DotToken;
+                    return true;
+
                 case ',':
                     Next();
                     syntaxKind = SyntaxKind.CommaToken;

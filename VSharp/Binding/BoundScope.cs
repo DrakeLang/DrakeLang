@@ -220,16 +220,12 @@ namespace VSharp.Binding
             {
                 _methods = new Dictionary<string, MethodSymbol>
                 {
-                    [method.Name] = method
+                    [method.FullName] = method
                 };
                 return true;
             }
 
-            if (_methods.ContainsKey(method.Name))
-                return false;
-
-            _methods[method.Name] = method;
-            return true;
+            return _methods.TryAdd(method.FullName, method);
         }
 
         /// <summary>

@@ -63,6 +63,7 @@ namespace VSharp.Syntax
         OpenBraceToken,
         CloseBraceToken,
         IdentifierToken,
+        DotToken,
         CommaToken,
         UnderscoreToken,
         WhitespaceToken,
@@ -80,6 +81,7 @@ namespace VSharp.Syntax
         TrueKeyword,
         FalseKeyword,
         DefKeyword,
+        NamespaceKeyword,
         IfKeyword,
         ElseKeyword,
         WhileKeyword,
@@ -98,6 +100,7 @@ namespace VSharp.Syntax
 
         // Statements
 
+        NamespaceDeclarationStatement,
         BlockStatement,
         VariableDeclarationStatement,
         MethodDeclarationStatement,

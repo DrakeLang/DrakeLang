@@ -34,7 +34,8 @@ namespace VSharp
 
         public void Evaluate(ImmutableArray<BoundMethodDeclarationStatement> methods, Dictionary<VariableSymbol, object> variables)
         {
-            var entryMethod = methods.FirstOrDefault(m => m.Method.Name == Binder.MainMethodName);
+            var entryMethod = methods.FirstOrDefault(m => m.Method.Name == Binder.GeneratedMainMethodName)
+                ?? methods.FirstOrDefault(m => m.Method.Name == Binder.MainMethodName);
             if (entryMethod is null)
                 throw new Exception($"No method with the name '{Binder.MainMethodName}' was found.");
 

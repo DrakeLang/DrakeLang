@@ -16,42 +16,33 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
-namespace VSharp.Syntax
+namespace VSharp.Symbols
 {
-    public sealed class SeparatedSyntaxList<T> : IReadOnlyList<T>
-        where T : SyntaxNode
+    public sealed class NamespaceSymbol : Symbol
     {
-        private readonly ImmutableArray<SyntaxNode> _nodesAndSeparators;
-
-        public SeparatedSyntaxList(ImmutableArray<SyntaxNode> nodesAndSeparators)
+        internal NamespaceSymbol(ImmutableArray<string> names) : base(string.Join('.', names))
         {
-            _nodesAndSeparators = nodesAndSeparators;
+            Names = names;
         }
 
-        public int Count => (_nodesAndSeparators.Length + 1) / 2;
-
-        public T this[int index] => (T)_nodesAndSeparators[index * 2];
-
-        public SyntaxToken GetSeparator(int index) => (SyntaxToken)_nodesAndSeparators[index * 2 + 1];
-
-        public ImmutableArray<SyntaxNode> GetWithSeparators() => _nodesAndSeparators;
-
-        #region IEnumerable<T>
-
-        public IEnumerator<T> GetEnumerator()
+        internal NamespaceSymbol(NamespaceSymbol parent, IEnumerable<string> extraNames) : this(parent.Names.AddRange(extraNames))
         {
-            for (int i = 0; i < Count; i++)
-            {
-                yield return this[i];
-            }
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        public override SymbolKind Kind => SymbolKind.Namespace;
 
-        #endregion IEnumerable<T>
+        public ImmutableArray<string> Names { get; }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is NamespaceSymbol other
+                && Name == other.Name;
+        }
+
+        public override int GetHashCode() => HashCode.Combine(Name);
     }
 }

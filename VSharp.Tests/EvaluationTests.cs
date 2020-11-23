@@ -159,6 +159,56 @@ namespace VSharp.Tests
             AssertDiagnostics(text, diagnostics);
         }
 
+        [Fact]
+        public void Evaluator_Statement_Reports_Illegal_Statement_Placement()
+        {
+            var text = @"
+                namespace A;
+
+                var a = 0;
+            ";
+
+            string diagnostics = @"
+                Unexpected statement. Namespaces and type declarations cannot directly contain statements.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Namespace_Declaration_Reports_Illegal_In_Method()
+        {
+            var text = @"
+                def B()
+                {
+                    [namespace] Y;
+                }
+            ";
+
+            string diagnostics = @"
+                Namespaces may not be declared inside of methods or types.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Simple_Namespace_Declaration_Reports_Illegal_Nesting()
+        {
+            var text = @"
+                namespace A
+                {
+                    [namespace] X;
+                }
+            ";
+
+            string diagnostics = @"
+                Simple namespace declarations may only exist as top-level statement (not nested in other namespaces).
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
         #endregion Reports
 
         public static IEnumerable<object[]> GetStatementsData()
@@ -348,15 +398,15 @@ namespace VSharp.Tests
 
         private static void AssertDiagnostics(string text, string diagnosticText)
         {
-            AnnotatedText annotaedText = AnnotatedText.Parse(text);
-            SyntaxTree syntaxTree = SyntaxTree.Parse(annotaedText.Text);
+            AnnotatedText annotatedText = AnnotatedText.Parse(text);
+            SyntaxTree syntaxTree = SyntaxTree.Parse(annotatedText.Text);
             Compilation compilation = new Compilation(syntaxTree);
             EvaluationResult result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
 
             string[] expectedDiagnostics = AnnotatedText.UnintentLines(diagnosticText);
 
-            if (annotaedText.Spans.Length != expectedDiagnostics.Length)
-                throw new Exception("ERROR: Must mark as many spans as there are expected diagnostics");
+            if (annotatedText.Spans.Length != expectedDiagnostics.Length)
+                throw new Exception($"ERROR: Must mark as many spans as there are expected diagnostics.");
 
             Assert.Equal(expectedDiagnostics.Length, result.Diagnostics.Length);
 
@@ -365,7 +415,7 @@ namespace VSharp.Tests
                 string expectedMessage = expectedDiagnostics[i];
                 string actualMessage = result.Diagnostics[i].Message;
 
-                TextSpan expectedSpan = annotaedText.Spans[i];
+                TextSpan expectedSpan = annotatedText.Spans[i];
                 TextSpan actualSpan = result.Diagnostics[i].Span;
 
                 Assert.Equal(expectedMessage, actualMessage);

@@ -29,9 +29,19 @@ namespace VSharp.Symbols
             ReturnType = returnType;
         }
 
+        public MethodSymbol(NamespaceSymbol? @namespace, string name, ImmutableArray<ParameterSymbol> parameters, TypeSymbol returnType) : base(name)
+        {
+            Namespace = @namespace;
+            Parameters = parameters;
+            ReturnType = returnType;
+        }
+
         #region Properties
 
         public override SymbolKind Kind => SymbolKind.Method;
+
+        public NamespaceSymbol? Namespace { get; }
+        public string FullName => Namespace is null ? Name : Namespace.Name + "." + Name;
         public ImmutableArray<ParameterSymbol> Parameters { get; }
         public TypeSymbol ReturnType { get; }
 
@@ -45,7 +55,7 @@ namespace VSharp.Symbols
                 ? Parameters.Select(p => p.ToString())
                 : Parameters.Select(p => p.Type.ToString());
 
-            return ReturnType + " " + Name + "(" + string.Join(", ", paramExpression) + ")";
+            return ReturnType + " " + FullName + "(" + string.Join(", ", paramExpression) + ")";
         }
     }
 }

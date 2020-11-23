@@ -134,6 +134,7 @@ namespace VSharp.Syntax
             SyntaxKind.CloseParenthesisToken => ")",
             SyntaxKind.OpenBraceToken => "{",
             SyntaxKind.CloseBraceToken => "}",
+            SyntaxKind.DotToken => ".",
             SyntaxKind.CommaToken => ",",
             SyntaxKind.UnderscoreToken => "_",
             SyntaxKind.ColonToken => ":",
@@ -148,6 +149,7 @@ namespace VSharp.Syntax
             SyntaxKind.TrueKeyword => "true",
             SyntaxKind.FalseKeyword => "false",
             SyntaxKind.DefKeyword => "def",
+            SyntaxKind.NamespaceKeyword => "namespace",
             SyntaxKind.IfKeyword => "if",
             SyntaxKind.ElseKeyword => "else",
             SyntaxKind.WhileKeyword => "while",
@@ -166,13 +168,15 @@ namespace VSharp.Syntax
         {
             keywordKind = word switch
             {
-                "def" => SyntaxKind.DefKeyword,
                 "bool" => SyntaxKind.BoolKeyword,
                 "int" => SyntaxKind.IntKeyword,
                 "float" => SyntaxKind.FloatKeyword,
                 "string" => SyntaxKind.StringKeyword,
                 "var" => SyntaxKind.VarKeyword,
                 "set" => SyntaxKind.SetKeyword,
+
+                "def" => SyntaxKind.DefKeyword,
+                "namespace" => SyntaxKind.NamespaceKeyword,
 
                 "true" => SyntaxKind.TrueKeyword,
                 "false" => SyntaxKind.FalseKeyword,

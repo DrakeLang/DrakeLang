@@ -221,6 +221,24 @@ namespace VSharp
             Report(span, message);
         }
 
+        public void ReportIllegalStatementPlacement(TextSpan span)
+        {
+            string message = $"Unexpected statement. Namespaces and type declarations cannot directly contain statements.";
+            Report(span, message);
+        }
+
+        public void ReportIllegalNamespaceDeclaration(TextSpan span)
+        {
+            string message = $"Namespaces may not be declared inside of methods or types.";
+            Report(span, message);
+        }
+
+        public void ReportIllegalSimpleNamespaceDeclaration(TextSpan span)
+        {
+            string message = $"Simple namespace declarations may only exist as top-level statement (not nested in other namespaces).";
+            Report(span, message);
+        }
+
         #endregion Report
 
         #region IEnumerable

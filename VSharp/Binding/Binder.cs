@@ -33,11 +33,13 @@ namespace VSharp.Binding
 {
     internal sealed class Binder
     {
+        public const string GeneratedMainMethodName = "<Main>";
         public const string MainMethodName = "Main";
-        private static readonly MethodSymbol _mainMethodSymbol = new MethodSymbol(MainMethodName, ImmutableArray<ParameterSymbol>.Empty, Types.Void);
 
         private readonly LabelGenerator _labelGenerator;
-        private readonly Stack<MethodSymbol> _callStack = new(new[] { _mainMethodSymbol });
+        private readonly Stack<MethodSymbol> _callStack = new();
+
+        private readonly Stack<NamespaceSymbol> _namespaceStack = new();
 
         private BoundScope _scope;
 
@@ -64,23 +66,22 @@ namespace VSharp.Binding
         private ImmutableArray<BoundMethodDeclarationStatement> BindTopLevelStatements(IEnumerable<StatementSyntax> statements)
         {
             var boundStatements = BindStatements(statements);
+            var loweredStatements = Lowerer.Lower(boundStatements, _labelGenerator);
 
-            var methods = boundStatements.OfType<BoundMethodDeclarationStatement>();
-            var topLevelStatements = boundStatements.Except(methods).ToImmutableArray();
+            var methods = loweredStatements.OfType<BoundMethodDeclarationStatement>();
+            var topLevelStatements = loweredStatements.Except(methods).ToImmutableArray();
 
             if (topLevelStatements.Length > 0)
             {
                 // Implicitly create main method.
 
-                _scope.TryDeclareMethod(_mainMethodSymbol);
+                var mainMethodSymbol = new MethodSymbol(GeneratedMainMethodName, ImmutableArray<ParameterSymbol>.Empty, Types.Void);
+                _scope.TryDeclareMethod(mainMethodSymbol);
 
                 var mainMethodBody = new BoundBlockStatement(topLevelStatements);
-                var mainMethod = new BoundMethodDeclarationStatement(_mainMethodSymbol, mainMethodBody);
+                var mainMethod = new BoundMethodDeclarationStatement(mainMethodSymbol, mainMethodBody);
 
-                // Push a new method scope, so that the user may define a main method with the same signature.
-                PushMethodScope(_mainMethodSymbol);
-
-                return methods.Prepend(mainMethod).ToImmutableArray();
+                methods = methods.Prepend(mainMethod);
             }
 
             return methods.ToImmutableArray();
@@ -151,7 +152,9 @@ namespace VSharp.Binding
         /// <summary>
         /// The return value of the current method. Null if method is implicit.
         /// </summary>
-        private MethodSymbol CurrentMethod => _callStack.Peek();
+        private MethodSymbol? CurrentMethod => _callStack.TryPeek(out var method) ? method : null;
+
+        private NamespaceSymbol? CurrentNamespace => _namespaceStack.TryPeek(out var currentNamespace) ? currentNamespace : null;
 
         /// <summary>
         /// Used for binding statements for analysis, without commitment.
@@ -164,11 +167,24 @@ namespace VSharp.Binding
 
         private BoundStatement BindStatement(StatementSyntax syntax)
         {
+            switch (syntax.Kind)
+            {
+                case SyntaxKind.MethodDeclarationStatement:
+                    return BindMethodDeclarationStatement((MethodDeclarationStatementSyntax)syntax);
+                case SyntaxKind.NamespaceDeclarationStatement:
+                    return BindNamespaceDeclarationStatement((NamespaceDeclarationStatementSyntax)syntax);
+            
+            }
+
+            if (CurrentNamespace is not null)
+            {
+                Diagnostics.ReportIllegalStatementPlacement(syntax.Span);
+            }
+
             return syntax.Kind switch
             {
                 SyntaxKind.BlockStatement => BindBlockStatement((BlockStatementSyntax)syntax),
                 SyntaxKind.VariableDeclarationStatement => BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax),
-                SyntaxKind.MethodDeclarationStatement => BindMethodDeclarationStatement((MethodDeclarationStatementSyntax)syntax),
                 SyntaxKind.IfStatement => BindIfStatement((IfStatementSyntax)syntax),
                 SyntaxKind.WhileStatement => BindLoopStatement((WhileStatementSyntax)syntax),
                 SyntaxKind.ForStatement => BindLoopStatement((ForStatementSyntax)syntax),
@@ -194,6 +210,31 @@ namespace VSharp.Binding
             finally
             {
                 PopScope();
+            }
+        }
+
+        private BoundStatement BindNamespaceDeclarationStatement(NamespaceDeclarationStatementSyntax syntax)
+        {
+            if (CurrentMethod is not null)
+                Diagnostics.ReportIllegalNamespaceDeclaration(syntax.NamespaceToken.Span);
+
+            if (syntax is SimpleNamespaceDeclarationStatementSyntax && _namespaceStack.Count > 0)
+                Diagnostics.ReportIllegalSimpleNamespaceDeclaration(syntax.NamespaceToken.Span);
+
+            _namespaceStack.TryPeek(out var currentNamespace);
+
+            var newNames = syntax.Names.Select(n => n.Text ?? "");
+            var namespaceSym = currentNamespace is null ? new NamespaceSymbol(newNames.ToImmutableArray()) : new NamespaceSymbol(currentNamespace, newNames);
+
+            _namespaceStack.Push(namespaceSym);
+            try
+            {
+                var statements = BindStatements(syntax.Statements);
+                return new BoundBlockStatement(statements);
+            }
+            finally
+            {
+                _namespaceStack.Pop();
             }
         }
 
@@ -704,7 +745,7 @@ namespace VSharp.Binding
             if (!hasImplicitReturnType)
             {
                 var returnType = ResolveType(syntax.TypeOrDefKeyword.Kind) ?? Types.Error;
-                method = new MethodSymbol(name, parameters, returnType);
+                method = new MethodSymbol(CurrentNamespace, name, parameters, returnType);
             }
             else if (declareImplicitReturnTypesAsError)
             {
@@ -731,7 +772,7 @@ namespace VSharp.Binding
                     if (returnType is null)
                         return MethodDeclarationResult.CannotInferReturnType;
 
-                    method = new MethodSymbol(name, parameters, returnType);
+                    method = new MethodSymbol(CurrentNamespace, name, parameters, returnType);
                 }
                 finally
                 {

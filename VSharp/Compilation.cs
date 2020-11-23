@@ -48,8 +48,7 @@ namespace VSharp
                 if (_bindingResult is null)
                 {
                     var result = Binder.Bind(SyntaxTree.Root, _labelGenerator);
-                    var loweredMethods = Lowerer.Lower(result.Methods, _labelGenerator);
-                    result = new BindingResult(loweredMethods, result.Diagnostics);
+                    result = new BindingResult(result.Methods, result.Diagnostics);
 
                     Interlocked.CompareExchange(ref _bindingResult, result, null);
                 }

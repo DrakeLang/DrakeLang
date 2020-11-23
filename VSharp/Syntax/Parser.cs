@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using VSharp.Symbols;
@@ -33,6 +35,9 @@ namespace VSharp.Syntax
             SyntaxKind.LineCommentToken,
             SyntaxKind.MultiLineCommentToken,
         }.ToImmutableHashSet();
+
+        private static readonly ImmutableHashSet<SyntaxKind> _closeBraceEscapeCondition = ImmutableHashSet.Create(SyntaxKind.CloseBraceToken);
+        private static readonly ImmutableHashSet<SyntaxKind> _namespaceKeywordEscapeCondition = ImmutableHashSet.Create(SyntaxKind.CloseBraceToken);
 
         private readonly DiagnosticBag _diagnostics = new DiagnosticBag();
 
@@ -68,23 +73,10 @@ namespace VSharp.Syntax
 
         public CompilationUnitSyntax ParseCompilationUnit()
         {
-            var statementsBuilder = ImmutableArray.CreateBuilder<StatementSyntax>();
-            while (Current.Kind != SyntaxKind.EndOfFileToken)
-            {
-                var currentToken = Current;
+            var statements = ParseStatements();
+            var endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
 
-                var statement = ParseStatement();
-                statementsBuilder.Add(statement);
-
-                // If no tokens were consumed by the parse call,
-                // we should escape the loop. Parse errors will
-                // have already been reported.
-                if (currentToken == Current)
-                    break;
-            }
-            SyntaxToken endOfFileToken = MatchToken(SyntaxKind.EndOfFileToken);
-
-            return new CompilationUnitSyntax(statementsBuilder.ToImmutable(), endOfFileToken);
+            return new CompilationUnitSyntax(statements, endOfFileToken);
         }
 
         public ImmutableArray<Diagnostic> GetDiagnostics() => _diagnostics.ToImmutableArray();
@@ -92,6 +84,27 @@ namespace VSharp.Syntax
         #endregion Methods
 
         #region ParseStatement
+
+        private ImmutableArray<StatementSyntax> ParseStatements(ISet<SyntaxKind>? optionalEscapeConditions = null)
+        {
+            var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
+            while (Current.Kind != SyntaxKind.EndOfFileToken &&
+                (optionalEscapeConditions is null || !optionalEscapeConditions.Contains(Current.Kind)))
+            {
+                var currentToken = Current;
+
+                var statement = ParseStatement();
+                statements.Add(statement);
+
+                // If no tokens were consumed by the parse call,
+                // we should escape the loop. Parse errors will
+                // have already been reported.
+                if (currentToken == Current)
+                    break;
+            }
+
+            return statements.ToImmutable();
+        }
 
         private StatementSyntax ParseStatement(bool requireSemicolon = true)
         {
@@ -106,6 +119,7 @@ namespace VSharp.Syntax
             return Current.Kind switch
             {
                 SyntaxKind.OpenBraceToken => ParseBlockStatement(),
+                SyntaxKind.NamespaceKeyword => ParseNamespaceDeclarationStatement(),
                 SyntaxKind.DefKeyword => ParseMethodDeclarationStatement(),
                 SyntaxKind.IfKeyword => ParseIfStatement(),
                 SyntaxKind.WhileKeyword => ParseWhileStatement(),
@@ -122,27 +136,31 @@ namespace VSharp.Syntax
 
         private BlockStatementSyntax ParseBlockStatement()
         {
-            var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
             var openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
-
-            while (Current.Kind != SyntaxKind.CloseBraceToken &&
-                   Current.Kind != SyntaxKind.EndOfFileToken)
-            {
-                var currentToken = Current;
-
-                var statement = ParseStatement();
-                statements.Add(statement);
-
-                // If no tokens were consumed by the parse call,
-                // we should escape the loop. Parse errors will
-                // have already been reported.
-                if (currentToken == Current)
-                    break;
-            }
-
+            var statements = ParseStatements(_closeBraceEscapeCondition);
             var closeBraceToken = MatchToken(SyntaxKind.CloseBraceToken);
 
-            return new BlockStatementSyntax(openBraceToken, statements.ToImmutable(), closeBraceToken);
+            return new BlockStatementSyntax(openBraceToken, statements, closeBraceToken);
+        }
+
+        private static readonly ImmutableHashSet<SyntaxKind> _namespaceNameEscapeConditions = ImmutableHashSet.Create(SyntaxKind.OpenBraceToken, SyntaxKind.SemicolonToken);
+
+        private NamespaceDeclarationStatementSyntax ParseNamespaceDeclarationStatement()
+        {
+            var namespaceToken = NextToken();
+            var names = ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken, _namespaceNameEscapeConditions);
+
+            if (Current.Kind == SyntaxKind.OpenBraceToken)
+            {
+                var body = ParseBlockStatement();
+                return new BodiedNamespaceDeclarationStatementSyntax(namespaceToken, names, body);
+            }
+            else
+            {
+                var semicolon = MatchToken(SyntaxKind.SemicolonToken);
+                var statements = ParseStatements(_namespaceKeywordEscapeCondition);
+                return new SimpleNamespaceDeclarationStatementSyntax(namespaceToken, names, semicolon, statements);
+            }
         }
 
         private VariableDeclarationStatementSyntax ParseVariableDeclarationStatement(bool requireSemicolon)
@@ -280,46 +298,18 @@ namespace VSharp.Syntax
             return new LabelStatementSyntax(identifier, colonToken);
         }
 
+        private static readonly ImmutableHashSet<SyntaxKind> _parameterListEscapeCondition = ImmutableHashSet.Create(SyntaxKind.CloseParenthesisToken);
+
         private MethodDeclarationStatementSyntax ParseMethodDeclarationStatement()
         {
             var defKeyword = Current.Kind.IsTypeKeyword() ? NextToken() : MatchToken(SyntaxKind.DefKeyword);
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
             var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
-            var parameters = ParseParameterList();
+            var parameters = ParseSyntaxList(ParseParameter, SyntaxKind.CommaToken, _parameterListEscapeCondition);
             var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
             var declaration = Current.Kind == SyntaxKind.EqualsGreaterToken ? (BodyStatementSyntax)ParseExpressionBody() : ParseBlockBody();
 
             return new MethodDeclarationStatementSyntax(defKeyword, identifier, leftParenthesis, parameters, rightParenthesis, declaration);
-        }
-
-        private SeparatedSyntaxList<ParameterSyntax> ParseParameterList()
-        {
-            var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
-
-            while (Current.Kind != SyntaxKind.CloseParenthesisToken &&
-                   Current.Kind != SyntaxKind.EndOfFileToken)
-            {
-                var currentToken = Current;
-
-                var parameter = ParseParameter();
-                builder.Add(parameter);
-
-                // Don't expect comma after final argument.
-                if (Current.Kind != SyntaxKind.CloseParenthesisToken &&
-                    Current.Kind != SyntaxKind.EndOfFileToken)
-                {
-                    var comma = MatchToken(SyntaxKind.CommaToken);
-                    builder.Add(comma);
-                }
-
-                // If no tokens were consumed by the parse call,
-                // we should escape the loop. Parse errors will
-                // have already been reported.
-                if (currentToken == Current)
-                    break;
-            }
-
-            return new SeparatedSyntaxList<ParameterSyntax>(builder.ToImmutable());
         }
 
         private ParameterSyntax ParseParameter()
@@ -625,6 +615,37 @@ namespace VSharp.Syntax
 
             _diagnostics.ReportUnexpectedToken(Current.Span, Current.Kind, kind);
             return new SyntaxToken(kind, Current.Position, null, null);
+        }
+
+        private SeparatedSyntaxList<T> ParseSyntaxList<T>(Func<T> valueParser, SyntaxKind seperator, ISet<SyntaxKind> escapeConditions)
+            where T : SyntaxNode
+        {
+            var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
+
+            while (Current.Kind != SyntaxKind.EndOfFileToken &&
+                   !escapeConditions.Contains(Current.Kind))
+            {
+                var currentToken = Current;
+
+                var value = valueParser();
+                builder.Add(value);
+
+                // Don't expect comma after final argument.
+                if (Current.Kind != SyntaxKind.EndOfFileToken &&
+                   !escapeConditions.Contains(Current.Kind))
+                {
+                    var dot = MatchToken(seperator);
+                    builder.Add(dot);
+                }
+
+                // If no tokens were consumed by the parse call,
+                // we should escape the loop. Parse errors will
+                // have already been reported.
+                if (currentToken == Current)
+                    break;
+            }
+
+            return new SeparatedSyntaxList<T>(builder.ToImmutable());
         }
 
         #endregion Helper methods

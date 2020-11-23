@@ -35,29 +35,9 @@ namespace VSharp.Lowering
 
         #region Methods
 
-        public static ImmutableArray<BoundMethodDeclarationStatement> Lower(ImmutableArray<BoundMethodDeclarationStatement> methods, LabelGenerator labelGenerator)
+        public static ImmutableArray<BoundStatement> Lower(IReadOnlyList<BoundStatement> statements, LabelGenerator labelGenerator)
         {
-            var lowerer = new Lowerer(labelGenerator);
-            var rewrittenMethods = lowerer.RewriteStatements(methods);
-
-            if (rewrittenMethods is null)
-                return methods;
-
-            return rewrittenMethods.Value
-                .SelectMany(m =>
-                {
-                    bool reRunLowering;
-                    BoundBlockStatement result;
-
-                    do
-                    {
-                        result = lowerer.FlattenAndClean(m, out reRunLowering);
-                    } while (reRunLowering);
-
-                    return result.Statements;
-                })
-                .Cast<BoundMethodDeclarationStatement>()
-                .ToImmutableArray();
+            return new Lowerer(labelGenerator).Lower(statements);
         }
 
         public static BoundBlockStatement Lower(BoundStatement statement, LabelGenerator labelGenerator)
@@ -79,6 +59,21 @@ namespace VSharp.Lowering
             } while (reRunLowering);
 
             return flattenedResult;
+        }
+
+        private ImmutableArray<BoundStatement> Lower(IReadOnlyList<BoundStatement> statements)
+        {
+            bool reRunLowering;
+            do
+            {
+                var result = RewriteStatements(statements);
+                if (result is null)
+                    return statements.ToImmutableArray();
+
+                statements = FlattenAndClean(new BoundBlockStatement(result.Value), out reRunLowering).Statements;
+            } while (reRunLowering);
+
+            return statements.ToImmutableArray();
         }
 
         #region RewriteStatement
@@ -239,7 +234,7 @@ namespace VSharp.Lowering
         /// <summary>
         /// Flattens into a single block statement, removing unused labels and similar statements.
         /// </summary>
-        /// <param name="reRunLowering">True if the lowering have to be re-run due to changed state.</param>
+        /// <param name="reRunLowering">True if the lowering has to be re-run due to changed state.</param>
         private BoundBlockStatement FlattenAndClean(BoundStatement statement, out bool reRunLowering)
         {
             reRunLowering = false;

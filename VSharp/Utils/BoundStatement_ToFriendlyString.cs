@@ -148,7 +148,7 @@ namespace VSharp.Binding
                 .Select(pair => pair.parameterSymbol.Type + ": " + pair.argument.ToFriendlyString());
             var formattedArguments = string.Join(", ", arguments);
 
-            return $"{method.Name}({formattedArguments})";
+            return $"{method.FullName}({formattedArguments})";
         }
 
         private static string StringifyExplicitCastExpression(BoundExplicitCastExpression node)

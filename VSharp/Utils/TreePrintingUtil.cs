@@ -96,7 +96,7 @@ namespace VSharp.Utils
         {
             writer.WriteType(method.ReturnType);
             writer.Write(" ");
-            writer.WriteClr(method.Name, ConsoleColor.Cyan);
+            writer.WriteClr(method.FullName, ConsoleColor.Cyan);
             writer.WriteClr('(', ConsoleColor.White);
             for (int i = 0; i < method.Parameters.Length; i++)
             {
