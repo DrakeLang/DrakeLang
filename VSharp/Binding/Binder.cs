@@ -801,7 +801,7 @@ namespace VSharp.Binding
                 Diagnostics.ReportLabelAlreadyDeclared(syntax.Identifier.Span, name);
         }
 
-        private ImmutableArray<ParameterSymbol> BindParameters(SeparatedSyntaxCollection<ParameterSyntax> parameters)
+        private ImmutableArray<ParameterSymbol> BindParameters(SeparatedSyntaxList<ParameterSyntax> parameters)
         {
             var builder = ImmutableArray.CreateBuilder<ParameterSymbol>(parameters.Count);
             var parameterNames = new HashSet<string>();

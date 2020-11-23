@@ -22,12 +22,12 @@ using System.Collections.Immutable;
 
 namespace VSharp.Syntax
 {
-    public sealed class SeparatedSyntaxCollection<T> : IReadOnlyList<T>
+    public sealed class SeparatedSyntaxList<T> : IReadOnlyList<T>
         where T : SyntaxNode
     {
         private readonly ImmutableArray<SyntaxNode> _nodesAndSeparators;
 
-        public SeparatedSyntaxCollection(ImmutableArray<SyntaxNode> separatorsAndNodes)
+        public SeparatedSyntaxList(ImmutableArray<SyntaxNode> separatorsAndNodes)
         {
             _nodesAndSeparators = separatorsAndNodes;
         }

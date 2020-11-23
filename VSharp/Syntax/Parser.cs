@@ -291,7 +291,7 @@ namespace VSharp.Syntax
             return new MethodDeclarationStatementSyntax(defKeyword, identifier, leftParenthesis, parameters, rightParenthesis, declaration);
         }
 
-        private SeparatedSyntaxCollection<ParameterSyntax> ParseParameterList()
+        private SeparatedSyntaxList<ParameterSyntax> ParseParameterList()
         {
             var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
 
@@ -318,7 +318,7 @@ namespace VSharp.Syntax
                     break;
             }
 
-            return new SeparatedSyntaxCollection<ParameterSyntax>(builder.ToImmutable());
+            return new SeparatedSyntaxList<ParameterSyntax>(builder.ToImmutable());
         }
 
         private ParameterSyntax ParseParameter()
@@ -552,7 +552,7 @@ namespace VSharp.Syntax
             return new CallExpressionSyntax(identifierToken, leftParenthesis, arguments, rightParenthesis);
         }
 
-        private SeparatedSyntaxCollection<SyntaxNode> ParseArguments()
+        private SeparatedSyntaxList<SyntaxNode> ParseArguments()
         {
             var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
 
@@ -587,7 +587,7 @@ namespace VSharp.Syntax
                 }
             }
 
-            return new SeparatedSyntaxCollection<SyntaxNode>(builder.ToImmutable());
+            return new SeparatedSyntaxList<SyntaxNode>(builder.ToImmutable());
         }
 
         private NameExpressionSyntax ParseNameExpression()
