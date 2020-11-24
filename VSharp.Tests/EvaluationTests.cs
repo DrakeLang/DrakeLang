@@ -214,8 +214,8 @@ namespace VSharp.Tests
 
         public static IEnumerable<object[]> GetStatementsData()
         {
-            foreach ((string statement, object result) in GetStatements())
-                yield return new object[] { statement + "var resultX = result; result = resultX;", result };
+            foreach (var (statement, result) in GetStatements())
+                yield return new object[] { statement + "\r\nvar resultX = result; result = resultX;", result };
 
             static IEnumerable<(string statement, object result)> GetStatements()
             {
@@ -382,6 +382,15 @@ namespace VSharp.Tests
 
                 // Namespaces
                 yield return (@"
+                    var result = A.GetVal();
+
+                    namespace A;
+                    def GetVal() => ""a"";
+
+                    namespace B {} // Because of the way we avoid optimizing away variables, we have to escape the previous namespace.",
+                    "a");
+                yield return (@" 
+                    // Combination of simple and bodied statement
                     var result = B.GetVal();
 
                     namespace A;
@@ -389,7 +398,8 @@ namespace VSharp.Tests
                     namespace B
                     {
                         def GetVal() => ""a"";
-                    }", "a");
+                    }",
+                    "a");
             }
         }
 
