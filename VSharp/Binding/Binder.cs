@@ -77,8 +77,7 @@ namespace VSharp.Binding
                 var mainMethodSymbol = new MethodSymbol(GeneratedMainMethodName, ImmutableArray<ParameterSymbol>.Empty, Types.Void);
                 _scope.TryDeclareMethod(mainMethodSymbol);
 
-                var mainMethodBody = new BoundBlockStatement(topLevelStatements);
-                var mainMethod = new BoundMethodDeclaration(mainMethodSymbol, mainMethodBody);
+                var mainMethod = new BoundMethodDeclaration(mainMethodSymbol, topLevelStatements);
 
                 methods = methods.Prepend(mainMethod);
             }
@@ -143,7 +142,7 @@ namespace VSharp.Binding
 
             static HashSet<(MethodDeclarationSyntax methodDeclaration, NamespaceSymbol? namespaceSym)> getMethodDeclarations(Binder @this, IEnumerable<StatementSyntax> statements)
             {
-                var stack = new Stack<(StatementSyntax statement, NamespaceSymbol? namespaceSym)>(statements.Select(s => (s, (NamespaceSymbol?)null)));
+                var stack = new Stack<(StatementSyntax statement, NamespaceSymbol? namespaceSym)>(statements.Select(s => (s, default(NamespaceSymbol))).Reverse());
 
                 var result = new HashSet<(MethodDeclarationSyntax, NamespaceSymbol?)>();
                 while (stack.Count > 0)
@@ -773,7 +772,7 @@ namespace VSharp.Binding
                     // Bind a primitive body for analyzis to infer the return type.
                     var boundDeclaration = BindBody(syntax);
 
-                    var returnStatements = boundDeclaration.Statements.OfType<BoundReturnStatement>();
+                    var returnStatements = boundDeclaration.OfType<BoundReturnStatement>();
                     var returnType = ResolveImplicitType(this, returnStatements);
 
                     if (returnType is null)
@@ -806,7 +805,7 @@ namespace VSharp.Binding
             }
         }
 
-        private BoundBlockStatement BindBody(MethodDeclarationSyntax syntax)
+        private ImmutableArray<BoundStatement> BindBody(MethodDeclarationSyntax syntax)
         {
             if (syntax.Declaration is ExpressionBodyStatementSyntax expressionBody)
             {

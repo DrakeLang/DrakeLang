@@ -18,9 +18,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using VSharp.Symbols;
 using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp.Binding.CFA
@@ -32,9 +32,9 @@ namespace VSharp.Binding.CFA
         private readonly List<GraphBlock> _blocks;
         private readonly List<GraphBranch> _branches;
 
-        public ControlFlowGraph(BoundBlockStatement block)
+        public ControlFlowGraph(ImmutableArray<BoundStatement> statements)
         {
-            (_blocks, _branches) = BuildGraph(block);
+            (_blocks, _branches) = BuildGraph(statements);
         }
 
         #region Methods
@@ -75,12 +75,12 @@ namespace VSharp.Binding.CFA
 
         #region Methods
 
-        private (List<GraphBlock>, List<GraphBranch>) BuildGraph(BoundBlockStatement block)
+        private (List<GraphBlock>, List<GraphBranch>) BuildGraph(ImmutableArray<BoundStatement> statements)
         {
-            var blocks = CreateGraphBlocks(block);
+            var blocks = CreateGraphBlocks(statements);
             var branches = new List<GraphBranch>();
 
-            if (block.Statements.Length == 0)
+            if (statements.Length == 0)
             {
                 ConnectBlocks(_start, _end);
                 return (blocks, branches);
@@ -165,30 +165,30 @@ namespace VSharp.Binding.CFA
 
         #region Helpers
 
-        private List<GraphBlock> CreateGraphBlocks(BoundBlockStatement block)
+        private List<GraphBlock> CreateGraphBlocks(ImmutableArray<BoundStatement> statements)
         {
             var blocks = new List<GraphBlock> { _start };
 
-            var statements = new List<BoundStatement>();
-            foreach (var statement in block.Statements)
+            var currentBlockStatements = new List<BoundStatement>();
+            foreach (var statement in statements)
             {
                 switch (statement.Kind)
                 {
                     case BoundNodeKind.VariableDeclarationStatement:
                     case BoundNodeKind.NoOpStatement:
                     case BoundNodeKind.ExpressionStatement:
-                        statements.Add(statement);
+                        currentBlockStatements.Add(statement);
                         break;
 
                     case BoundNodeKind.LabelStatement:
                         nextBlock();
-                        statements.Add(statement);
+                        currentBlockStatements.Add(statement);
                         break;
 
                     case BoundNodeKind.GotoStatement:
                     case BoundNodeKind.ConditionalGotoStatement:
                     case BoundNodeKind.ReturnStatement:
-                        statements.Add(statement);
+                        currentBlockStatements.Add(statement);
                         nextBlock();
                         break;
 
@@ -207,14 +207,14 @@ namespace VSharp.Binding.CFA
 
             void nextBlock()
             {
-                if (statements.Count == 0)
+                if (currentBlockStatements.Count == 0)
                     return;
 
                 var block = new GraphBlock();
                 blocks.Add(block);
 
-                block.Statements.AddRange(statements);
-                statements.Clear();
+                block.Statements.AddRange(currentBlockStatements);
+                currentBlockStatements.Clear();
             }
         }
 

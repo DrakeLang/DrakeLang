@@ -46,23 +46,23 @@ namespace VSharp
 
         private sealed class InternalEvaluator
         {
-            private readonly BoundBlockStatement _root;
+            private readonly ImmutableArray<BoundStatement> _statements;
             private readonly Dictionary<VariableSymbol, object> _variables;
             private readonly Dictionary<LabelSymbol, int> _labelToIndex = new Dictionary<LabelSymbol, int>();
             private readonly Dictionary<MethodSymbol, BoundMethodDeclaration> _methods;
 
-            public InternalEvaluator(BoundBlockStatement root,
+            public InternalEvaluator(ImmutableArray<BoundStatement> statements,
                                      Dictionary<VariableSymbol, object> variables,
                                      Dictionary<MethodSymbol, BoundMethodDeclaration> methods)
             {
-                _root = root;
+                _statements = statements;
                 _variables = variables;
                 _methods = methods;
 
                 // Create label-index mapping for goto statements.
-                for (int i = 0; i < _root.Statements.Length; i++)
+                for (int i = 0; i < statements.Length; i++)
                 {
-                    if (_root.Statements[i] is BoundLabelStatement l)
+                    if (statements[i] is BoundLabelStatement l)
                     {
                         _labelToIndex.Add(l.Label, i + 1);
                     }
@@ -73,9 +73,9 @@ namespace VSharp
             {
                 // Evaluate program.
                 int index = 0;
-                while (index < _root.Statements.Length)
+                while (index < _statements.Length)
                 {
-                    var s = _root.Statements[index];
+                    var s = _statements[index];
                     switch (s.Kind)
                     {
                         case BoundNodeKind.VariableDeclarationStatement:

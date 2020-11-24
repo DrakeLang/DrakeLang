@@ -155,16 +155,11 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteMethodDeclarationStatement(BoundMethodDeclaration node)
         {
-            var declaration = RewriteBlockStatement(node.Declaration);
-            if (declaration is BoundBlockStatement blockStatement)
-            {
-                if (declaration == node.Declaration)
-                    return node;
-                else
-                    return new BoundMethodDeclaration(node.Method, blockStatement);
-            }
+            var declaration = RewriteStatements(node.Declaration);
+            if (declaration is null)
+                return node;
 
-            return new BoundMethodDeclaration(node.Method, new BoundBlockStatement(ImmutableArray.Create(declaration)));
+            return new BoundMethodDeclaration(node.Method, declaration.Value);
         }
 
         protected virtual BoundStatement RewriteIfStatement(BoundIfStatement node)

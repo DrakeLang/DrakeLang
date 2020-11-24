@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using VSharp.Utils;
@@ -297,8 +298,13 @@ namespace VSharp.Binding
 
         private static void PrintChildren(BoundNode node, WriteContext context)
         {
-            var lastChild = node.GetChildren().LastOrDefault();
-            foreach (var child in node.GetChildren())
+            PrintChildren(node.GetChildren(), context);
+        }    
+        
+        private static void PrintChildren(IEnumerable<BoundNode> children, WriteContext context)
+        {
+            var lastChild = children.LastOrDefault();
+            foreach (var child in children)
             {
                 child.WriteTo(context with
                 {

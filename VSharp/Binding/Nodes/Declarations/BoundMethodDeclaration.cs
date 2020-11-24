@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using VSharp.Symbols;
 
 namespace VSharp.Binding
@@ -24,7 +25,7 @@ namespace VSharp.Binding
 
     internal sealed class BoundMethodDeclaration : BoundDeclaration
     {
-        public BoundMethodDeclaration(MethodSymbol method, BoundBlockStatement declaration)
+        public BoundMethodDeclaration(MethodSymbol method, ImmutableArray<BoundStatement> declaration)
         {
             Method = method;
             Declaration = declaration;
@@ -32,11 +33,14 @@ namespace VSharp.Binding
 
         public override BoundNodeKind Kind => BoundNodeKind.MethodDeclaration;
         public MethodSymbol Method { get; }
-        public BoundBlockStatement Declaration { get; }
+        public ImmutableArray<BoundStatement> Declaration { get; }
 
         public override IEnumerable<BoundNode> GetChildren()
         {
-            yield return Declaration;
+            foreach (var statement in Declaration)
+            {
+                yield return statement;
+            }
         }
     }
 }

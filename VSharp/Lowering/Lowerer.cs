@@ -40,26 +40,12 @@ namespace VSharp.Lowering
             return new Lowerer(labelGenerator).Lower(statements);
         }
 
-        public static BoundBlockStatement Lower(BoundStatement statement, LabelGenerator labelGenerator)
+        public static ImmutableArray<BoundStatement> Lower(BoundStatement statement, LabelGenerator labelGenerator)
         {
-            return new Lowerer(labelGenerator).Lower(statement);
+            return new Lowerer(labelGenerator).Lower(new[] { statement });
         }
 
         #endregion Methods
-
-        private BoundBlockStatement Lower(BoundStatement statement)
-        {
-            bool reRunLowering;
-            BoundBlockStatement flattenedResult;
-
-            do
-            {
-                statement = RewriteStatement(statement);
-                flattenedResult = FlattenAndClean(statement, out reRunLowering);
-            } while (reRunLowering);
-
-            return flattenedResult;
-        }
 
         private ImmutableArray<BoundStatement> Lower(IReadOnlyList<BoundStatement> statements)
         {
@@ -69,7 +55,7 @@ namespace VSharp.Lowering
             do
             {
                 result = RewriteStatements(result) ?? result;
-                result = FlattenAndClean(new BoundBlockStatement(result), out reRunLowering).Statements;
+                result = FlattenAndClean(result, out reRunLowering);
             } while (reRunLowering);
 
             return result;
@@ -81,10 +67,10 @@ namespace VSharp.Lowering
         {
             var declaration = Lower(node.Declaration);
 
-            var methods = declaration.Statements.OfType<BoundMethodDeclaration>();
-            var generalStatements = declaration.Statements.Except(methods).ToImmutableArray();
+            var methods = declaration.OfType<BoundMethodDeclaration>();
+            var generalStatements = declaration.Except(methods).ToImmutableArray();
 
-            var method = new BoundMethodDeclaration(node.Method, new BoundBlockStatement(generalStatements));
+            var method = new BoundMethodDeclaration(node.Method, generalStatements);
             methods = methods.Append(method);
 
             return new BoundBlockStatement(methods.ToImmutableArray<BoundStatement>());
@@ -234,14 +220,13 @@ namespace VSharp.Lowering
         /// Flattens into a single block statement, removing unused labels and similar statements.
         /// </summary>
         /// <param name="reRunLowering">True if the lowering has to be re-run due to changed state.</param>
-        private BoundBlockStatement FlattenAndClean(BoundStatement statement, out bool reRunLowering)
+        private ImmutableArray<BoundStatement> FlattenAndClean(ImmutableArray<BoundStatement> statements, out bool reRunLowering)
         {
             reRunLowering = false;
 
-            var statements = new List<BoundStatement>();
+            var result = new List<BoundStatement>();
 
-            var statementStack = new Stack<BoundStatement>();
-            statementStack.Push(statement);
+            var statementStack = new Stack<BoundStatement>(statements.Reverse());
 
             // Remove nested block statements.
             while (statementStack.Count > 0)
@@ -254,7 +239,7 @@ namespace VSharp.Lowering
                 }
                 else
                 {
-                    statements.Add(current);
+                    result.Add(current);
                 }
             }
 
@@ -264,25 +249,25 @@ namespace VSharp.Lowering
             {
                 removedVariables = false;
 
-                for (int i = 0; i < statements.Count; i++)
+                for (int i = 0; i < result.Count; i++)
                 {
-                    if (statements[i] is BoundVariableDeclarationStatement variableDeclaration)
+                    if (result[i] is BoundVariableDeclarationStatement variableDeclaration)
                     {
                         var variable = GetActiveVariable(variableDeclaration.Variable);
                         if (VariableUsage.TryGetValue(variable, out var variableUsage) && variableUsage.Count == 0)
                         {
                             removedVariables = true;
-                            statements[i] = RewriteStatement(new BoundExpressionStatement(variableDeclaration.Initializer));
+                            result[i] = RewriteStatement(new BoundExpressionStatement(variableDeclaration.Initializer));
                         }
                     }
-                    else if (statements[i] is BoundExpressionStatement expressionStatement &&
+                    else if (result[i] is BoundExpressionStatement expressionStatement &&
                        expressionStatement.Expression is BoundAssignmentExpression assignmentExpression)
                     {
                         var variable = GetActiveVariable(assignmentExpression.Variable);
                         if (VariableUsage.TryGetValue(variable, out var variableUsage) && variableUsage.Count == 0)
                         {
                             removedVariables = true;
-                            statements[i] = RewriteStatement(new BoundExpressionStatement(assignmentExpression.Expression));
+                            result[i] = RewriteStatement(new BoundExpressionStatement(assignmentExpression.Expression));
                         }
                     }
                 }
@@ -295,9 +280,9 @@ namespace VSharp.Lowering
             {
                 updatedVariables = false;
 
-                for (int i = 0; i < statements.Count; i++)
+                for (int i = 0; i < result.Count; i++)
                 {
-                    if (statements[i] is BoundVariableDeclarationStatement variableDeclaration)
+                    if (result[i] is BoundVariableDeclarationStatement variableDeclaration)
                     {
                         var oldVariable = GetActiveVariable(variableDeclaration.Variable);
                         if (!oldVariable.IsReadOnly && !ReassignedVariables.Contains(oldVariable))
@@ -308,7 +293,7 @@ namespace VSharp.Lowering
                             var newVariable = new VariableSymbol(oldVariable.Name, isReadOnly: true, oldVariable.Type);
                             UpdateVariable(oldVariable, newVariable);
 
-                            statements[i] = RewriteStatement(new BoundVariableDeclarationStatement(newVariable, variableDeclaration.Initializer));
+                            result[i] = RewriteStatement(new BoundVariableDeclarationStatement(newVariable, variableDeclaration.Initializer));
                         }
                     }
                 }
@@ -316,7 +301,7 @@ namespace VSharp.Lowering
 
             // Remove unused labels, no-op statements.
             var labels = new HashSet<LabelSymbol>();
-            foreach (var s in statements)
+            foreach (var s in result)
             {
                 switch (s)
                 {
@@ -329,10 +314,10 @@ namespace VSharp.Lowering
                         break;
                 }
             }
-            statements.RemoveAll(s => s is BoundNoOpStatement ||
-                                      s is BoundLabelStatement labelStatement && !labels.Remove(labelStatement.Label));
+            result.RemoveAll(s => s is BoundNoOpStatement ||
+                                  s is BoundLabelStatement labelStatement && !labels.Remove(labelStatement.Label));
 
-            return new BoundBlockStatement(statements.ToImmutableArray());
+            return result.ToImmutableArray();
         }
 
         #endregion Helpers
