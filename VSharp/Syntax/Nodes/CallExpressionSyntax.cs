@@ -29,8 +29,9 @@ namespace VSharp.Syntax
 
     public sealed class CallExpressionSyntax : ExpressionSyntax
     {
-        public CallExpressionSyntax(SyntaxToken identifier, SyntaxToken leftParenthesis, SeparatedSyntaxList<SyntaxNode> arguments, SyntaxToken rightParenthesis)
+        public CallExpressionSyntax(SeparatedSyntaxList<SyntaxToken>? namespaceNames, SyntaxToken identifier, SyntaxToken leftParenthesis, SeparatedSyntaxList<SyntaxNode> arguments, SyntaxToken rightParenthesis)
         {
+            NamespaceNames = namespaceNames;
             Identifier = identifier;
             LeftParenthesis = leftParenthesis;
             Arguments = arguments;
@@ -39,6 +40,7 @@ namespace VSharp.Syntax
 
         public override SyntaxKind Kind => SyntaxKind.CallExpression;
 
+        public SeparatedSyntaxList<SyntaxToken>? NamespaceNames { get; }
         public SyntaxToken Identifier { get; }
         public SyntaxToken LeftParenthesis { get; }
         public SeparatedSyntaxList<SyntaxNode> Arguments { get; }
@@ -46,6 +48,14 @@ namespace VSharp.Syntax
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
+            if (NamespaceNames is not null)
+            {
+                foreach (var item in NamespaceNames.GetWithSeparators())
+                {
+                    yield return item;
+                }
+            }
+
             yield return Identifier;
             yield return LeftParenthesis;
 

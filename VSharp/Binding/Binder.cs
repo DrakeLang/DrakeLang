@@ -38,8 +38,7 @@ namespace VSharp.Binding
 
         private readonly LabelGenerator _labelGenerator;
         private readonly Stack<MethodSymbol> _callStack = new();
-
-        private readonly Stack<NamespaceSymbol> _namespaceStack = new();
+        private readonly Dictionary<MethodDeclarationStatementSyntax, MethodSymbol> _methodSymbols = new();
 
         private BoundScope _scope;
 
@@ -89,7 +88,7 @@ namespace VSharp.Binding
 
         private ImmutableArray<BoundStatement> BindStatements(IEnumerable<StatementSyntax> statements)
         {
-            DeclareMethods(statements.OfType<MethodDeclarationStatementSyntax>());
+            DeclareMethods(statements);
 
             // Declare labels.
             foreach (var statement in statements.OfType<LabelStatementSyntax>())
@@ -108,23 +107,23 @@ namespace VSharp.Binding
             return statementBuilder.ToImmutable();
         }
 
-        private void DeclareMethods(IEnumerable<MethodDeclarationStatementSyntax> methodDeclarations)
+        private void DeclareMethods(IEnumerable<StatementSyntax> statements)
         {
             if (EnableAnalysisMode)
                 return;
 
-            var methodsToDeclare = methodDeclarations.ToHashSet();
-            var declaredMethods = new HashSet<MethodDeclarationStatementSyntax>();
+            var methodDeclarationsInfo = getMethodDeclarations(this, statements).ToHashSet();
+            var declaredMethods = new HashSet<(MethodDeclarationStatementSyntax methodDeclaration, NamespaceSymbol? namespaceSym)>();
 
             // Keep declaring methods in a loop until no new methods are delcared.
-            while (methodsToDeclare.Count > 0)
+            while (methodDeclarationsInfo.Count > 0)
             {
-                foreach (var methodDeclaration in methodsToDeclare)
+                foreach (var info in methodDeclarationsInfo)
                 {
-                    var result = TryDeclareMethod(methodDeclaration);
+                    var result = TryDeclareMethod(info.methodDeclaration, info.namespaceSym);
                     if (result is not MethodDeclarationResult.CannotInferReturnType)
                     {
-                        declaredMethods.Add(methodDeclaration);
+                        declaredMethods.Add(info);
                     }
                 }
 
@@ -132,14 +131,48 @@ namespace VSharp.Binding
                 if (declaredMethods.Count == 0)
                     break;
 
-                methodsToDeclare.ExceptWith(declaredMethods);
+                methodDeclarationsInfo.ExceptWith(declaredMethods);
                 declaredMethods.Clear();
             }
 
-            foreach (var methodDeclaration in methodsToDeclare)
+            foreach (var (methodDeclaration, namespaceSym) in methodDeclarationsInfo)
             {
-                TryDeclareMethod(methodDeclaration, declareImplicitReturnTypesAsError: true);
+                TryDeclareMethod(methodDeclaration, namespaceSym, declareImplicitReturnTypesAsError: true);
                 Diagnostics.ReportCannotInferReturnType(methodDeclaration.Identifier.Span, methodDeclaration.Identifier.Text);
+            }
+
+            static HashSet<(MethodDeclarationStatementSyntax methodDeclaration, NamespaceSymbol? namespaceSym)> getMethodDeclarations(Binder @this, IEnumerable<StatementSyntax> statements)
+            {
+                var stack = new Stack<(StatementSyntax statement, NamespaceSymbol? namespaceSym)>(statements.Select(s => (s, (NamespaceSymbol?)null)));
+
+                var result = new HashSet<(MethodDeclarationStatementSyntax, NamespaceSymbol?)>();
+                while (stack.Count > 0)
+                {
+                    var (current, currentNamespace) = stack.Pop();
+                    if (current is MethodDeclarationStatementSyntax methodDeclaration)
+                    {
+                        result.Add((methodDeclaration, currentNamespace));
+                    }
+                    else if (current is NamespaceDeclarationStatementSyntax namespaceDeclaration)
+                    {
+                        if (namespaceDeclaration is SimpleNamespaceDeclarationStatementSyntax && currentNamespace is not null)
+                            @this.Diagnostics.ReportIllegalSimpleNamespaceDeclaration(namespaceDeclaration.NamespaceToken.Span);
+
+                        var names = namespaceDeclaration.Names.Select(name => name.Text ?? "");
+                        var newNamespace = currentNamespace is null ? new NamespaceSymbol(names.ToImmutableArray()) : new NamespaceSymbol(currentNamespace, names);
+                        foreach (var statement in namespaceDeclaration.Statements)
+                        {
+                            stack.Push((statement, newNamespace));
+                        }
+                    }
+                    else
+                    {
+                        if (currentNamespace is not null)
+                            @this.Diagnostics.ReportIllegalStatementPlacement(current.Span);
+                    }
+                }
+
+                return result;
             }
         }
 
@@ -154,8 +187,6 @@ namespace VSharp.Binding
         /// </summary>
         private MethodSymbol? CurrentMethod => _callStack.TryPeek(out var method) ? method : null;
 
-        private NamespaceSymbol? CurrentNamespace => _namespaceStack.TryPeek(out var currentNamespace) ? currentNamespace : null;
-
         /// <summary>
         /// Used for binding statements for analysis, without commitment.
         /// </summary>
@@ -167,22 +198,11 @@ namespace VSharp.Binding
 
         private BoundStatement BindStatement(StatementSyntax syntax)
         {
-            switch (syntax.Kind)
-            {
-                case SyntaxKind.MethodDeclarationStatement:
-                    return BindMethodDeclarationStatement((MethodDeclarationStatementSyntax)syntax);
-                case SyntaxKind.NamespaceDeclarationStatement:
-                    return BindNamespaceDeclarationStatement((NamespaceDeclarationStatementSyntax)syntax);
-            
-            }
-
-            if (CurrentNamespace is not null)
-            {
-                Diagnostics.ReportIllegalStatementPlacement(syntax.Span);
-            }
-
             return syntax.Kind switch
             {
+                SyntaxKind.MethodDeclarationStatement => BindMethodDeclarationStatement((MethodDeclarationStatementSyntax)syntax),
+                SyntaxKind.NamespaceDeclarationStatement => BindNamespaceDeclarationStatement((NamespaceDeclarationStatementSyntax)syntax),
+
                 SyntaxKind.BlockStatement => BindBlockStatement((BlockStatementSyntax)syntax),
                 SyntaxKind.VariableDeclarationStatement => BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax),
                 SyntaxKind.IfStatement => BindIfStatement((IfStatementSyntax)syntax),
@@ -218,24 +238,8 @@ namespace VSharp.Binding
             if (CurrentMethod is not null)
                 Diagnostics.ReportIllegalNamespaceDeclaration(syntax.NamespaceToken.Span);
 
-            if (syntax is SimpleNamespaceDeclarationStatementSyntax && _namespaceStack.Count > 0)
-                Diagnostics.ReportIllegalSimpleNamespaceDeclaration(syntax.NamespaceToken.Span);
-
-            _namespaceStack.TryPeek(out var currentNamespace);
-
-            var newNames = syntax.Names.Select(n => n.Text ?? "");
-            var namespaceSym = currentNamespace is null ? new NamespaceSymbol(newNames.ToImmutableArray()) : new NamespaceSymbol(currentNamespace, newNames);
-
-            _namespaceStack.Push(namespaceSym);
-            try
-            {
-                var statements = BindStatements(syntax.Statements);
-                return new BoundBlockStatement(statements);
-            }
-            finally
-            {
-                _namespaceStack.Pop();
-            }
+            var statements = BindStatements(syntax.Statements);
+            return new BoundBlockStatement(statements);
         }
 
         private BoundStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
@@ -275,7 +279,7 @@ namespace VSharp.Binding
 
         private BoundStatement BindMethodDeclarationStatement(MethodDeclarationStatementSyntax syntax)
         {
-            if (!_scope.TryLookupMethod(syntax.Identifier.Text, out var method))
+            if (!_methodSymbols.TryGetValue(syntax, out var method))
                 return BoundNoOpStatement.Instance;
 
             PushMethodScope(method);
@@ -599,9 +603,9 @@ namespace VSharp.Binding
                 return BoundErrorExpression.Instance;
 
             // Locate method.
-            if (EnableAnalysisMode && !_scope.TryLookupMethod(syntax.Identifier.Text, out var method))
+            if (EnableAnalysisMode && !TryFindMethod(syntax.NamespaceNames, syntax.Identifier, out var method))
                 return BoundErrorExpression.Instance;
-            else if (!TryFindMethod(syntax.Identifier, out method))
+            else if (!FindMethodOrReport(syntax.NamespaceNames, syntax.Identifier, out method))
                 return BoundErrorExpression.Instance;
 
             if (method.ReturnType.IsError())
@@ -731,8 +735,11 @@ namespace VSharp.Binding
 
         private enum MethodDeclarationResult { Success, CannotInferReturnType, Error }
 
-        private MethodDeclarationResult TryDeclareMethod(MethodDeclarationStatementSyntax syntax, bool declareImplicitReturnTypesAsError = false)
+        private MethodDeclarationResult TryDeclareMethod(MethodDeclarationStatementSyntax syntax, NamespaceSymbol? namespaceSym, bool declareImplicitReturnTypesAsError = false)
         {
+            if (_methodSymbols.ContainsKey(syntax))
+                return MethodDeclarationResult.Success;
+
             if (syntax.Identifier.Text is null)
                 return MethodDeclarationResult.Error;
 
@@ -745,11 +752,11 @@ namespace VSharp.Binding
             if (!hasImplicitReturnType)
             {
                 var returnType = ResolveType(syntax.TypeOrDefKeyword.Kind) ?? Types.Error;
-                method = new MethodSymbol(CurrentNamespace, name, parameters, returnType);
+                method = new MethodSymbol(namespaceSym, name, parameters, returnType);
             }
             else if (declareImplicitReturnTypesAsError)
             {
-                method = new MethodSymbol(name, parameters, Types.Error);
+                method = new MethodSymbol(namespaceSym, name, parameters, Types.Error);
             }
             else
             {
@@ -772,7 +779,7 @@ namespace VSharp.Binding
                     if (returnType is null)
                         return MethodDeclarationResult.CannotInferReturnType;
 
-                    method = new MethodSymbol(CurrentNamespace, name, parameters, returnType);
+                    method = new MethodSymbol(namespaceSym, name, parameters, returnType);
                 }
                 finally
                 {
@@ -787,6 +794,7 @@ namespace VSharp.Binding
                 return MethodDeclarationResult.Error;
             }
 
+            _methodSymbols.Add(syntax, method);
             return MethodDeclarationResult.Success;
 
             static TypeSymbol? ResolveImplicitType(Binder @this, IEnumerable<BoundReturnStatement> returnStatements)
@@ -938,24 +946,47 @@ namespace VSharp.Binding
             return true;
         }
 
-        private bool TryFindMethod(SyntaxToken identifierToken, [NotNullWhen(true)] out MethodSymbol? method)
+        private bool TryFindMethod(SeparatedSyntaxList<SyntaxToken>? namespaceNames, SyntaxToken identifierToken, [NotNullWhen(true)] out MethodSymbol? method)
         {
-            string? name = identifierToken.Text;
-            if (string.IsNullOrEmpty(name))
+            if (namespaceNames is null)
+                return TryFindMethod((NamespaceSymbol?)null, identifierToken, out method);
+
+            var @namespace = new NamespaceSymbol(namespaceNames.Select(name => name.Text ?? "").ToImmutableArray());
+            return TryFindMethod(@namespace, identifierToken, out method);
+        }
+
+        private bool TryFindMethod(NamespaceSymbol? @namespace, SyntaxToken identifierToken, [NotNullWhen(true)] out MethodSymbol? method)
+        {
+            string? name = @namespace is null ? identifierToken.Text : @namespace.Name + "." + identifierToken.Text;
+            if (name is null)
             {
                 method = null;
                 return false;
             }
 
-            if (!_scope.TryLookupMethod(name, out method))
-            {
-                Diagnostics.ReportUndefinedSymbol(identifierToken.Span, name);
+            return _scope.TryLookupMethod(name, out method);
+        }
 
-                _scope.TryDeclareMethod(new MethodSymbol(name, ImmutableArray<ParameterSymbol>.Empty, Types.Error));
-                return false;
+        private bool FindMethodOrReport(SeparatedSyntaxList<SyntaxToken>? namespaceNames, SyntaxToken identifierToken, [NotNullWhen(true)] out MethodSymbol? method)
+        {
+            if (TryFindMethod(namespaceNames, identifierToken, out method))
+                return true;
+
+            var methodName = identifierToken.Text;
+            if (methodName is not null)
+            {
+                Diagnostics.ReportUndefinedSymbol(identifierToken.Span, methodName);
+
+                if (namespaceNames is null)
+                    _scope.TryDeclareMethod(new MethodSymbol(methodName, ImmutableArray<ParameterSymbol>.Empty, Types.Error));
+                else
+                {
+                    var @namespace = new NamespaceSymbol(namespaceNames.Select(name => name.Text ?? "").ToImmutableArray());
+                    _scope.TryDeclareMethod(new MethodSymbol(@namespace, methodName, ImmutableArray<ParameterSymbol>.Empty, Types.Error));
+                }
             }
 
-            return true;
+            return false;
         }
 
         #endregion TryFind

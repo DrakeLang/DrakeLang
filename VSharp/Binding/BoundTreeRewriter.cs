@@ -136,8 +136,6 @@ namespace VSharp.Binding
             var initializer = RewriteExpression(node.Initializer);
 
             var variable = GetActiveVariable(node.Variable);
-            VariableUsage[variable] = new HashSet<BoundExpression>();
-
             if (variable.IsReadOnly && initializer is BoundLiteralExpression literalExpression)
             {
                 var constant = new ConstantSymbol(variable.Name, literalExpression.Value);
@@ -146,8 +144,11 @@ namespace VSharp.Binding
                 return BoundNoOpStatement.Instance;
             }
 
-            if (initializer == node.Initializer)
+            if (initializer == node.Initializer &&
+                variable == node.Variable)
+            {
                 return node;
+            }
 
             return new BoundVariableDeclarationStatement(variable, initializer);
         }
@@ -265,8 +266,8 @@ namespace VSharp.Binding
                 case BoundUnaryExpression unaryExpression when !unaryExpression.Op.Kind.IsIncrementOrDecrement():
                     {
                         // Removed expressions may affect variable usage.
-                        foreach (var set in VariableUsage)
-                            set.Value.Remove(node.Expression);
+                        foreach (var varUsage in VariableUsage.Values)
+                            varUsage.Remove(node.Expression);
 
                         return BoundNoOpStatement.Instance;
                     }
@@ -348,10 +349,12 @@ namespace VSharp.Binding
             }
 
             var variable = GetActiveVariable(node.Variable);
-            if (VariableUsage.TryGetValue(variable, out var variableUsage))
-                variableUsage.Add(RootExpression ?? node);
+            VariableUsage[variable].Add(RootExpression ?? node);
 
-            return node;
+            if (variable == node.Variable)
+                return node;
+
+            return new BoundVariableExpression(variable);
         }
 
         protected virtual BoundExpression RewriteAssignmentExpression(BoundAssignmentExpression node)
@@ -360,8 +363,11 @@ namespace VSharp.Binding
             ReassignedVariables.Add(variable);
 
             var expression = RewriteExpression(node.Expression);
-            if (expression == node.Expression)
+            if (expression == node.Expression &&
+                variable == node.Variable)
+            {
                 return node;
+            }
 
             return new BoundAssignmentExpression(variable, expression);
         }
@@ -465,6 +471,9 @@ namespace VSharp.Binding
         {
             while (UpdatedVariables.TryGetValue(variable, out var updatedVariable))
                 variable = updatedVariable;
+
+            if (!VariableUsage.ContainsKey(variable))
+                VariableUsage.Add(variable, new());
 
             return variable;
         }

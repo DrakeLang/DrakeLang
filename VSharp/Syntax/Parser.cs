@@ -17,10 +17,8 @@
 //------------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
-using VSharp.Symbols;
 using VSharp.Text;
 using static VSharp.Symbols.SystemSymbols;
 
@@ -35,9 +33,6 @@ namespace VSharp.Syntax
             SyntaxKind.LineCommentToken,
             SyntaxKind.MultiLineCommentToken,
         }.ToImmutableHashSet();
-
-        private static readonly ImmutableHashSet<SyntaxKind> _closeBraceEscapeCondition = ImmutableHashSet.Create(SyntaxKind.CloseBraceToken);
-        private static readonly ImmutableHashSet<SyntaxKind> _namespaceKeywordEscapeCondition = ImmutableHashSet.Create(SyntaxKind.CloseBraceToken);
 
         private readonly DiagnosticBag _diagnostics = new DiagnosticBag();
 
@@ -85,11 +80,11 @@ namespace VSharp.Syntax
 
         #region ParseStatement
 
-        private ImmutableArray<StatementSyntax> ParseStatements(ISet<SyntaxKind>? optionalEscapeConditions = null)
+        private ImmutableArray<StatementSyntax> ParseStatements(Func<bool>? escapeCondition = null)
         {
             var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
             while (Current.Kind != SyntaxKind.EndOfFileToken &&
-                (optionalEscapeConditions is null || !optionalEscapeConditions.Contains(Current.Kind)))
+                (escapeCondition is null || !escapeCondition()))
             {
                 var currentToken = Current;
 
@@ -137,18 +132,16 @@ namespace VSharp.Syntax
         private BlockStatementSyntax ParseBlockStatement()
         {
             var openBraceToken = MatchToken(SyntaxKind.OpenBraceToken);
-            var statements = ParseStatements(_closeBraceEscapeCondition);
+            var statements = ParseStatements(() => Current.Kind is SyntaxKind.CloseBraceToken);
             var closeBraceToken = MatchToken(SyntaxKind.CloseBraceToken);
 
             return new BlockStatementSyntax(openBraceToken, statements, closeBraceToken);
         }
 
-        private static readonly ImmutableHashSet<SyntaxKind> _namespaceNameEscapeConditions = ImmutableHashSet.Create(SyntaxKind.OpenBraceToken, SyntaxKind.SemicolonToken);
-
         private NamespaceDeclarationStatementSyntax ParseNamespaceDeclarationStatement()
         {
             var namespaceToken = NextToken();
-            var names = ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken, _namespaceNameEscapeConditions);
+            var names = ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken, () => Current.Kind is SyntaxKind.OpenBraceToken or SyntaxKind.SemicolonToken);
 
             if (Current.Kind == SyntaxKind.OpenBraceToken)
             {
@@ -158,7 +151,7 @@ namespace VSharp.Syntax
             else
             {
                 var semicolon = MatchToken(SyntaxKind.SemicolonToken);
-                var statements = ParseStatements(_namespaceKeywordEscapeCondition);
+                var statements = ParseStatements(() => Current.Kind is SyntaxKind.NamespaceKeyword or SyntaxKind.CloseBraceToken);
                 return new SimpleNamespaceDeclarationStatementSyntax(namespaceToken, names, semicolon, statements);
             }
         }
@@ -298,14 +291,12 @@ namespace VSharp.Syntax
             return new LabelStatementSyntax(identifier, colonToken);
         }
 
-        private static readonly ImmutableHashSet<SyntaxKind> _parameterListEscapeCondition = ImmutableHashSet.Create(SyntaxKind.CloseParenthesisToken);
-
         private MethodDeclarationStatementSyntax ParseMethodDeclarationStatement()
         {
             var defKeyword = Current.Kind.IsTypeKeyword() ? NextToken() : MatchToken(SyntaxKind.DefKeyword);
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
             var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
-            var parameters = ParseSyntaxList(ParseParameter, SyntaxKind.CommaToken, _parameterListEscapeCondition);
+            var parameters = ParseSyntaxList(ParseParameter, SyntaxKind.CommaToken, () => Current.Kind is SyntaxKind.CloseParenthesisToken);
             var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
             var declaration = Current.Kind == SyntaxKind.EqualsGreaterToken ? (BodyStatementSyntax)ParseExpressionBody() : ParseBlockBody();
 
@@ -444,7 +435,9 @@ namespace VSharp.Syntax
                 SyntaxKind.FloatToken => ParseFloatLiteral(),
                 SyntaxKind.StringToken => ParseStringLiteral(),
 
-                SyntaxKind.IdentifierToken when LookAhead.Kind == SyntaxKind.OpenParenthesisToken => ParseCallExpression(),
+                SyntaxKind.IdentifierToken when LookAhead.Kind is
+                    SyntaxKind.OpenParenthesisToken or SyntaxKind.DotToken
+                    => ParseCallExpression(),
                 _ => ParseNameExpression(),
             };
         }
@@ -535,12 +528,20 @@ namespace VSharp.Syntax
 
         private CallExpressionSyntax ParseCallExpression()
         {
+            SeparatedSyntaxList<SyntaxToken>? namespaceNames;
+            if (LookAhead.Kind is SyntaxKind.DotToken)
+            {
+                namespaceNames = ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken,
+                    () => Current.Kind is not SyntaxKind.IdentifierToken and not SyntaxKind.DotToken || LookAhead.Kind is SyntaxKind.OpenParenthesisToken);
+            }
+            else namespaceNames = null;
+
             var identifierToken = MatchToken(SyntaxKind.IdentifierToken);
             var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
             var arguments = ParseArguments();
             var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 
-            return new CallExpressionSyntax(identifierToken, leftParenthesis, arguments, rightParenthesis);
+            return new CallExpressionSyntax(namespaceNames, identifierToken, leftParenthesis, arguments, rightParenthesis);
         }
 
         private SeparatedSyntaxList<SyntaxNode> ParseArguments()
@@ -617,13 +618,13 @@ namespace VSharp.Syntax
             return new SyntaxToken(kind, Current.Position, null, null);
         }
 
-        private SeparatedSyntaxList<T> ParseSyntaxList<T>(Func<T> valueParser, SyntaxKind seperator, ISet<SyntaxKind> escapeConditions)
+        private SeparatedSyntaxList<T> ParseSyntaxList<T>(Func<T> valueParser, SyntaxKind seperator, Func<bool> escapeConditions)
             where T : SyntaxNode
         {
             var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
 
             while (Current.Kind != SyntaxKind.EndOfFileToken &&
-                   !escapeConditions.Contains(Current.Kind))
+                   !escapeConditions())
             {
                 var currentToken = Current;
 
@@ -632,7 +633,7 @@ namespace VSharp.Syntax
 
                 // Don't expect comma after final argument.
                 if (Current.Kind != SyntaxKind.EndOfFileToken &&
-                   !escapeConditions.Contains(Current.Kind))
+                   !escapeConditions())
                 {
                     var dot = MatchToken(seperator);
                     builder.Add(dot);

@@ -289,6 +289,12 @@ namespace VSharp.Tests.Syntax
                 if (t2Kind == SyntaxKind.EqualsGreaterToken) return true;
             }
 
+            if (t1Kind == SyntaxKind.DotToken)
+            {
+                if (t2Kind == SyntaxKind.IntegerToken) return true;
+                if (t2Kind == SyntaxKind.FloatToken) return true;
+            }
+
             return RequiresLinebreak(t1Kind, t2Kind);
         }
 

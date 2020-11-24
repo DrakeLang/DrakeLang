@@ -40,7 +40,7 @@ namespace VSharpO
             };
             try
             {
-                new Parser(options =>
+                using var parser = new Parser(options =>
                 {
                     options.AutoHelp = true;
                     options.AutoVersion = true;
@@ -48,7 +48,9 @@ namespace VSharpO
                     options.CaseInsensitiveEnumValues = true;
                     options.CaseSensitive = false;
                     options.HelpWriter = Console.Out;
-                }).ParseArguments<Options>(args)
+                });
+
+                parser.ParseArguments<Options>(args)
                     .WithParsed(Run);
             }
             catch (Exception ex)
@@ -102,16 +104,20 @@ namespace VSharpO
             if (debugOutput.HasFlag(DebugOutput.ShowProgram)) compilation.BindingResult.PrintProgram(Console.Out);
             if (debugOutput.HasFlag(DebugOutput.PrintControlFlowGraph)) PrintControlFlowGraph(compilation);
 
-            var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
-
-            if (result.Diagnostics.Length == 0)
+            if (!compilation.SyntaxTree.Diagnostics.IsEmpty)
             {
-                ConsoleExt.WriteLine("Program executed successfully", ConsoleColor.Green);
+                HandleDiagonstics(syntaxTree.Text, compilation.SyntaxTree.Diagnostics);
+                return;
             }
-            else
+
+            var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
+            if (!result.Diagnostics.IsEmpty)
             {
                 HandleDiagonstics(syntaxTree.Text, result.Diagnostics);
+                return;
             }
+
+            ConsoleExt.WriteLine("Program executed successfully", ConsoleColor.Green);
         }
 
         private static readonly ImmutableHashSet<char> _invalidChars = Path.GetInvalidFileNameChars().ToImmutableHashSet();
@@ -157,8 +163,8 @@ namespace VSharpO
                     rawFileName[i] = '_';
                 }
 
-                return hasIllegalChar 
-                    ? new string(rawFileName) + Guid.NewGuid() 
+                return hasIllegalChar
+                    ? new string(rawFileName) + Guid.NewGuid()
                     : filename;
             }
         }

@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using VSharp.Symbols;
 using VSharp.Syntax;
@@ -165,7 +166,7 @@ namespace VSharp.Tests
             var text = @"
                 namespace A;
 
-                var a = 0;
+                [var a = 0;]
             ";
 
             string diagnostics = @"
@@ -378,6 +379,17 @@ namespace VSharp.Tests
                 yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\");", "ba");
                 yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\", _);", "ba");
                 yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(_, \"b\");", "ab");
+
+                // Namespaces
+                yield return (@"
+                    var result = B.GetVal();
+
+                    namespace A;
+
+                    namespace B
+                    {
+                        def GetVal() => ""a"";
+                    }", "a");
             }
         }
 
@@ -408,15 +420,16 @@ namespace VSharp.Tests
             if (annotatedText.Spans.Length != expectedDiagnostics.Length)
                 throw new Exception($"ERROR: Must mark as many spans as there are expected diagnostics.");
 
-            Assert.Equal(expectedDiagnostics.Length, result.Diagnostics.Length);
+            var diagnostics = result.Diagnostics.OrderBy(d => d.Span).ToImmutableArray();
+            Assert.Equal(expectedDiagnostics.Length, diagnostics.Length);
 
             for (int i = 0; i < expectedDiagnostics.Length; i++)
             {
                 string expectedMessage = expectedDiagnostics[i];
-                string actualMessage = result.Diagnostics[i].Message;
+                string actualMessage = diagnostics[i].Message;
 
                 TextSpan expectedSpan = annotatedText.Spans[i];
-                TextSpan actualSpan = result.Diagnostics[i].Span;
+                TextSpan actualSpan = diagnostics[i].Span;
 
                 Assert.Equal(expectedMessage, actualMessage);
                 Assert.Equal(expectedSpan, actualSpan);

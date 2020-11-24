@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using VSharp.Text;
 
@@ -36,7 +37,7 @@ namespace VSharp.Syntax
         #region Properties
 
         public SourceText Text { get; }
-        public IReadOnlyList<Diagnostic> Diagnostics { get; }
+        public ImmutableArray<Diagnostic> Diagnostics { get; }
         public CompilationUnitSyntax Root { get; }
 
         #endregion Properties

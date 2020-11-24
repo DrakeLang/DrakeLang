@@ -54,8 +54,8 @@ namespace VSharp.Lowering
 
             do
             {
-                var result = RewriteStatement(statement);
-                flattenedResult = FlattenAndClean(result, out reRunLowering);
+                statement = RewriteStatement(statement);
+                flattenedResult = FlattenAndClean(statement, out reRunLowering);
             } while (reRunLowering);
 
             return flattenedResult;
@@ -63,17 +63,16 @@ namespace VSharp.Lowering
 
         private ImmutableArray<BoundStatement> Lower(IReadOnlyList<BoundStatement> statements)
         {
+            var result = statements.ToImmutableArray();
+
             bool reRunLowering;
             do
             {
-                var result = RewriteStatements(statements);
-                if (result is null)
-                    return statements.ToImmutableArray();
-
-                statements = FlattenAndClean(new BoundBlockStatement(result.Value), out reRunLowering).Statements;
+                result = RewriteStatements(result) ?? result;
+                result = FlattenAndClean(new BoundBlockStatement(result), out reRunLowering).Statements;
             } while (reRunLowering);
 
-            return statements.ToImmutableArray();
+            return result;
         }
 
         #region RewriteStatement

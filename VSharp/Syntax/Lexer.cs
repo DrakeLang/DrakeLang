@@ -233,7 +233,7 @@ namespace VSharp.Syntax
                     syntaxKind = SyntaxKind.CloseBraceToken;
                     return true;
 
-                case '.':
+                case '.' when !char.IsNumber(LookAhead):
                     Next();
                     syntaxKind = SyntaxKind.DotToken;
                     return true;
