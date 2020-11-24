@@ -20,37 +20,34 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    internal sealed class NameofExpressionSyntax : ExpressionSyntax
+    public sealed class BinaryExpressionSyntax : ExpressionSyntax
     {
-        public NameofExpressionSyntax(
-           SyntaxToken typeofKeyword,
-           SyntaxToken leftParenthesis,
-           SyntaxToken identifierToken,
-           SyntaxToken rightParenthesis)
+        internal BinaryExpressionSyntax(ExpressionSyntax left, SyntaxToken operatorToken, ExpressionSyntax right)
         {
-            NameofKeyword = typeofKeyword;
-            LeftParenthesis = leftParenthesis;
-            IdentifierToken = identifierToken;
-            RightParenthesis = rightParenthesis;
+            Left = left;
+            OperatorToken = operatorToken;
+            Right = right;
         }
 
         #region Properties
 
-        public override SyntaxKind Kind => SyntaxKind.NameofExpression;
+        public override SyntaxKind Kind => SyntaxKind.BinaryExpression;
 
-        public SyntaxToken NameofKeyword { get; }
-        public SyntaxToken LeftParenthesis { get; }
-        public SyntaxToken IdentifierToken { get; }
-        public SyntaxToken RightParenthesis { get; }
+        public ExpressionSyntax Left { get; }
+        public SyntaxToken OperatorToken { get; }
+        public ExpressionSyntax Right { get; }
 
         #endregion Properties
 
+        #region Methods
+
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return NameofKeyword;
-            yield return LeftParenthesis;
-            yield return IdentifierToken;
-            yield return RightParenthesis;
+            yield return Left;
+            yield return OperatorToken;
+            yield return Right;
         }
+
+        #endregion Methods
     }
 }

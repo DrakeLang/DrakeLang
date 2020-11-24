@@ -20,19 +20,27 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    public sealed class ExpressionStatementSyntax : StatementSyntax
+    public sealed class VariableDeclarationStatementSyntax : StatementSyntax
     {
-        public ExpressionStatementSyntax(ExpressionSyntax expression, SyntaxToken? semicolonToken)
+        internal VariableDeclarationStatementSyntax(SyntaxToken keyword, SyntaxToken? explicitType, SyntaxToken identifier, SyntaxToken equalsToken, ExpressionSyntax initializer, SyntaxToken? semicolonToken)
         {
-            Expression = expression;
+            Keyword = keyword;
+            ExplicitType = explicitType;
+            Identifier = identifier;
+            EqualsToken = equalsToken;
+            Initializer = initializer;
             SemicolonToken = semicolonToken;
         }
 
         #region Properties
 
-        public override SyntaxKind Kind => SyntaxKind.ExpressionStatement;
+        public override SyntaxKind Kind => SyntaxKind.VariableDeclarationStatement;
 
-        public ExpressionSyntax Expression { get; }
+        public SyntaxToken Keyword { get; }
+        public SyntaxToken? ExplicitType { get; }
+        public SyntaxToken Identifier { get; }
+        public SyntaxToken EqualsToken { get; }
+        public ExpressionSyntax Initializer { get; }
         public SyntaxToken? SemicolonToken { get; }
 
         #endregion Properties
@@ -41,9 +49,15 @@ namespace VSharp.Syntax
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return Expression;
+            yield return Keyword;
+            if (ExplicitType is not null)
+                yield return ExplicitType;
 
-            if (SemicolonToken != null)
+            yield return Identifier;
+            yield return EqualsToken;
+            yield return Initializer;
+
+            if (SemicolonToken is not null)
                 yield return SemicolonToken;
         }
 

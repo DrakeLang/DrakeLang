@@ -21,24 +21,24 @@ using System.Collections.Immutable;
 
 namespace VSharp.Syntax
 {
-    internal abstract class NamespaceDeclarationStatementSyntax : StatementSyntax
+    public abstract class NamespaceDeclarationSyntax : DeclarationSyntax
     {
-        protected NamespaceDeclarationStatementSyntax(SyntaxToken namespaceToken, SeparatedSyntaxList<SyntaxToken> names, ImmutableArray<StatementSyntax> statements)
+        protected NamespaceDeclarationSyntax(SyntaxToken namespaceToken, SeparatedSyntaxList<SyntaxToken> names, ImmutableArray<StatementSyntax> statements)
         {
             NamespaceToken = namespaceToken;
             Names = names;
             Statements = statements;
         }
 
-        public override SyntaxKind Kind => SyntaxKind.NamespaceDeclarationStatement;
+        public override SyntaxKind Kind => SyntaxKind.NamespaceDeclaration;
         public SyntaxToken NamespaceToken { get; }
         public SeparatedSyntaxList<SyntaxToken> Names { get; }
         public ImmutableArray<StatementSyntax> Statements { get; }
     }
 
-    internal sealed class BodiedNamespaceDeclarationStatementSyntax : NamespaceDeclarationStatementSyntax
+    internal sealed class BodiedNamespaceDeclarationStatementSyntax : NamespaceDeclarationSyntax
     {
-        public BodiedNamespaceDeclarationStatementSyntax(SyntaxToken namespaceToken, SeparatedSyntaxList<SyntaxToken> names, BlockStatementSyntax namespaceBody)
+        internal BodiedNamespaceDeclarationStatementSyntax(SyntaxToken namespaceToken, SeparatedSyntaxList<SyntaxToken> names, BlockStatementSyntax namespaceBody)
             : base(namespaceToken, names, namespaceBody.Statements)
         {
             NamespaceBody = namespaceBody;
@@ -58,9 +58,9 @@ namespace VSharp.Syntax
         }
     }
 
-    internal sealed class SimpleNamespaceDeclarationStatementSyntax : NamespaceDeclarationStatementSyntax
+    internal sealed class SimpleNamespaceDeclarationStatementSyntax : NamespaceDeclarationSyntax
     {
-        public SimpleNamespaceDeclarationStatementSyntax(SyntaxToken namespaceToken, SeparatedSyntaxList<SyntaxToken> names, SyntaxToken semicolon, ImmutableArray<StatementSyntax> statements)
+        internal SimpleNamespaceDeclarationStatementSyntax(SyntaxToken namespaceToken, SeparatedSyntaxList<SyntaxToken> names, SyntaxToken semicolon, ImmutableArray<StatementSyntax> statements)
             : base(namespaceToken, names, statements)
         {
             Semicolon = semicolon;

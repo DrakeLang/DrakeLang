@@ -20,17 +20,20 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    public class NameExpressionSyntax : ExpressionSyntax
+    public sealed class ExpressionStatementSyntax : StatementSyntax
     {
-        public NameExpressionSyntax(SyntaxToken identifierToken)
+        internal ExpressionStatementSyntax(ExpressionSyntax expression, SyntaxToken? semicolonToken)
         {
-            IdentifierToken = identifierToken;
+            Expression = expression;
+            SemicolonToken = semicolonToken;
         }
 
         #region Properties
 
-        public override SyntaxKind Kind => SyntaxKind.NameExpression;
-        public SyntaxToken IdentifierToken { get; }
+        public override SyntaxKind Kind => SyntaxKind.ExpressionStatement;
+
+        public ExpressionSyntax Expression { get; }
+        public SyntaxToken? SemicolonToken { get; }
 
         #endregion Properties
 
@@ -38,7 +41,10 @@ namespace VSharp.Syntax
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return IdentifierToken;
+            yield return Expression;
+
+            if (SemicolonToken != null)
+                yield return SemicolonToken;
         }
 
         #endregion Methods

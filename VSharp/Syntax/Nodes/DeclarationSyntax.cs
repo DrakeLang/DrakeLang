@@ -16,32 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-
 namespace VSharp.Syntax
 {
-    internal sealed class ContinueStatementSyntax : StatementSyntax
+    public abstract class DeclarationSyntax : StatementSyntax
     {
-        public ContinueStatementSyntax(SyntaxToken continueKeyword, LiteralExpressionSyntax? layerExpression, SyntaxToken semicolon)
-        {
-            ContinueKeyword = continueKeyword;
-            LayerExpression = layerExpression;
-            Semicolon = semicolon;
-        }
-
-        public override SyntaxKind Kind => SyntaxKind.ContinueStatement;
-
-        public SyntaxToken ContinueKeyword { get; }
-        public LiteralExpressionSyntax? LayerExpression { get; }
-        public SyntaxToken Semicolon { get; }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return ContinueKeyword;
-            if (LayerExpression != null)
-                yield return LayerExpression;
-
-            yield return Semicolon;
-        }
     }
 }

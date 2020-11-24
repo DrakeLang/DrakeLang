@@ -20,9 +20,9 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    internal sealed class TypeofExpressionSyntax : ExpressionSyntax
+    public sealed class TypeofExpressionSyntax : ExpressionSyntax
     {
-        public TypeofExpressionSyntax(
+        internal TypeofExpressionSyntax(
             SyntaxToken typeofKeyword,
             SyntaxToken leftParenthesis,
             TypeExpressionSyntax typeExpression,

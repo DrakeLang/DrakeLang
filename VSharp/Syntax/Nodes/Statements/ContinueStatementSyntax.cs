@@ -20,45 +20,27 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    public sealed class LabelStatementSyntax : StatementSyntax
+    public sealed class ContinueStatementSyntax : StatementSyntax
     {
-        public LabelStatementSyntax(SyntaxToken identifier, SyntaxToken colonToken)
+        internal ContinueStatementSyntax(SyntaxToken continueKeyword, LiteralExpressionSyntax? layerExpression, SyntaxToken semicolon)
         {
-            Identifier = identifier;
-            ColonToken = colonToken;
-        }
-
-        public override SyntaxKind Kind => SyntaxKind.LabelStatement;
-
-        public SyntaxToken Identifier { get; }
-        public SyntaxToken ColonToken { get; }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return Identifier;
-            yield return ColonToken;
-        }
-    }
-
-    public sealed class GoToStatementSyntax : StatementSyntax
-    {
-        public GoToStatementSyntax(SyntaxToken goToKeyword, SyntaxToken label, SyntaxToken semicolon)
-        {
-            GoToKeyword = goToKeyword;
-            Label = label;
+            ContinueKeyword = continueKeyword;
+            LayerExpression = layerExpression;
             Semicolon = semicolon;
         }
 
-        public override SyntaxKind Kind => SyntaxKind.GoToStatement;
+        public override SyntaxKind Kind => SyntaxKind.ContinueStatement;
 
-        public SyntaxToken GoToKeyword { get; }
-        public SyntaxToken Label { get; }
+        public SyntaxToken ContinueKeyword { get; }
+        public LiteralExpressionSyntax? LayerExpression { get; }
         public SyntaxToken Semicolon { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return GoToKeyword;
-            yield return Label;
+            yield return ContinueKeyword;
+            if (LayerExpression != null)
+                yield return LayerExpression;
+
             yield return Semicolon;
         }
     }

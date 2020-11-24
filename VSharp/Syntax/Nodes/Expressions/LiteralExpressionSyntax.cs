@@ -20,19 +20,33 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    public sealed class TypeExpressionSyntax : ExpressionSyntax
+    public sealed class LiteralExpressionSyntax : ExpressionSyntax
     {
-        public TypeExpressionSyntax(SyntaxToken typeIdentifier)
+        internal LiteralExpressionSyntax(SyntaxToken literalToken) : this(literalToken, literalToken.Value)
         {
-            TypeIdentifier = typeIdentifier;
         }
 
-        public override SyntaxKind Kind => SyntaxKind.TypeExpression;
-        public SyntaxToken TypeIdentifier { get; }
+        internal LiteralExpressionSyntax(SyntaxToken literalToken, object? value)
+        {
+            LiteralToken = literalToken;
+            Value = value;
+        }
+
+        #region Properties
+
+        public override SyntaxKind Kind => SyntaxKind.LiteralExpression;
+        public SyntaxToken LiteralToken { get; }
+        public object? Value { get; }
+
+        #endregion Properties
+
+        #region Methods
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return TypeIdentifier;
+            yield return LiteralToken;
         }
+
+        #endregion Methods
     }
 }

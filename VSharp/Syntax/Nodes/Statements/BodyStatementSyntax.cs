@@ -21,26 +21,28 @@ using System.Collections.Immutable;
 
 namespace VSharp.Syntax
 {
-    public sealed class BlockStatementSyntax : StatementSyntax
+    public abstract class BodyStatementSyntax : StatementSyntax
     {
-        public BlockStatementSyntax(SyntaxToken openBraceToken, ImmutableArray<StatementSyntax> statements, SyntaxToken closeBraceToken)
+        protected BodyStatementSyntax(ImmutableArray<StatementSyntax> statements)
+        {
+            Statements = statements;
+        }
+
+        public ImmutableArray<StatementSyntax> Statements { get; }
+    }
+
+    public sealed class BlockBodyStatementSyntax : BodyStatementSyntax
+    {
+        internal BlockBodyStatementSyntax(SyntaxToken openBraceToken, ImmutableArray<StatementSyntax> statements, SyntaxToken closeBraceToken)
+            : base(statements)
         {
             OpenBraceToken = openBraceToken;
-            Statements = statements;
             CloseBraceToken = closeBraceToken;
         }
 
-        #region Properties
-
-        public override SyntaxKind Kind => SyntaxKind.BlockStatement;
-
+        public override SyntaxKind Kind => SyntaxKind.BlockBodyStatement;
         public SyntaxToken OpenBraceToken { get; }
-        public ImmutableArray<StatementSyntax> Statements { get; }
         public SyntaxToken CloseBraceToken { get; }
-
-        #endregion Properties
-
-        #region Methods
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
@@ -51,7 +53,25 @@ namespace VSharp.Syntax
 
             yield return CloseBraceToken;
         }
+    }
 
-        #endregion Methods
+    public sealed class ExpressionBodyStatementSyntax : BodyStatementSyntax
+    {
+        internal ExpressionBodyStatementSyntax(SyntaxToken lambdaOperator, StatementSyntax statement)
+            : base(ImmutableArray.Create(statement))
+        {
+            LambdaOperator = lambdaOperator;
+            Statement = statement;
+        }
+
+        public override SyntaxKind Kind => SyntaxKind.ExpressionBodyStatement;
+        public SyntaxToken LambdaOperator { get; }
+        public StatementSyntax Statement { get; }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return LambdaOperator;
+            yield return Statement;
+        }
     }
 }

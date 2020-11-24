@@ -22,7 +22,7 @@ namespace VSharp.Syntax
 {
     public sealed class UnaryExpressionSyntax : ExpressionSyntax
     {
-        public UnaryExpressionSyntax(SyntaxToken operatorToken, ExpressionSyntax operand, UnaryType unaryType)
+        internal UnaryExpressionSyntax(SyntaxToken operatorToken, ExpressionSyntax operand, UnaryType unaryType)
         {
             OperatorToken = operatorToken;
             Operand = operand;

@@ -16,15 +16,23 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace VSharp.Syntax
 {
-    public abstract class LoopStatementSyntax : StatementSyntax
+    public sealed class TypeExpressionSyntax : ExpressionSyntax
     {
-        public LoopStatementSyntax(StatementSyntax body)
+        internal TypeExpressionSyntax(SyntaxToken typeIdentifier)
         {
-            Body = body;
+            TypeIdentifier = typeIdentifier;
         }
 
-        public StatementSyntax Body { get; }
+        public override SyntaxKind Kind => SyntaxKind.TypeExpression;
+        public SyntaxToken TypeIdentifier { get; }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return TypeIdentifier;
+        }
     }
 }

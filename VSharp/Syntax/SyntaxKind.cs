@@ -95,16 +95,19 @@ namespace VSharp.Syntax
         // Nodes
 
         CompilationUnit,
-        ElseClause,
         Parameter,
+
+        // Declaration statements
+
+        NamespaceDeclaration,
+        MethodDeclaration,
 
         // Statements
 
-        NamespaceDeclarationStatement,
         BlockStatement,
         VariableDeclarationStatement,
-        MethodDeclarationStatement,
         IfStatement,
+        ElseStatement,
         WhileStatement,
         ForStatement,
         GoToKeyword,

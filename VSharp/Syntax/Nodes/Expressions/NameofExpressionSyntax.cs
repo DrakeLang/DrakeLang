@@ -20,39 +20,37 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    internal sealed class IfStatementSyntax : StatementSyntax
+    public sealed class NameofExpressionSyntax : ExpressionSyntax
     {
-        public IfStatementSyntax(SyntaxToken ifKeyword, ParenthesizedExpressionSyntax condition, StatementSyntax thenStatement, ElseClauseSyntax? elseClause)
+        internal NameofExpressionSyntax(
+           SyntaxToken typeofKeyword,
+           SyntaxToken leftParenthesis,
+           SyntaxToken identifierToken,
+           SyntaxToken rightParenthesis)
         {
-            IfKeyword = ifKeyword;
-            Condition = condition;
-            ThenStatement = thenStatement;
-            ElseClause = elseClause;
+            NameofKeyword = typeofKeyword;
+            LeftParenthesis = leftParenthesis;
+            IdentifierToken = identifierToken;
+            RightParenthesis = rightParenthesis;
         }
 
         #region Properties
 
-        public override SyntaxKind Kind => SyntaxKind.IfStatement;
+        public override SyntaxKind Kind => SyntaxKind.NameofExpression;
 
-        public SyntaxToken IfKeyword { get; }
-        public ParenthesizedExpressionSyntax Condition { get; }
-        public StatementSyntax ThenStatement { get; }
-        public ElseClauseSyntax? ElseClause { get; }
+        public SyntaxToken NameofKeyword { get; }
+        public SyntaxToken LeftParenthesis { get; }
+        public SyntaxToken IdentifierToken { get; }
+        public SyntaxToken RightParenthesis { get; }
 
         #endregion Properties
 
-        #region Methods
-
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return IfKeyword;
-            yield return Condition;
-            yield return ThenStatement;
-
-            if (ElseClause != null)
-                yield return ElseClause;
+            yield return NameofKeyword;
+            yield return LeftParenthesis;
+            yield return IdentifierToken;
+            yield return RightParenthesis;
         }
-
-        #endregion Methods
     }
 }

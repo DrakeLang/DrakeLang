@@ -22,47 +22,44 @@ namespace VSharp.Syntax
 {
     /**
      * Syntax:
-     * - methodName();
-     * - methodName(param1);
-     * - methodName(param1, param2);
+     * def methodName() {}
+     * int methodName() {}
+     * def methodName(type param1) {}
+     * def methodName(type param2, type param2) {}
      */
 
-    public sealed class CallExpressionSyntax : ExpressionSyntax
+    public sealed class MethodDeclarationSyntax : DeclarationSyntax
     {
-        public CallExpressionSyntax(SeparatedSyntaxList<SyntaxToken>? namespaceNames, SyntaxToken identifier, SyntaxToken leftParenthesis, SeparatedSyntaxList<SyntaxNode> arguments, SyntaxToken rightParenthesis)
+        internal MethodDeclarationSyntax(SyntaxToken typeOrDefKeyword, SyntaxToken identifier, SyntaxToken leftParenthesis, SeparatedSyntaxList<ParameterSyntax> parameters, SyntaxToken rightParenthesis, BodyStatementSyntax declaration)
         {
-            NamespaceNames = namespaceNames;
+            TypeOrDefKeyword = typeOrDefKeyword;
             Identifier = identifier;
             LeftParenthesis = leftParenthesis;
-            Arguments = arguments;
+            Parameters = parameters;
             RightParenthesis = rightParenthesis;
+            Declaration = declaration;
         }
 
-        public override SyntaxKind Kind => SyntaxKind.CallExpression;
+        public override SyntaxKind Kind => SyntaxKind.MethodDeclaration;
 
-        public SeparatedSyntaxList<SyntaxToken>? NamespaceNames { get; }
+        public SyntaxToken TypeOrDefKeyword { get; }
         public SyntaxToken Identifier { get; }
         public SyntaxToken LeftParenthesis { get; }
-        public SeparatedSyntaxList<SyntaxNode> Arguments { get; }
+        public SeparatedSyntaxList<ParameterSyntax> Parameters { get; }
         public SyntaxToken RightParenthesis { get; }
+        public BodyStatementSyntax Declaration { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            if (NamespaceNames is not null)
-            {
-                foreach (var item in NamespaceNames.GetWithSeparators())
-                {
-                    yield return item;
-                }
-            }
-
+            yield return TypeOrDefKeyword;
             yield return Identifier;
             yield return LeftParenthesis;
-
-            foreach (var argument in Arguments.GetWithSeparators())
-                yield return argument;
-
+            foreach (var parameter in Parameters)
+            {
+                yield return parameter;
+            }
             yield return RightParenthesis;
+            yield return Declaration;
         }
     }
 }

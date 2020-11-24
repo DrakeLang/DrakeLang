@@ -20,21 +20,21 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    public sealed class AssignmentExpressionSyntax : ExpressionSyntax
+    public sealed class WhileStatementSyntax : LoopStatementSyntax
     {
-        public AssignmentExpressionSyntax(SyntaxToken identifierToken, SyntaxToken equalsToken, ExpressionSyntax expression)
+        internal WhileStatementSyntax(SyntaxToken whileKeyword, ParenthesizedExpressionSyntax condition, StatementSyntax body)
+            : base(body)
         {
-            IdentifierToken = identifierToken;
-            EqualsToken = equalsToken;
-            Expression = expression;
+            WhileKeyword = whileKeyword;
+            Condition = condition;
         }
 
         #region Properties
 
-        public override SyntaxKind Kind => SyntaxKind.AssignmentExpression;
-        public SyntaxToken IdentifierToken { get; }
-        public SyntaxToken EqualsToken { get; }
-        public ExpressionSyntax Expression { get; }
+        public override SyntaxKind Kind => SyntaxKind.WhileStatement;
+
+        public SyntaxToken WhileKeyword { get; }
+        public ParenthesizedExpressionSyntax Condition { get; }
 
         #endregion Properties
 
@@ -42,9 +42,9 @@ namespace VSharp.Syntax
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return IdentifierToken;
-            yield return EqualsToken;
-            yield return Expression;
+            yield return WhileKeyword;
+            yield return Condition;
+            yield return Body;
         }
 
         #endregion Methods

@@ -17,33 +17,31 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 
 namespace VSharp.Syntax
 {
-    /// <summary>
-    /// Root object of a compilation.
-    /// </summary>
-    public sealed class CompilationUnitSyntax : SyntaxNode
+    public sealed class BreakStatementSyntax : StatementSyntax
     {
-        internal CompilationUnitSyntax(ImmutableArray<StatementSyntax> statements, SyntaxToken endOfFileToken)
+        internal BreakStatementSyntax(SyntaxToken breakKeyword, LiteralExpressionSyntax? layerExpression, SyntaxToken semicolon)
         {
-            Statements = statements;
-            EndOfFileToken = endOfFileToken;
+            BreakKeyword = breakKeyword;
+            LayerExpression = layerExpression;
+            Semicolon = semicolon;
         }
 
-        public ImmutableArray<StatementSyntax> Statements { get; }
-        public SyntaxToken EndOfFileToken { get; }
+        public override SyntaxKind Kind => SyntaxKind.BreakStatement;
 
-        public override SyntaxKind Kind => SyntaxKind.CompilationUnit;
+        public SyntaxToken BreakKeyword { get; }
+        public LiteralExpressionSyntax? LayerExpression { get; }
+        public SyntaxToken Semicolon { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            foreach (var statement in Statements)
-            {
-                yield return statement;
-            }
-            yield return EndOfFileToken;
+            yield return BreakKeyword;
+            if (LayerExpression != null)
+                yield return LayerExpression;
+
+            yield return Semicolon;
         }
     }
 }

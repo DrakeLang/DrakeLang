@@ -138,7 +138,7 @@ namespace VSharp.Syntax
             return new BlockStatementSyntax(openBraceToken, statements, closeBraceToken);
         }
 
-        private NamespaceDeclarationStatementSyntax ParseNamespaceDeclarationStatement()
+        private NamespaceDeclarationSyntax ParseNamespaceDeclarationStatement()
         {
             var namespaceToken = NextToken();
             var names = ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken, () => Current.Kind is SyntaxKind.OpenBraceToken or SyntaxKind.SemicolonToken);
@@ -291,7 +291,7 @@ namespace VSharp.Syntax
             return new LabelStatementSyntax(identifier, colonToken);
         }
 
-        private MethodDeclarationStatementSyntax ParseMethodDeclarationStatement()
+        private MethodDeclarationSyntax ParseMethodDeclarationStatement()
         {
             var defKeyword = Current.Kind.IsTypeKeyword() ? NextToken() : MatchToken(SyntaxKind.DefKeyword);
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
@@ -300,7 +300,7 @@ namespace VSharp.Syntax
             var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
             var declaration = Current.Kind == SyntaxKind.EqualsGreaterToken ? (BodyStatementSyntax)ParseExpressionBody() : ParseBlockBody();
 
-            return new MethodDeclarationStatementSyntax(defKeyword, identifier, leftParenthesis, parameters, rightParenthesis, declaration);
+            return new MethodDeclarationSyntax(defKeyword, identifier, leftParenthesis, parameters, rightParenthesis, declaration);
         }
 
         private ParameterSyntax ParseParameter()

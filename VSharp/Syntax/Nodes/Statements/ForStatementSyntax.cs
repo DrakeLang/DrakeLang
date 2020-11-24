@@ -22,7 +22,7 @@ namespace VSharp.Syntax
 {
     public sealed class ForStatementSyntax : LoopStatementSyntax
     {
-        public ForStatementSyntax(
+        internal ForStatementSyntax(
             SyntaxToken forKeyword,
             SyntaxToken openParenthesisToken,
             StatementSyntax? initializationStatement, SyntaxToken initializationSemicolon,

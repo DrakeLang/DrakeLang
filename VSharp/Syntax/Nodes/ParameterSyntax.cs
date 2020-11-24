@@ -22,7 +22,7 @@ namespace VSharp.Syntax
 {
     public sealed class ParameterSyntax : SyntaxNode
     {
-        public ParameterSyntax(TypeExpressionSyntax typeToken, SyntaxToken identifier)
+        internal ParameterSyntax(TypeExpressionSyntax typeToken, SyntaxToken identifier)
         {
             TypeToken = typeToken;
             Identifier = identifier;

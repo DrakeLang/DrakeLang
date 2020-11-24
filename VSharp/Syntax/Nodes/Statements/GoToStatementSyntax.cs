@@ -20,31 +20,26 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    public sealed class ElseClauseSyntax : SyntaxNode
+    public sealed class GoToStatementSyntax : StatementSyntax
     {
-        public ElseClauseSyntax(SyntaxToken elseKeyword, StatementSyntax elseStatement)
+        internal GoToStatementSyntax(SyntaxToken goToKeyword, SyntaxToken label, SyntaxToken semicolon)
         {
-            ElseKeyword = elseKeyword;
-            ElseStatement = elseStatement;
+            GoToKeyword = goToKeyword;
+            Label = label;
+            Semicolon = semicolon;
         }
 
-        #region Properties
+        public override SyntaxKind Kind => SyntaxKind.GoToStatement;
 
-        public override SyntaxKind Kind => SyntaxKind.ElseClause;
-
-        public SyntaxToken ElseKeyword { get; }
-        public StatementSyntax ElseStatement { get; }
-
-        #endregion Properties
-
-        #region Methods
+        public SyntaxToken GoToKeyword { get; }
+        public SyntaxToken Label { get; }
+        public SyntaxToken Semicolon { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return ElseKeyword;
-            yield return ElseStatement;
+            yield return GoToKeyword;
+            yield return Label;
+            yield return Semicolon;
         }
-
-        #endregion Methods
     }
 }

@@ -17,32 +17,41 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace VSharp.Syntax
 {
-    public sealed class ReturnStatementSyntax : StatementSyntax
+    public sealed class BlockStatementSyntax : StatementSyntax
     {
-        public ReturnStatementSyntax(SyntaxToken returnKeyword, ExpressionSyntax? expression, SyntaxToken semicolonToken)
+        internal BlockStatementSyntax(SyntaxToken openBraceToken, ImmutableArray<StatementSyntax> statements, SyntaxToken closeBraceToken)
         {
-            ReturnKeyword = returnKeyword;
-            Expression = expression;
-            SemicolonToken = semicolonToken;
+            OpenBraceToken = openBraceToken;
+            Statements = statements;
+            CloseBraceToken = closeBraceToken;
         }
 
-        public override SyntaxKind Kind => SyntaxKind.ReturnStatement;
+        #region Properties
 
-        public SyntaxToken ReturnKeyword { get; }
-        public ExpressionSyntax? Expression { get; }
-        public SyntaxToken SemicolonToken { get; }
+        public override SyntaxKind Kind => SyntaxKind.BlockStatement;
+
+        public SyntaxToken OpenBraceToken { get; }
+        public ImmutableArray<StatementSyntax> Statements { get; }
+        public SyntaxToken CloseBraceToken { get; }
+
+        #endregion Properties
+
+        #region Methods
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return ReturnKeyword;
+            yield return OpenBraceToken;
 
-            if (Expression != null)
-                yield return Expression;
+            foreach (var statement in Statements)
+                yield return statement;
 
-            yield return SemicolonToken;
+            yield return CloseBraceToken;
         }
+
+        #endregion Methods
     }
 }

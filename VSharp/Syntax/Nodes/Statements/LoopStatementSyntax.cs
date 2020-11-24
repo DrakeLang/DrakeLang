@@ -16,37 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-
 namespace VSharp.Syntax
 {
-    internal sealed class WhileStatementSyntax : LoopStatementSyntax
+    public abstract class LoopStatementSyntax : StatementSyntax
     {
-        public WhileStatementSyntax(SyntaxToken whileKeyword, ParenthesizedExpressionSyntax condition, StatementSyntax body)
-            : base(body)
+        protected LoopStatementSyntax(StatementSyntax body)
         {
-            WhileKeyword = whileKeyword;
-            Condition = condition;
+            Body = body;
         }
 
-        #region Properties
-
-        public override SyntaxKind Kind => SyntaxKind.WhileStatement;
-
-        public SyntaxToken WhileKeyword { get; }
-        public ParenthesizedExpressionSyntax Condition { get; }
-
-        #endregion Properties
-
-        #region Methods
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            yield return WhileKeyword;
-            yield return Condition;
-            yield return Body;
-        }
-
-        #endregion Methods
+        public StatementSyntax Body { get; }
     }
 }

@@ -20,29 +20,23 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    public sealed class ExplicitCastExpressionSyntax : ExpressionSyntax
+    public sealed class LabelStatementSyntax : StatementSyntax
     {
-        public ExplicitCastExpressionSyntax(SyntaxToken openParenthesisToken, TypeExpressionSyntax typeExpression, SyntaxToken closeParenthesisToken, ExpressionSyntax expression)
+        internal LabelStatementSyntax(SyntaxToken identifier, SyntaxToken colonToken)
         {
-            OpenParenthesisToken = openParenthesisToken;
-            TypeExpression = typeExpression;
-            CloseParenthesisToken = closeParenthesisToken;
-            Expression = expression;
+            Identifier = identifier;
+            ColonToken = colonToken;
         }
 
-        public override SyntaxKind Kind => SyntaxKind.ExplicitCastExpression;
+        public override SyntaxKind Kind => SyntaxKind.LabelStatement;
 
-        public SyntaxToken OpenParenthesisToken { get; }
-        public TypeExpressionSyntax TypeExpression { get; }
-        public SyntaxToken CloseParenthesisToken { get; }
-        public ExpressionSyntax Expression { get; }
+        public SyntaxToken Identifier { get; }
+        public SyntaxToken ColonToken { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return OpenParenthesisToken;
-            yield return TypeExpression;
-            yield return CloseParenthesisToken;
-            yield return Expression;
+            yield return Identifier;
+            yield return ColonToken;
         }
     }
 }

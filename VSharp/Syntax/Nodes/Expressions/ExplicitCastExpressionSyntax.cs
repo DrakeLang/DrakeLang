@@ -20,28 +20,29 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    internal sealed class BreakStatementSyntax : StatementSyntax
+    public sealed class ExplicitCastExpressionSyntax : ExpressionSyntax
     {
-        public BreakStatementSyntax(SyntaxToken breakKeyword, LiteralExpressionSyntax? layerExpression, SyntaxToken semicolon)
+        internal ExplicitCastExpressionSyntax(SyntaxToken openParenthesisToken, TypeExpressionSyntax typeExpression, SyntaxToken closeParenthesisToken, ExpressionSyntax expression)
         {
-            BreakKeyword = breakKeyword;
-            LayerExpression = layerExpression;
-            Semicolon = semicolon;
+            OpenParenthesisToken = openParenthesisToken;
+            TypeExpression = typeExpression;
+            CloseParenthesisToken = closeParenthesisToken;
+            Expression = expression;
         }
 
-        public override SyntaxKind Kind => SyntaxKind.BreakStatement;
+        public override SyntaxKind Kind => SyntaxKind.ExplicitCastExpression;
 
-        public SyntaxToken BreakKeyword { get; }
-        public LiteralExpressionSyntax? LayerExpression { get; }
-        public SyntaxToken Semicolon { get; }
+        public SyntaxToken OpenParenthesisToken { get; }
+        public TypeExpressionSyntax TypeExpression { get; }
+        public SyntaxToken CloseParenthesisToken { get; }
+        public ExpressionSyntax Expression { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return BreakKeyword;
-            if (LayerExpression != null)
-                yield return LayerExpression;
-
-            yield return Semicolon;
+            yield return OpenParenthesisToken;
+            yield return TypeExpression;
+            yield return CloseParenthesisToken;
+            yield return Expression;
         }
     }
 }

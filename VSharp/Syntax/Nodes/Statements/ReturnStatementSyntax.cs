@@ -20,34 +20,29 @@ using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
-    internal class BinaryExpressionSyntax : ExpressionSyntax
+    public sealed class ReturnStatementSyntax : StatementSyntax
     {
-        public BinaryExpressionSyntax(ExpressionSyntax left, SyntaxToken operatorToken, ExpressionSyntax right)
+        internal ReturnStatementSyntax(SyntaxToken returnKeyword, ExpressionSyntax? expression, SyntaxToken semicolonToken)
         {
-            Left = left;
-            OperatorToken = operatorToken;
-            Right = right;
+            ReturnKeyword = returnKeyword;
+            Expression = expression;
+            SemicolonToken = semicolonToken;
         }
 
-        #region Properties
+        public override SyntaxKind Kind => SyntaxKind.ReturnStatement;
 
-        public override SyntaxKind Kind => SyntaxKind.BinaryExpression;
-
-        public ExpressionSyntax Left { get; }
-        public SyntaxToken OperatorToken { get; }
-        public ExpressionSyntax Right { get; }
-
-        #endregion Properties
-
-        #region Methods
+        public SyntaxToken ReturnKeyword { get; }
+        public ExpressionSyntax? Expression { get; }
+        public SyntaxToken SemicolonToken { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return Left;
-            yield return OperatorToken;
-            yield return Right;
-        }
+            yield return ReturnKeyword;
 
-        #endregion Methods
+            if (Expression != null)
+                yield return Expression;
+
+            yield return SemicolonToken;
+        }
     }
 }
