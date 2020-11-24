@@ -21,7 +21,7 @@ using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
-    internal class BoundBinaryExpression : BoundExpression
+    internal sealed class BoundBinaryExpression : BoundExpression
     {
         public BoundBinaryExpression(BoundExpression left, BoundBinaryOperator op, BoundExpression right)
         {

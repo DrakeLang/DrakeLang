@@ -23,7 +23,7 @@ using VSharp.Utils;
 
 namespace VSharp.Binding
 {
-    internal class BoundLiteralExpression : BoundExpression
+    internal sealed class BoundLiteralExpression : BoundExpression
     {
         public static readonly BoundLiteralExpression True = new BoundLiteralExpression(true);
         public static readonly BoundLiteralExpression False = new BoundLiteralExpression(false);

@@ -23,7 +23,7 @@ using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp.Binding
 {
-    internal class BoundBinaryOperator
+    internal sealed class BoundBinaryOperator
     {
         private BoundBinaryOperator(SyntaxKind syntaxKind, BoundBinaryOperatorKind kind, TypeSymbol type)
             : this(syntaxKind, kind, type, type, type)

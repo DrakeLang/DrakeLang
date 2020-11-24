@@ -23,7 +23,7 @@ using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp.Binding
 {
-    internal class BoundUnaryOperator
+    internal sealed class BoundUnaryOperator
     {
         private BoundUnaryOperator(SyntaxKind syntaxKind, UnaryType unaryType, BoundUnaryOperatorKind kind, TypeSymbol operandType)
             : this(syntaxKind, unaryType, kind, operandType, operandType)

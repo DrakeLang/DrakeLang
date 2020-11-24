@@ -32,7 +32,7 @@ namespace VSharp.Binding
         OnesComplement,
     }
 
-    internal static class BoundUnaryOperatorKindExpression
+    internal static class BoundUnaryOperatorKindExtensions
     {
         public static bool IsIncrementOrDecrement(this BoundUnaryOperatorKind kind) => kind is
             BoundUnaryOperatorKind.PreDecrement or

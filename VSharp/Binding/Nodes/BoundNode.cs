@@ -21,7 +21,7 @@ using System.IO;
 
 namespace VSharp.Binding
 {
-    public abstract class BoundNode
+    internal abstract class BoundNode
     {
         public abstract BoundNodeKind Kind { get; }
 

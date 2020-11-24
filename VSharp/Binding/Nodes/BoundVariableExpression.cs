@@ -22,7 +22,7 @@ using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
-    internal class BoundVariableExpression : BoundExpression
+    internal sealed class BoundVariableExpression : BoundExpression
     {
         public BoundVariableExpression(VariableSymbol variable)
         {
