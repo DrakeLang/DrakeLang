@@ -77,14 +77,14 @@ namespace VSharp.Lowering
 
         #region RewriteStatement
 
-        protected override BoundStatement RewriteMethodDeclarationStatement(BoundMethodDeclarationStatement node)
+        protected override BoundStatement RewriteMethodDeclarationStatement(BoundMethodDeclaration node)
         {
             var declaration = Lower(node.Declaration);
 
-            var methods = declaration.Statements.OfType<BoundMethodDeclarationStatement>();
+            var methods = declaration.Statements.OfType<BoundMethodDeclaration>();
             var generalStatements = declaration.Statements.Except(methods).ToImmutableArray();
 
-            var method = new BoundMethodDeclarationStatement(node.Method, new BoundBlockStatement(generalStatements));
+            var method = new BoundMethodDeclaration(node.Method, new BoundBlockStatement(generalStatements));
             methods = methods.Append(method);
 
             return new BoundBlockStatement(methods.ToImmutableArray<BoundStatement>());

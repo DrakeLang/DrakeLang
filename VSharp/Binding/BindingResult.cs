@@ -25,14 +25,14 @@ namespace VSharp.Binding
 {
     public sealed class BindingResult
     {
-        internal BindingResult(ImmutableArray<BoundMethodDeclarationStatement> methods, ImmutableArray<Diagnostic> diagnostics)
+        internal BindingResult(ImmutableArray<BoundMethodDeclaration> methods, ImmutableArray<Diagnostic> diagnostics)
         {
             Methods = methods;
             Diagnostics = diagnostics;
         }
 
         public ImmutableArray<Diagnostic> Diagnostics { get; }
-        internal ImmutableArray<BoundMethodDeclarationStatement> Methods { get; }
+        internal ImmutableArray<BoundMethodDeclaration> Methods { get; }
 
         #region Methods
 

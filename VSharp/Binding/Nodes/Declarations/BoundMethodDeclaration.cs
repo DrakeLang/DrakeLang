@@ -17,14 +17,26 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using VSharp.Binding;
 using VSharp.Symbols;
 
-namespace VSharp
+namespace VSharp.Binding
 {
-    internal interface IEvaluator
+
+    internal sealed class BoundMethodDeclaration : BoundDeclaration
     {
-        void Evaluate(ImmutableArray<BoundMethodDeclaration> methods, Dictionary<VariableSymbol, object> variables);
+        public BoundMethodDeclaration(MethodSymbol method, BoundBlockStatement declaration)
+        {
+            Method = method;
+            Declaration = declaration;
+        }
+
+        public override BoundNodeKind Kind => BoundNodeKind.MethodDeclaration;
+        public MethodSymbol Method { get; }
+        public BoundBlockStatement Declaration { get; }
+
+        public override IEnumerable<BoundNode> GetChildren()
+        {
+            yield return Declaration;
+        }
     }
 }

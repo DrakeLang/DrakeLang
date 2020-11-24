@@ -32,7 +32,7 @@ namespace VSharp
         {
         }
 
-        public void Evaluate(ImmutableArray<BoundMethodDeclarationStatement> methods, Dictionary<VariableSymbol, object> variables)
+        public void Evaluate(ImmutableArray<BoundMethodDeclaration> methods, Dictionary<VariableSymbol, object> variables)
         {
             var entryMethod = methods.FirstOrDefault(m => m.Method.Name == Binder.GeneratedMainMethodName)
                 ?? methods.FirstOrDefault(m => m.Method.Name == Binder.MainMethodName);
@@ -49,11 +49,11 @@ namespace VSharp
             private readonly BoundBlockStatement _root;
             private readonly Dictionary<VariableSymbol, object> _variables;
             private readonly Dictionary<LabelSymbol, int> _labelToIndex = new Dictionary<LabelSymbol, int>();
-            private readonly Dictionary<MethodSymbol, BoundMethodDeclarationStatement> _methods;
+            private readonly Dictionary<MethodSymbol, BoundMethodDeclaration> _methods;
 
             public InternalEvaluator(BoundBlockStatement root,
                                      Dictionary<VariableSymbol, object> variables,
-                                     Dictionary<MethodSymbol, BoundMethodDeclarationStatement> methods)
+                                     Dictionary<MethodSymbol, BoundMethodDeclaration> methods)
             {
                 _root = root;
                 _variables = variables;

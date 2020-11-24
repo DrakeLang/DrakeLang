@@ -95,7 +95,7 @@ namespace VSharp.Binding
                 {
                     BoundNodeKind.BlockStatement => RewriteBlockStatement((BoundBlockStatement)node),
                     BoundNodeKind.VariableDeclarationStatement => RewriteVariableDeclarationStatement((BoundVariableDeclarationStatement)node),
-                    BoundNodeKind.MethodDeclarationStatement => RewriteMethodDeclarationStatement((BoundMethodDeclarationStatement)node),
+                    BoundNodeKind.MethodDeclaration => RewriteMethodDeclarationStatement((BoundMethodDeclaration)node),
                     BoundNodeKind.IfStatement => RewriteIfStatement((BoundIfStatement)node),
                     BoundNodeKind.WhileStatement => RewriteWhileStatement((BoundWhileStatement)node),
                     BoundNodeKind.ForStatement => RewriteForStatement((BoundForStatement)node),
@@ -153,7 +153,7 @@ namespace VSharp.Binding
             return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
-        protected virtual BoundStatement RewriteMethodDeclarationStatement(BoundMethodDeclarationStatement node)
+        protected virtual BoundStatement RewriteMethodDeclarationStatement(BoundMethodDeclaration node)
         {
             var declaration = RewriteBlockStatement(node.Declaration);
             if (declaration is BoundBlockStatement blockStatement)
@@ -161,10 +161,10 @@ namespace VSharp.Binding
                 if (declaration == node.Declaration)
                     return node;
                 else
-                    return new BoundMethodDeclarationStatement(node.Method, blockStatement);
+                    return new BoundMethodDeclaration(node.Method, blockStatement);
             }
 
-            return new BoundMethodDeclarationStatement(node.Method, new BoundBlockStatement(ImmutableArray.Create(declaration)));
+            return new BoundMethodDeclaration(node.Method, new BoundBlockStatement(ImmutableArray.Create(declaration)));
         }
 
         protected virtual BoundStatement RewriteIfStatement(BoundIfStatement node)

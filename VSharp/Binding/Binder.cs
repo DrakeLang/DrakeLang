@@ -62,12 +62,12 @@ namespace VSharp.Binding
             return new BindingResult(statements, diagnostics);
         }
 
-        private ImmutableArray<BoundMethodDeclarationStatement> BindTopLevelStatements(IEnumerable<StatementSyntax> statements)
+        private ImmutableArray<BoundMethodDeclaration> BindTopLevelStatements(IEnumerable<StatementSyntax> statements)
         {
             var boundStatements = BindStatements(statements);
             var loweredStatements = Lowerer.Lower(boundStatements, _labelGenerator);
 
-            var methods = loweredStatements.OfType<BoundMethodDeclarationStatement>();
+            var methods = loweredStatements.OfType<BoundMethodDeclaration>();
             var topLevelStatements = loweredStatements.Except(methods).ToImmutableArray();
 
             if (topLevelStatements.Length > 0)
@@ -78,7 +78,7 @@ namespace VSharp.Binding
                 _scope.TryDeclareMethod(mainMethodSymbol);
 
                 var mainMethodBody = new BoundBlockStatement(topLevelStatements);
-                var mainMethod = new BoundMethodDeclarationStatement(mainMethodSymbol, mainMethodBody);
+                var mainMethod = new BoundMethodDeclaration(mainMethodSymbol, mainMethodBody);
 
                 methods = methods.Prepend(mainMethod);
             }
@@ -294,7 +294,7 @@ namespace VSharp.Binding
                 if (method.ReturnType != Types.Void && !new ControlFlowGraph(boundDeclaration).AllPathsReturn())
                     Diagnostics.ReportMethodNotAllPathsReturnValue(syntax.Identifier.Span);
 
-                return new BoundMethodDeclarationStatement(method, boundDeclaration);
+                return new BoundMethodDeclaration(method, boundDeclaration);
             }
             finally
             {

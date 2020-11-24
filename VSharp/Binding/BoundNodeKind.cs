@@ -20,11 +20,14 @@ namespace VSharp.Binding
 {
     public enum BoundNodeKind
     {
+        // Declarations
+
+        MethodDeclaration,
+
         // Statements
 
         BlockStatement,
         VariableDeclarationStatement,
-        MethodDeclarationStatement,
         IfStatement,
         WhileStatement,
         ForStatement,

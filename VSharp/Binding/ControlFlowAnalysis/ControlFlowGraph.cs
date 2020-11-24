@@ -192,7 +192,7 @@ namespace VSharp.Binding.CFA
                         nextBlock();
                         break;
 
-                    case BoundNodeKind.MethodDeclarationStatement:
+                    case BoundNodeKind.MethodDeclaration:
                         break;
 
                     default:

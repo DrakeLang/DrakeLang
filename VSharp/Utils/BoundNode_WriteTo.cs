@@ -55,8 +55,8 @@ namespace VSharp.Binding
                     WriteVariableDeclarationStatement((BoundVariableDeclarationStatement)node, context);
                     break;
 
-                case BoundNodeKind.MethodDeclarationStatement:
-                    WriteMethodDeclarationStatement((BoundMethodDeclarationStatement)node, context);
+                case BoundNodeKind.MethodDeclaration:
+                    WriteMethodDeclarationStatement((BoundMethodDeclaration)node, context);
                     break;
 
                 case BoundNodeKind.LabelStatement:
@@ -131,7 +131,7 @@ namespace VSharp.Binding
             PrintChildren(node, context);
         }
 
-        private static void WriteMethodDeclarationStatement(BoundMethodDeclarationStatement node, WriteContext context)
+        private static void WriteMethodDeclarationStatement(BoundMethodDeclaration node, WriteContext context)
         {
             context.Writer.WriteSyntaxKind(node.Kind);
             context.Writer.Write(" ");
