@@ -86,6 +86,7 @@ namespace VSharp.Syntax
             SyntaxKind.IntKeyword or
             SyntaxKind.FloatKeyword or
             SyntaxKind.StringKeyword or
+            SyntaxKind.CharKeyword or
             SyntaxKind.VarKeyword or
             SyntaxKind.SetKeyword;
 
@@ -93,7 +94,8 @@ namespace VSharp.Syntax
             SyntaxKind.BoolKeyword or
             SyntaxKind.IntKeyword or
             SyntaxKind.FloatKeyword or
-            SyntaxKind.StringKeyword;
+            SyntaxKind.StringKeyword or
+            SyntaxKind.CharKeyword;
 
         public static bool IsImplicitTypeKeyword(this SyntaxKind kind) => kind is
             SyntaxKind.VarKeyword or
@@ -144,6 +146,7 @@ namespace VSharp.Syntax
             SyntaxKind.IntKeyword => "int",
             SyntaxKind.FloatKeyword => "float",
             SyntaxKind.StringKeyword => "string",
+            SyntaxKind.CharKeyword => "char",
             SyntaxKind.VarKeyword => "var",
             SyntaxKind.SetKeyword => "set",
             SyntaxKind.TrueKeyword => "true",
@@ -164,7 +167,7 @@ namespace VSharp.Syntax
 
             _ => null,
         };
-
+        
         public static bool TryGetKeywordKind(string word, out SyntaxKind keywordKind)
         {
             keywordKind = word switch
@@ -173,6 +176,7 @@ namespace VSharp.Syntax
                 "int" => SyntaxKind.IntKeyword,
                 "float" => SyntaxKind.FloatKeyword,
                 "string" => SyntaxKind.StringKeyword,
+                "char" => SyntaxKind.CharKeyword,
                 "var" => SyntaxKind.VarKeyword,
                 "set" => SyntaxKind.SetKeyword,
 

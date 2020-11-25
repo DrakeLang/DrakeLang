@@ -254,7 +254,7 @@ namespace VSharp.Syntax
         private WithNamespaceStatementSyntax ParseWithNamespaceSyntax()
         {
             var keyword = MatchToken(SyntaxKind.WithKeyword);
-            var names = ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken, 
+            var names = ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken,
                 () => Current.Kind is SyntaxKind.SemicolonToken or SyntaxKind.OpenBraceToken);
             if (Current.Kind == SyntaxKind.SemicolonToken)
             {
@@ -453,6 +453,7 @@ namespace VSharp.Syntax
                 SyntaxKind.IntegerToken => ParseIntegerLiteral(),
                 SyntaxKind.FloatToken => ParseFloatLiteral(),
                 SyntaxKind.StringToken => ParseStringLiteral(),
+                SyntaxKind.CharToken => ParseCharLiteral(),
 
                 SyntaxKind.IdentifierToken when LookAhead.Kind is
                     SyntaxKind.OpenParenthesisToken or SyntaxKind.DotToken
@@ -543,6 +544,12 @@ namespace VSharp.Syntax
         {
             var stringToken = MatchToken(SyntaxKind.StringToken);
             return new LiteralExpressionSyntax(stringToken);
+        }
+
+        private LiteralExpressionSyntax ParseCharLiteral()
+        {
+            var charToken = MatchToken(SyntaxKind.CharToken);
+            return new LiteralExpressionSyntax(charToken);
         }
 
         private CallExpressionSyntax ParseCallExpression()

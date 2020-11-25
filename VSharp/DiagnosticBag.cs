@@ -60,15 +60,27 @@ namespace VSharp
             Report(span, message);
         }
 
+        public void ReportEmptyCharacterLiteral(TextSpan span)
+        {
+            string message = "Empty character literal.";
+            Report(span, message);
+        }
+
+        public void ReportUnterminatedCharacterLiteral(TextSpan span)
+        {
+            string message = "Unterminated character literal.";
+            Report(span, message);
+        }
+
         public void ReportUnterminatedString(TextSpan span)
         {
-            string message = "Unterminated string literal";
+            string message = "Unterminated string literal.";
             Report(span, message);
         }
 
         public void ReportUnexpectedToken(TextSpan span, SyntaxKind actualKind, SyntaxKind expectedKind)
         {
-            string message = $"Unexpected token <{actualKind}>, expected <{expectedKind}>";
+            string message = $"Unexpected token <{actualKind}>, expected <{expectedKind}>.";
             Report(span, message);
         }
 

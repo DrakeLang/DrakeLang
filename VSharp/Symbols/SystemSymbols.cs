@@ -25,13 +25,13 @@ namespace VSharp.Symbols
     {
         public static class Namespaces
         {
-            public static readonly NamespaceSymbol Sys = new NamespaceSymbol(ImmutableArray.Create("Sys"));
+            public static readonly NamespaceSymbol Sys = new(ImmutableArray.Create("Sys"));
         }
 
         public static class Methods
         {
-            public static readonly MethodSymbol Print = new MethodSymbol(Namespaces.Sys, "Print", ImmutableArray.Create(new ParameterSymbol("text", Types.String)), Types.Void);
-            public static readonly MethodSymbol Input = new MethodSymbol(Namespaces.Sys, "Input", ImmutableArray<ParameterSymbol>.Empty, Types.String);
+            public static readonly MethodSymbol Print = new(Namespaces.Sys, "Print", ImmutableArray.Create(new ParameterSymbol("text", Types.String)), Types.Void);
+            public static readonly MethodSymbol Input = new(Namespaces.Sys, "Input", ImmutableArray<ParameterSymbol>.Empty, Types.String);
 
             public static IEnumerable<MethodSymbol> GetAll()
             {
@@ -42,13 +42,14 @@ namespace VSharp.Symbols
 
         public static class Types
         {
-            public static readonly TypeSymbol Error = new TypeSymbol("?");
-            public static readonly TypeSymbol Void = new TypeSymbol("void");
+            public static readonly TypeSymbol Error = new("?");
+            public static readonly TypeSymbol Void = new("void");
 
-            public static readonly TypeSymbol Boolean = new TypeSymbol("bool");
-            public static readonly TypeSymbol Int = new TypeSymbol("int");
-            public static readonly TypeSymbol Float = new TypeSymbol("float");
-            public static readonly TypeSymbol String = new TypeSymbol("string");
+            public static readonly TypeSymbol Boolean = new("bool");
+            public static readonly TypeSymbol Int = new("int");
+            public static readonly TypeSymbol Float = new("float");
+            public static readonly TypeSymbol String = new("string");
+            public static readonly TypeSymbol Char = new("char");
         }
     }
 }

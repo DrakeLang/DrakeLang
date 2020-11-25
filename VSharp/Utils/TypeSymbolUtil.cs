@@ -29,10 +29,12 @@ namespace VSharp.Utils
                 return Types.Boolean;
             else if (type == typeof(int))
                 return Types.Int;
-            else if (type == typeof(string))
-                return Types.String;
             else if (type == typeof(double))
                 return Types.Float;
+            else if (type == typeof(string))
+                return Types.String;
+            else if (type == typeof(char))
+                return Types.Char;
 
             throw new Exception($"Clr type '{type}' is illegal.");
         }
@@ -43,8 +45,9 @@ namespace VSharp.Utils
             {
                 bool _ => Types.Boolean,
                 int _ => Types.Int,
-                string _ => Types.String,
                 double _ => Types.Float,
+                string _ => Types.String,
+                char _ => Types.Char,
 
                 _ => throw new Exception($"Value '{value}' of type '{value.GetType()}' is illegal."),
             };

@@ -134,6 +134,8 @@ namespace VSharp.Tests.Syntax
                 (SyntaxKind.IdentifierToken, "abc"),
                 (SyntaxKind.StringToken, "\"a\""),
                 (SyntaxKind.StringToken, "\"JOIN THE ASCENDENCY!\""),
+                (SyntaxKind.CharToken, "'a'"),
+                (SyntaxKind.CharToken, "'\n'"),
                 (SyntaxKind.LineCommentToken, "//"),
                 (SyntaxKind.LineCommentToken, "// "),
                 (SyntaxKind.LineCommentToken, "// comment"),

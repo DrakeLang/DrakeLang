@@ -62,6 +62,10 @@ namespace VSharp.Syntax
             {
                 switch (Current)
                 {
+                    case '\'':
+                        ReadChar();
+                        break;
+
                     case '"':
                         ReadString();
                         break;
@@ -348,6 +352,34 @@ namespace VSharp.Syntax
                     syntaxKind = default;
                     return false;
             }
+        }
+
+        private void ReadChar()
+        {
+            // Skip quote start.
+            _position++;
+
+            if (Current is '\'')
+            {
+                var span = new TextSpan(_start, 1);
+                _diagnostics.ReportEmptyCharacterLiteral(span);
+
+                _value = default(char);
+            }
+            else
+            {
+                _value = Current;
+                _position++;
+
+                if (Current is not '\'')
+                {
+                    var span = new TextSpan(_start, 1);
+                    _diagnostics.ReportUnterminatedCharacterLiteral(span);
+                }
+            }
+
+            _position++;
+            _kind = SyntaxKind.CharToken;
         }
 
         private void ReadString()
