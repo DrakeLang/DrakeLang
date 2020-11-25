@@ -31,7 +31,6 @@ namespace VSharp
 {
     public sealed class Compilation
     {
-        private readonly LabelGenerator _labelGenerator = new LabelGenerator();
         private BindingResult? _bindingResult;
 
         public Compilation(SyntaxTree syntaxTree)
@@ -47,7 +46,7 @@ namespace VSharp
             {
                 if (_bindingResult is null)
                 {
-                    var result = Binder.Bind(SyntaxTree.Root, _labelGenerator);
+                    var result = Binder.Bind(SyntaxTree.Root);
                     result = new BindingResult(result.Methods, result.Diagnostics);
 
                     Interlocked.CompareExchange(ref _bindingResult, result, null);

@@ -18,6 +18,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using VSharp.Symbols;
 using VSharp.Syntax;
 using VSharp.Text;
@@ -236,6 +237,16 @@ namespace VSharp
         public void ReportIllegalSimpleNamespaceDeclaration(TextSpan span)
         {
             string message = $"Simple namespace declarations may only exist as top-level statement (not nested in other namespaces).";
+            Report(span, message);
+        }
+
+        public void ReportAmbigousSymbolReference(TextSpan span, IEnumerable<MemberSymbol> symbols)
+        {
+            var symbolStrs = symbols.Select(s => s.FullName)
+                                    .OrderBy(name => name)
+                                    .Select(name => '\'' + name + '\'');
+
+            string message = $"Reference is ambiguous between the following symbols: {string.Join(", ", symbolStrs)}.";
             Report(span, message);
         }
 

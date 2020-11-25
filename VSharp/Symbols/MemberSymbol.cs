@@ -18,20 +18,13 @@
 
 namespace VSharp.Symbols
 {
-    public sealed class TypeSymbol : MemberSymbol
+    public abstract class MemberSymbol : Symbol
     {
-        internal TypeSymbol(string name) : base(name)
+        private protected MemberSymbol(string name) : base(name)
         {
         }
 
-        internal TypeSymbol(NamespaceSymbol? @namespace, string name) : this(name)
-        {
-            Namespace = @namespace;
-        }
-
-        public override SymbolKind Kind => SymbolKind.Type;
-        public override NamespaceSymbol? Namespace { get; }
-
-        public override string FullName => throw new System.NotImplementedException();
+        public abstract NamespaceSymbol? Namespace { get; }
+        public virtual string FullName => Namespace is null ? Name : Namespace.Name + "." + Name;
     }
 }

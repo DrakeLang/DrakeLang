@@ -21,7 +21,7 @@ using System.Linq;
 
 namespace VSharp.Symbols
 {
-    public sealed class MethodSymbol : Symbol
+    public sealed class MethodSymbol : MemberSymbol
     {
         public MethodSymbol(string name, ImmutableArray<ParameterSymbol> parameters, TypeSymbol returnType) : base(name)
         {
@@ -29,19 +29,17 @@ namespace VSharp.Symbols
             ReturnType = returnType;
         }
 
-        public MethodSymbol(NamespaceSymbol? @namespace, string name, ImmutableArray<ParameterSymbol> parameters, TypeSymbol returnType) : base(name)
+        public MethodSymbol(NamespaceSymbol? namespaceSym, string name, ImmutableArray<ParameterSymbol> parameters, TypeSymbol returnType)
+            : this(name, parameters, returnType)
         {
-            Namespace = @namespace;
-            Parameters = parameters;
-            ReturnType = returnType;
+            Namespace = namespaceSym;
         }
 
         #region Properties
 
         public override SymbolKind Kind => SymbolKind.Method;
 
-        public NamespaceSymbol? Namespace { get; }
-        public string FullName => Namespace is null ? Name : Namespace.Name + "." + Name;
+        public override NamespaceSymbol? Namespace { get; }
         public ImmutableArray<ParameterSymbol> Parameters { get; }
         public TypeSymbol ReturnType { get; }
 

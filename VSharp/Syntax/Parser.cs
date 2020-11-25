@@ -122,6 +122,7 @@ namespace VSharp.Syntax
                 SyntaxKind.GoToKeyword => ParseGoToStatement(),
                 SyntaxKind.IdentifierToken when LookAhead.Kind == SyntaxKind.ColonToken => ParseLabelDeclarationStatement(),
                 SyntaxKind.ReturnKeyword => ParseReturnStatement(),
+                SyntaxKind.WithKeyword => ParseWithNamespaceSyntax(),
                 SyntaxKind.ContinueKeyword => ParseContinueStatement(),
                 SyntaxKind.BreakKeyword => ParseBreakStatement(),
 
@@ -250,6 +251,24 @@ namespace VSharp.Syntax
             return new ReturnStatementSyntax(keyword, expression, semicolon);
         }
 
+        private WithNamespaceStatementSyntax ParseWithNamespaceSyntax()
+        {
+            var keyword = MatchToken(SyntaxKind.WithKeyword);
+            var names = ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken, 
+                () => Current.Kind is SyntaxKind.SemicolonToken or SyntaxKind.OpenBraceToken);
+            if (Current.Kind == SyntaxKind.SemicolonToken)
+            {
+                var semicolon = MatchToken(SyntaxKind.SemicolonToken);
+                var statements = ParseStatements(() => Current.Kind is SyntaxKind.CloseBraceToken);
+                return new SimpleWithNamespaceStatementSyntax(keyword, names, semicolon, statements);
+            }
+            else
+            {
+                var body = ParseBlockStatement();
+                return new BodiedWithNamespaceStatementSyntax(keyword, names, body);
+            }
+        }
+
         private ContinueStatementSyntax ParseContinueStatement()
         {
             var keyword = MatchToken(SyntaxKind.ContinueKeyword);
@@ -314,7 +333,7 @@ namespace VSharp.Syntax
         private ExpressionBodyStatementSyntax ParseExpressionBody()
         {
             var lambdaOperator = MatchToken(SyntaxKind.EqualsGreaterToken);
-            var statement = ParseStatement();
+            var statement = ParseExpressionStatement(requireSemicolon: true);
 
             return new ExpressionBodyStatementSyntax(lambdaOperator, statement);
         }
@@ -329,8 +348,8 @@ namespace VSharp.Syntax
         {
             var expression = ParseExpression();
 
-            var semicolonToken = requireSemicolon ? MatchToken(SyntaxKind.SemicolonToken) : null;
-            return new ExpressionStatementSyntax(expression, semicolonToken);
+            var semicolon = requireSemicolon ? MatchToken(SyntaxKind.SemicolonToken) : null;
+            return new ExpressionStatementSyntax(expression, semicolon);
         }
 
         #endregion ParseStatement

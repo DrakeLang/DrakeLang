@@ -156,6 +156,7 @@ namespace VSharp.Syntax
             SyntaxKind.GoToKeyword => "goto",
             SyntaxKind.ForKeyword => "for",
             SyntaxKind.ReturnKeyword => "return",
+            SyntaxKind.WithKeyword => "with",
             SyntaxKind.ContinueKeyword => "continue",
             SyntaxKind.BreakKeyword => "break",
             SyntaxKind.TypeofKeyword => "typeof",
@@ -187,6 +188,7 @@ namespace VSharp.Syntax
                 "goto" => SyntaxKind.GoToKeyword,
                 "for" => SyntaxKind.ForKeyword,
                 "return" => SyntaxKind.ReturnKeyword,
+                "with" => SyntaxKind.WithKeyword,
                 "continue" => SyntaxKind.ContinueKeyword,
                 "break" => SyntaxKind.BreakKeyword,
 

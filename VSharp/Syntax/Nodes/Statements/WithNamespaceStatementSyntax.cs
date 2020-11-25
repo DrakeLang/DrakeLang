@@ -21,47 +21,46 @@ using System.Collections.Immutable;
 
 namespace VSharp.Syntax
 {
-    public abstract class NamespaceDeclarationSyntax : DeclarationSyntax
+    public abstract class WithNamespaceStatementSyntax : StatementSyntax
     {
-        protected NamespaceDeclarationSyntax(SyntaxToken namespaceToken, SeparatedSyntaxList<SyntaxToken> names, ImmutableArray<StatementSyntax> statements)
+        protected WithNamespaceStatementSyntax(SyntaxToken withToken, SeparatedSyntaxList<SyntaxToken> names, ImmutableArray<StatementSyntax> statements)
         {
-            NamespaceToken = namespaceToken;
+            WithToken = withToken;
             Names = names;
             Statements = statements;
         }
 
-        public override SyntaxKind Kind => SyntaxKind.NamespaceDeclaration;
-        public SyntaxToken NamespaceToken { get; }
+        public override SyntaxKind Kind => SyntaxKind.WithNamespaceStatement;
+        public SyntaxToken WithToken { get; }
         public SeparatedSyntaxList<SyntaxToken> Names { get; }
         public ImmutableArray<StatementSyntax> Statements { get; }
     }
 
-    internal sealed class BodiedNamespaceDeclarationStatementSyntax : NamespaceDeclarationSyntax
+    public sealed class BodiedWithNamespaceStatementSyntax : WithNamespaceStatementSyntax
     {
-        internal BodiedNamespaceDeclarationStatementSyntax(SyntaxToken namespaceToken, SeparatedSyntaxList<SyntaxToken> names, BlockStatementSyntax namespaceBody)
-            : base(namespaceToken, names, namespaceBody.Statements)
+        internal BodiedWithNamespaceStatementSyntax(SyntaxToken withToken, SeparatedSyntaxList<SyntaxToken> names, BlockStatementSyntax body)
+            : base(withToken, names, body.Statements)
         {
-            NamespaceBody = namespaceBody;
+            Body = body;
         }
 
-        public BlockStatementSyntax NamespaceBody { get; }
+        public BlockStatementSyntax Body { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return NamespaceToken;
+            yield return WithToken;
             foreach (var name in Names.GetWithSeparators())
             {
                 yield return name;
             }
-
-            yield return NamespaceBody;
+            yield return Body;
         }
     }
 
-    internal sealed class SimpleNamespaceDeclarationStatementSyntax : NamespaceDeclarationSyntax
+    public sealed class SimpleWithNamespaceStatementSyntax : WithNamespaceStatementSyntax
     {
-        internal SimpleNamespaceDeclarationStatementSyntax(SyntaxToken namespaceToken, SeparatedSyntaxList<SyntaxToken> names, SyntaxToken semicolonToken, ImmutableArray<StatementSyntax> statements)
-            : base(namespaceToken, names, statements)
+        internal SimpleWithNamespaceStatementSyntax(SyntaxToken withToken, SeparatedSyntaxList<SyntaxToken> names, SyntaxToken semicolonToken, ImmutableArray<StatementSyntax> statements)
+            : base(withToken, names, statements)
         {
             SemicolonToken = semicolonToken;
         }
@@ -70,12 +69,11 @@ namespace VSharp.Syntax
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return NamespaceToken;
+            yield return WithToken;
             foreach (var name in Names.GetWithSeparators())
             {
                 yield return name;
             }
-
             yield return SemicolonToken;
             foreach (var statement in Statements)
             {

@@ -57,8 +57,8 @@ namespace VSharp.Syntax
 
     public sealed class ExpressionBodyStatementSyntax : BodyStatementSyntax
     {
-        internal ExpressionBodyStatementSyntax(SyntaxToken lambdaOperator, StatementSyntax statement)
-            : base(ImmutableArray.Create(statement))
+        internal ExpressionBodyStatementSyntax(SyntaxToken lambdaOperator, ExpressionStatementSyntax statement)
+            : base(ImmutableArray.Create<StatementSyntax>(statement))
         {
             LambdaOperator = lambdaOperator;
             Statement = statement;
@@ -66,7 +66,7 @@ namespace VSharp.Syntax
 
         public override SyntaxKind Kind => SyntaxKind.ExpressionBodyStatement;
         public SyntaxToken LambdaOperator { get; }
-        public StatementSyntax Statement { get; }
+        public ExpressionStatementSyntax Statement { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {

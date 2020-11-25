@@ -167,9 +167,13 @@ namespace VSharp.Tests
                 namespace A;
 
                 [var a = 0;]
+                [var b = a;]
+                [a = b;]
             ";
 
             string diagnostics = @"
+                Unexpected statement. Namespaces and type declarations cannot directly contain statements.
+                Unexpected statement. Namespaces and type declarations cannot directly contain statements.
                 Unexpected statement. Namespaces and type declarations cannot directly contain statements.
             ";
 
@@ -205,6 +209,29 @@ namespace VSharp.Tests
 
             string diagnostics = @"
                 Simple namespace declarations may only exist as top-level statement (not nested in other namespaces).
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Method_Call_Reports_Ambiguous_Reference()
+        {
+            var text = @"
+                with A;
+                with B;
+
+                [GetVal]();
+
+                namespace A;
+                def GetVal() => 0;
+
+                namespace B;
+                def GetVal() => 0;
+            ";
+
+            string diagnostics = @"
+                Reference is ambiguous between the following symbols: 'A.GetVal', 'B.GetVal'.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -400,6 +427,88 @@ namespace VSharp.Tests
                         def GetVal() => ""a"";
                     }",
                     "a");
+                yield return (@"
+                    namespace A;
+
+                    def GetVal()
+                    {
+                        with Sys;
+                        
+                        Print(""test"");
+                        
+                        return ""a"";
+                    }
+
+                    namespace B {} // Because of the way we avoid optimizing away variables, we have to escape the previous namespace.
+                    
+                    with A;
+                    var result = GetVal();",
+                    "a");
+                yield return (@"
+                    namespace A;
+
+                    def GetVal()
+                    {
+                        with Sys;
+                        
+                        Print(""test"");
+                        
+                        return ""a"";
+                    }
+
+                    namespace A.B;
+
+                    def GetValB() => GetVal();
+
+                    namespace B {} // Because of the way we avoid optimizing away variables, we have to escape the previous namespace.
+                    var result = A.B.GetValB();",
+                    "a");
+
+                // With namespace
+                yield return (@"
+                    namespace A;
+
+                    def GetVal() => ""a"";
+
+                    namespace B {} // Because of the way we avoid optimizing away variables, we have to escape the previous namespace.
+
+                    with A;
+                    var result = GetVal();",
+                    "a");
+                yield return (@"
+                    with A
+                    {
+                        def GetValB() => GetVal();
+
+                        namespace A;
+
+                        def GetVal()
+                        {
+                            with Sys;
+                        
+                            Print(""test"");
+                        
+                            return ""a"";
+                        }
+                    }
+
+                    namespace B {} // Because of the way we avoid optimizing away variables, we have to escape the previous namespace.
+                    var result = GetValB();",
+                    "a");
+                yield return (@"
+                    namespace A
+                    {
+                        def GetValue()
+                        {
+                            return GetValueB();
+
+                            def GetValueB() => ""a"";
+                        }
+                    }
+
+                    var result = A.GetValue();",
+                    "a");
+
             }
         }
 

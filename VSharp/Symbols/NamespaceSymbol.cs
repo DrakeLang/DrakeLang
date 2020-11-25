@@ -19,6 +19,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
+using VSharp.Syntax;
 
 namespace VSharp.Symbols
 {
@@ -29,7 +31,19 @@ namespace VSharp.Symbols
             Names = names;
         }
 
-        internal NamespaceSymbol(NamespaceSymbol parent, IEnumerable<string> extraNames) : this(parent.Names.AddRange(extraNames))
+        internal NamespaceSymbol(SeparatedSyntaxList<SyntaxToken> names) : this(ToEnumerable(names))
+        {
+        }
+
+        internal NamespaceSymbol(IEnumerable<string> names) : this(names.ToImmutableArray())
+        {
+        }
+
+        internal NamespaceSymbol(NamespaceSymbol? parent, IEnumerable<string> extraNames) : this(parent is null ? extraNames.ToImmutableArray() : parent.Names.AddRange(extraNames))
+        {
+        }
+
+        internal NamespaceSymbol(NamespaceSymbol? parent, SeparatedSyntaxList<SyntaxToken> extraNames) : this(parent, ToEnumerable(extraNames))
         {
         }
 
@@ -44,5 +58,11 @@ namespace VSharp.Symbols
         }
 
         public override int GetHashCode() => HashCode.Combine(Name);
+
+        #region Utilities
+
+        private static IEnumerable<string> ToEnumerable(SeparatedSyntaxList<SyntaxToken> names) => names.Select(name => name.Text ?? "");
+
+        #endregion Utilities
     }
 }

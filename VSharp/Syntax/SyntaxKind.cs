@@ -87,6 +87,7 @@ namespace VSharp.Syntax
         WhileKeyword,
         ForKeyword,
         ReturnKeyword,
+        WithKeyword,
         ContinueKeyword,
         BreakKeyword,
         TypeofKeyword,
@@ -104,6 +105,7 @@ namespace VSharp.Syntax
 
         // Statements
 
+        WithNamespaceStatement,
         BlockStatement,
         VariableDeclarationStatement,
         IfStatement,
