@@ -222,26 +222,55 @@ namespace VSharp
 
             public object EvaluateCallExpression(BoundCallExpression node)
             {
-                if (node.Method == Methods.Input)
+                var args = node.Arguments;
+
+                if (node.Method == Methods.Sys_Console_ReadLine)
                 {
                     return Console.ReadLine() ?? string.Empty;
                 }
-                else if (node.Method == Methods.Print)
+                else if (node.Method == Methods.Sys_Console_Write)
                 {
-                    string message = (string)EvaluateExpression(node.Arguments[0]);
+                    string message = (string)EvaluateExpression(args[0]);
+                    Console.Write(message);
+                }
+                else if (node.Method == Methods.Sys_Console_WriteLine)
+                {
+                    string message = (string)EvaluateExpression(args[0]);
                     Console.WriteLine(message);
+                }
+                else if (node.Method == Methods.Sys_IO_File_ReadAllText)
+                {
+                    var path = (string)EvaluateExpression(args[0]);
+                    if (!System.IO.File.Exists(path))
+                        return "";
+
+                    return System.IO.File.ReadAllText(path);
+                }
+                else if (node.Method == Methods.Sys_String_Length)
+                {
+                    var str = (string)EvaluateExpression(args[0]);
+                    return str.Length;
+                }
+                else if (node.Method == Methods.Sys_String_CharAt)
+                {
+                    var pos = (int)EvaluateExpression(args[0]);
+                    var str = (string)EvaluateExpression(args[1]);
+
+                    if (pos < 0 || pos >= str.Length)
+                        return default(char);
+
+                    return str[pos];
                 }
                 else if (_methods.TryGetValue(node.Method, out var method))
                 {
                     var stackFrame = new Dictionary<VariableSymbol, object>();
                     for (int i = 0; i < node.Method.Parameters.Length; i++)
                     {
-                        stackFrame[node.Method.Parameters[i]] = EvaluateExpression(node.Arguments[i]);
+                        stackFrame[node.Method.Parameters[i]] = EvaluateExpression(args[i]);
                     }
 
                     return new InternalEvaluator(method.Declaration, stackFrame, _methods).Evaluate();
                 }
-                else throw new Exception($"Unexpected method '{node.Method}'.");
 
                 return 0; // cannot return null due to nullable reference types being enabled.
             }

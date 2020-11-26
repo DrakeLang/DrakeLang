@@ -18,6 +18,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace VSharp.Symbols
 {
@@ -25,18 +26,48 @@ namespace VSharp.Symbols
     {
         public static class Namespaces
         {
-            public static readonly NamespaceSymbol Sys = new(ImmutableArray.Create("Sys"));
+            public static readonly NamespaceSymbol Sys = new(new[] { "Sys" });
+
+            public static readonly NamespaceSymbol Sys_Console = new(Sys, new[] { "Console" });
+            public static readonly NamespaceSymbol Sys_IO = new(Sys, new[] { "IO" });
+            public static readonly NamespaceSymbol Sys_String = new(Sys, new[] { "String" });
+
+            public static readonly NamespaceSymbol Sys_IO_File = new(Sys_IO, new[] { "File" });
         }
 
         public static class Methods
         {
-            public static readonly MethodSymbol Print = new(Namespaces.Sys, "Print", ImmutableArray.Create(new ParameterSymbol("text", Types.String)), Types.Void);
-            public static readonly MethodSymbol Input = new(Namespaces.Sys, "Input", ImmutableArray<ParameterSymbol>.Empty, Types.String);
+            #region Sys.Console
+
+            public static readonly MethodSymbol Sys_Console_Write = new(Namespaces.Sys_Console, "Write", ImmutableArray.Create(new ParameterSymbol("text", Types.String)), Types.Void);
+            public static readonly MethodSymbol Sys_Console_WriteLine = new(Namespaces.Sys_Console, "WriteLine", ImmutableArray.Create(new ParameterSymbol("text", Types.String)), Types.Void);
+            public static readonly MethodSymbol Sys_Console_ReadLine = new(Namespaces.Sys_Console, "ReadLine", ImmutableArray<ParameterSymbol>.Empty, Types.String);
+
+            #endregion Sys.Console
+
+            #region Sys.IO.File
+
+            public static readonly MethodSymbol Sys_IO_File_ReadAllText = new(Namespaces.Sys_IO_File, "ReadAllText", ImmutableArray.Create(new ParameterSymbol("path", Types.String)), Types.String);
+
+            #endregion Sys.IO.File
+
+            #region Sys.String
+
+            public static readonly MethodSymbol Sys_String_Length = new(Namespaces.Sys_String, "Length", ImmutableArray.Create(new ParameterSymbol("str", Types.String)), Types.Int);
+            public static readonly MethodSymbol Sys_String_CharAt = new(Namespaces.Sys_String, "CharAt",
+                ImmutableArray.Create(
+                    new ParameterSymbol("pos", Types.Int),
+                    new ParameterSymbol("str", Types.String)
+                ), Types.Char);
+
+            #endregion Sys.String
 
             public static IEnumerable<MethodSymbol> GetAll()
             {
-                yield return Print;
-                yield return Input;
+                return typeof(Methods).GetFields()
+                                      .Where(f => f.FieldType == typeof(MethodSymbol))
+                                      .Select(f => f.GetValue(null))
+                                      .Cast<MethodSymbol>();
             }
         }
 
