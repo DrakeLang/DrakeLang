@@ -414,10 +414,7 @@ namespace VSharp.Binding
                 return new BoundReturnStatement(expression);
             }
 
-            if (CurrentMethod is null)
-                throw new Exception($"Unexpected return statement outside of method body.");
-
-            if (CurrentMethod.ReturnType == Types.Void)
+            if (CurrentMethod is null || CurrentMethod.ReturnType == Types.Void)
             {
                 if (syntax.Expression is not null)
                     Diagnostics.ReportInvalidReturnInVoidMethod(syntax.Expression.Span);
