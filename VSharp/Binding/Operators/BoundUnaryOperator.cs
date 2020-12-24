@@ -63,6 +63,9 @@ namespace VSharp.Binding
                 }
             }
 
+            if (operandType != TypeSymbol.Object)
+                return Bind(syntaxKind, unaryType, operandType.BaseType);
+
             return null;
         }
 

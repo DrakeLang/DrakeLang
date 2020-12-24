@@ -711,7 +711,9 @@ namespace VSharp.Binding
                 var argument = boundArguments[i];
                 var parameter = method.Parameters[i];
 
-                if (argument.Type != parameter.Type && !argument.Type.IsError() && !parameter.Type.IsError())
+                boundArguments[i] = BindConvertion(syntax.Span, argument, parameter.Type);
+
+                if (boundArguments[i] is BoundErrorExpression)
                 {
                     Diagnostics.ReportWrongArgumentType(syntax.Span, method.Name, parameter.Name, parameter.Type, argument.Type);
                     return BoundErrorExpression.Instance;
@@ -732,7 +734,7 @@ namespace VSharp.Binding
                 return BoundErrorExpression.Instance;
 
             var conversion = Conversion.Classify(expression.Type, type);
-            if (conversion == Conversion.None)
+            if (!conversion.Exists)
             {
                 Diagnostics.ReportNoExplicitConversion(syntax.Span, expression.Type, type);
                 return BoundErrorExpression.Instance;
@@ -893,7 +895,7 @@ namespace VSharp.Binding
                     {
                         var expressionStatement = new BoundExpressionStatement(expression);
                         var returnStatement = new BoundReturnStatement();
-                        
+
                         var result = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(expressionStatement, returnStatement));
                         return Lowerer.Lower(result, _labelGenerator);
                     }
@@ -966,19 +968,20 @@ namespace VSharp.Binding
         private BoundExpression BindConvertion(TextSpan span, BoundExpression expression, TypeSymbol resultType)
         {
             var conversion = Conversion.Classify(expression.Type, resultType);
-            if (conversion == Conversion.Identity || conversion == Conversion.Implicit)
+            if (conversion.IsIdentity || conversion.IsImplicit)
             {
+                return expression;
             }
             else if (conversion == Conversion.Explicit)
             {
                 Diagnostics.ReportCannotImplicitlyConvert(span, expression.Type, resultType);
+                return BoundErrorExpression.Instance;
             }
             else
             {
                 Diagnostics.ReportCannotConvert(span, expression.Type, resultType);
+                return BoundErrorExpression.Instance;
             }
-
-            return expression;
         }
 
         #region TryFind
@@ -1101,10 +1104,12 @@ namespace VSharp.Binding
 
         private static TypeSymbol? ResolveType(SyntaxKind typeKeyword) => typeKeyword switch
         {
+            SyntaxKind.ObjectKeyword => Types.Object,
             SyntaxKind.BoolKeyword => Types.Boolean,
             SyntaxKind.IntKeyword => Types.Int,
-            SyntaxKind.StringKeyword => Types.String,
             SyntaxKind.FloatKeyword => Types.Float,
+            SyntaxKind.StringKeyword => Types.String,
+            SyntaxKind.CharKeyword => Types.Char,
 
             _ => null,
         };

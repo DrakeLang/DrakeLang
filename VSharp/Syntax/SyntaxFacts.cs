@@ -81,16 +81,10 @@ namespace VSharp.Syntax
             SyntaxKind.BangToken or
             SyntaxKind.TildeToken;
 
-        public static bool IsTypeKeyword(this SyntaxKind kind) => kind is
-            SyntaxKind.BoolKeyword or
-            SyntaxKind.IntKeyword or
-            SyntaxKind.FloatKeyword or
-            SyntaxKind.StringKeyword or
-            SyntaxKind.CharKeyword or
-            SyntaxKind.VarKeyword or
-            SyntaxKind.SetKeyword;
+        public static bool IsTypeKeyword(this SyntaxKind kind) => kind.IsImplicitTypeKeyword() || kind.IsExplicitTypeKeyword();
 
         public static bool IsExplicitTypeKeyword(this SyntaxKind kind) => kind is
+            SyntaxKind.ObjectKeyword or
             SyntaxKind.BoolKeyword or
             SyntaxKind.IntKeyword or
             SyntaxKind.FloatKeyword or
@@ -142,6 +136,7 @@ namespace VSharp.Syntax
             SyntaxKind.ColonToken => ":",
             SyntaxKind.SemicolonToken => ";",
 
+            SyntaxKind.ObjectKeyword => "object",
             SyntaxKind.BoolKeyword => "bool",
             SyntaxKind.IntKeyword => "int",
             SyntaxKind.FloatKeyword => "float",
@@ -167,11 +162,12 @@ namespace VSharp.Syntax
 
             _ => null,
         };
-        
+
         public static bool TryGetKeywordKind(string word, out SyntaxKind keywordKind)
         {
             keywordKind = word switch
             {
+                "object" => SyntaxKind.ObjectKeyword,
                 "bool" => SyntaxKind.BoolKeyword,
                 "int" => SyntaxKind.IntKeyword,
                 "float" => SyntaxKind.FloatKeyword,

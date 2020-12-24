@@ -58,16 +58,42 @@ namespace VSharp.Binding
 
         public static BoundBinaryOperator? Bind(SyntaxKind syntaxKind, TypeSymbol leftType, TypeSymbol rightType)
         {
-            return _operators.SingleOrDefault(op => op.SyntaxKind == syntaxKind && op.LeftType == leftType && op.RightType == rightType);
+            var result = _operators.SingleOrDefault(op => op.SyntaxKind == syntaxKind && op.LeftType == leftType && op.RightType == rightType);
+            if (result is null && leftType != TypeSymbol.Object)
+            {
+                result = Bind(syntaxKind, leftType.BaseType, rightType);
+            }
+
+            if (result is null && rightType != TypeSymbol.Object)
+            {
+                result = Bind(syntaxKind, leftType, rightType.BaseType);
+            }
+
+            return result;
         }
 
         public static BoundBinaryOperator? Bind(BoundBinaryOperatorKind operatorKind, TypeSymbol leftType, TypeSymbol rightType)
         {
-            return _operators.SingleOrDefault(op => op.Kind == operatorKind && op.LeftType == leftType && op.RightType == rightType);
+            var result = _operators.SingleOrDefault(op => op.Kind == operatorKind && op.LeftType == leftType && op.RightType == rightType);
+            if (result is null && leftType != TypeSymbol.Object)
+            {
+                result = Bind(operatorKind, leftType.BaseType, rightType);
+            }
+
+            if (result is null && rightType != TypeSymbol.Object)
+            {
+                result = Bind(operatorKind, leftType, rightType.BaseType);
+            }
+
+            return result;
         }
 
         private static readonly BoundBinaryOperator[] _operators =
         {
+            // Object
+            new BoundBinaryOperator(SyntaxKind.EqualsEqualsToken, BoundBinaryOperatorKind.Equals, Types.Object, Types.Boolean),
+            new BoundBinaryOperator(SyntaxKind.BangEqualsToken, BoundBinaryOperatorKind.NotEquals, Types.Object, Types.Boolean),
+
             // Boolean
             new BoundBinaryOperator(SyntaxKind.AmpersandToken, BoundBinaryOperatorKind.BitwiseAnd, Types.Boolean),
             new BoundBinaryOperator(SyntaxKind.AmpersandAmpersandToken, BoundBinaryOperatorKind.LogicalAnd, Types.Boolean),
@@ -110,15 +136,8 @@ namespace VSharp.Binding
             new BoundBinaryOperator(SyntaxKind.GreaterEqualsToken, BoundBinaryOperatorKind.GreaterThanOrEquals, Types.Float, Types.Boolean),
 
             // String
-            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, Types.String),
-            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, Types.String, Types.Boolean, Types.String),
-            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, Types.Boolean, Types.String, Types.String),
-            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, Types.String, Types.Int, Types.String),
-            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, Types.Int, Types.String, Types.String),       
-            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, Types.String, Types.Float, Types.String),
-            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, Types.Float, Types.String, Types.String),  
-            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, Types.String, Types.Char, Types.String),
-            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, Types.Char, Types.String, Types.String),
+            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, Types.String, Types.Object, Types.String),
+            new BoundBinaryOperator(SyntaxKind.PlusToken, BoundBinaryOperatorKind.Addition, Types.Object, Types.String, Types.String),
 
             new BoundBinaryOperator(SyntaxKind.EqualsEqualsToken, BoundBinaryOperatorKind.Equals, Types.String, Types.Boolean),
             new BoundBinaryOperator(SyntaxKind.BangEqualsToken, BoundBinaryOperatorKind.NotEquals, Types.String, Types.Boolean),

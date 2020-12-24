@@ -49,6 +49,9 @@ namespace VSharp.Binding
             if (from == to)
                 return Identity;
 
+            if (to == TypeSymbol.Object)
+                return Implicit;
+
             if (from == Types.Error || to == Types.Error)
                 return Identity;
 

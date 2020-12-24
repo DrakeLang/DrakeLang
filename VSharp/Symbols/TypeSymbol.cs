@@ -20,18 +20,25 @@ namespace VSharp.Symbols
 {
     public sealed class TypeSymbol : MemberSymbol
     {
+        /// <summary>
+        /// The base type of all types.
+        /// </summary>
+        public static readonly TypeSymbol Object = new TypeSymbol("object");
+
+        private readonly TypeSymbol? _baseType;
+
         internal TypeSymbol(string name) : base(name)
         {
         }
 
-        internal TypeSymbol(NamespaceSymbol? @namespace, string name) : this(name)
+        internal TypeSymbol(string name, NamespaceSymbol? namespaceSym = null, TypeSymbol? baseType = null) : this(name)
         {
-            Namespace = @namespace;
+            Namespace = namespaceSym;
+            _baseType = baseType;
         }
 
         public override SymbolKind Kind => SymbolKind.Type;
         public override NamespaceSymbol? Namespace { get; }
-
-        public override string FullName => throw new System.NotImplementedException();
+        public TypeSymbol BaseType => _baseType ?? Object;
     }
 }

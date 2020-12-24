@@ -39,8 +39,8 @@ namespace VSharp.Symbols
         {
             #region Sys.Console
 
-            public static readonly MethodSymbol Sys_Console_Write = new(Namespaces.Sys_Console, "Write", ImmutableArray.Create(new ParameterSymbol("text", Types.String)), Types.Void);
-            public static readonly MethodSymbol Sys_Console_WriteLine = new(Namespaces.Sys_Console, "WriteLine", ImmutableArray.Create(new ParameterSymbol("text", Types.String)), Types.Void);
+            public static readonly MethodSymbol Sys_Console_Write = new(Namespaces.Sys_Console, "Write", ImmutableArray.Create(new ParameterSymbol("value", Types.Object)), Types.Void);
+            public static readonly MethodSymbol Sys_Console_WriteLine = new(Namespaces.Sys_Console, "WriteLine", ImmutableArray.Create(new ParameterSymbol("value", Types.Object)), Types.Void);
             public static readonly MethodSymbol Sys_Console_ReadLine = new(Namespaces.Sys_Console, "ReadLine", ImmutableArray<ParameterSymbol>.Empty, Types.String);
 
             #endregion Sys.Console
@@ -54,6 +54,7 @@ namespace VSharp.Symbols
             #region Sys.String
 
             public static readonly MethodSymbol Sys_String_Length = new(Namespaces.Sys_String, "Length", ImmutableArray.Create(new ParameterSymbol("str", Types.String)), Types.Int);
+
             public static readonly MethodSymbol Sys_String_CharAt = new(Namespaces.Sys_String, "CharAt",
                 ImmutableArray.Create(
                     new ParameterSymbol("pos", Types.Int),
@@ -73,6 +74,8 @@ namespace VSharp.Symbols
 
         public static class Types
         {
+            public static readonly TypeSymbol Object = TypeSymbol.Object;
+
             public static readonly TypeSymbol Error = new("?");
             public static readonly TypeSymbol Void = new("void");
 

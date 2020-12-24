@@ -73,6 +73,7 @@ namespace VSharp.Syntax
 
         // Keywords
 
+        ObjectKeyword,
         BoolKeyword,
         IntKeyword,
         FloatKeyword,

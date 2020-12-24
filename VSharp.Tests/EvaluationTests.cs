@@ -416,7 +416,7 @@ namespace VSharp.Tests
 
                     namespace B {} // Because of the way we avoid optimizing away variables, we have to escape the previous namespace.",
                     "a");
-                yield return (@" 
+                yield return (@"
                     // Combination of simple and bodied statement
                     var result = B.GetVal();
 
@@ -433,14 +433,14 @@ namespace VSharp.Tests
                     def GetVal()
                     {
                         with Sys;
-                        
-                        Print(""test"");
-                        
+
+                        Console.Write(""test"");
+
                         return ""a"";
                     }
 
                     namespace B {} // Because of the way we avoid optimizing away variables, we have to escape the previous namespace.
-                    
+
                     with A;
                     var result = GetVal();",
                     "a");
@@ -450,9 +450,9 @@ namespace VSharp.Tests
                     def GetVal()
                     {
                         with Sys;
-                        
-                        Print(""test"");
-                        
+
+                        Console.Write(""test"");
+
                         return ""a"";
                     }
 
@@ -485,9 +485,9 @@ namespace VSharp.Tests
                         def GetVal()
                         {
                             with Sys;
-                        
-                            Print(""test"");
-                        
+
+                            Console.Write(""test"");
+
                             return ""a"";
                         }
                     }
@@ -509,6 +509,8 @@ namespace VSharp.Tests
                     var result = A.GetValue();",
                     "a");
 
+                // Implicit upcast
+                yield return (@"object result = false;", false);
             }
         }
 
