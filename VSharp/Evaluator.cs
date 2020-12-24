@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using VSharp.Binding;
 using VSharp.Symbols;
@@ -230,12 +231,12 @@ namespace VSharp
                 }
                 else if (node.Method == Methods.Sys_Console_Write)
                 {
-                    string message = (string)EvaluateExpression(args[0]);
+                    var message = toInvariantString(EvaluateExpression(args[0]));
                     Console.Write(message);
                 }
                 else if (node.Method == Methods.Sys_Console_WriteLine)
                 {
-                    string message = (string)EvaluateExpression(args[0]);
+                    var message = toInvariantString(EvaluateExpression(args[0]));
                     Console.WriteLine(message);
                 }
                 else if (node.Method == Methods.Sys_IO_File_ReadAllText)
@@ -273,6 +274,13 @@ namespace VSharp
                 }
 
                 return 0; // cannot return null due to nullable reference types being enabled.
+
+                static string? toInvariantString(object o)
+                {
+                    return o is IConvertible convertible ?
+                        convertible.ToString(CultureInfo.InvariantCulture) :
+                        o.ToString();
+                }
             }
 
             public object EvaluateExplicitCastExpression(BoundExplicitCastExpression node)
