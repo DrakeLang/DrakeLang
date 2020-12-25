@@ -254,21 +254,13 @@ namespace VSharp.Binding
             var expression = RewriteExpression(node.Expression);
 
             // Remove expression statements with no side effects.
-            switch (expression)
+            if (HasNoSideEffects(expression))
             {
-                case BoundLiteralExpression or
-                    BoundVariableExpression or
-                    BoundBinaryExpression or
-                    BoundExplicitCastExpression or
-                    BoundArrayInitializationExpression:
-                case BoundUnaryExpression unaryExpression when !unaryExpression.Op.Kind.IsIncrementOrDecrement():
-                    {
-                        // Removed expressions may affect variable usage.
-                        foreach (var varUsage in VariableUsage.Values)
-                            varUsage.Remove(expression);
+                // Removed expressions may affect variable usage.
+                foreach (var varUsage in VariableUsage.Values)
+                    varUsage.Remove(expression);
 
-                        return BoundNoOpStatement.Instance;
-                    }
+                return BoundNoOpStatement.Instance;
             }
 
             if (expression == node.Expression)
@@ -513,6 +505,25 @@ namespace VSharp.Binding
 
             UpdatedVariables.Add(activeOld, newVar);
         }
+
+        protected static bool HasNoSideEffects(BoundExpression? expression) => expression switch
+        {
+            BoundLiteralExpression or
+            BoundVariableExpression or
+            BoundBinaryExpression or
+            BoundExplicitCastExpression => true,
+
+            BoundArrayInitializationExpression arrayExpression when
+                HasNoSideEffects(arrayExpression.SizeExpression) &&
+                arrayExpression.Initializer.All(exp => HasNoSideEffects(exp)) => true,
+
+            BoundUnaryExpression unaryExpression when
+                !unaryExpression.Op.Kind.IsIncrementOrDecrement() => true,
+
+            null => true,
+
+            _ => false,
+        };
 
         #endregion Helpers
     }
