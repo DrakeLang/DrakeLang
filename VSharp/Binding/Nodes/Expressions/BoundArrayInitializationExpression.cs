@@ -16,32 +16,38 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using VSharp.Symbols;
 
-namespace VSharp.Syntax
+namespace VSharp.Binding
 {
-    public sealed class TypeExpressionSyntax : ExpressionSyntax
+    internal sealed class BoundArrayInitializationExpression : BoundExpression
     {
-        internal TypeExpressionSyntax(SyntaxToken typeIdentifier)
+        public BoundArrayInitializationExpression(TypeSymbol type, BoundExpression sizeExpression, ImmutableArray<BoundExpression> initializer)
         {
-            TypeIdentifiers = ImmutableArray.Create(typeIdentifier);
+            if (type.GetGenericTypeDefinition() != SystemSymbols.Types.Array)
+                throw new ArgumentException($"Array type must be of type '{SystemSymbols.Types.Array}'.");
+
+            Type = type;
+            SizeExpression = sizeExpression;
+            Initializer = initializer;
         }
 
-        internal TypeExpressionSyntax(ImmutableArray<SyntaxToken> typeIdentifiers)
-        {
-            TypeIdentifiers = typeIdentifiers;
-        }
+        public override TypeSymbol Type { get; }
+        public BoundExpression SizeExpression { get; }
+        public ImmutableArray<BoundExpression> Initializer { get; }
 
-        public override SyntaxKind Kind => SyntaxKind.TypeExpression;
-        public ImmutableArray<SyntaxToken> TypeIdentifiers { get; }
-        public bool IsArray => TypeIdentifiers.Length > 1;
-        public int GetArraySize() => TypeIdentifiers.Length / 2;
+        public override BoundNodeKind Kind => BoundNodeKind.ArrayInitializationExpression;
 
-        public override IEnumerable<SyntaxNode> GetChildren()
+        public override IEnumerable<BoundNode> GetChildren()
         {
-            foreach (var item in TypeIdentifiers)
+            yield return SizeExpression;
+            foreach (var item in Initializer)
+            {
                 yield return item;
+            }
         }
     }
 }

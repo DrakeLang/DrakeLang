@@ -251,24 +251,26 @@ namespace VSharp.Binding
 
         protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
         {
+            var expression = RewriteExpression(node.Expression);
+
             // Remove expression statements with no side effects.
-            switch (node.Expression)
+            switch (expression)
             {
                 case BoundLiteralExpression or
                     BoundVariableExpression or
                     BoundBinaryExpression or
-                    BoundExplicitCastExpression:
+                    BoundExplicitCastExpression or
+                    BoundArrayInitializationExpression:
                 case BoundUnaryExpression unaryExpression when !unaryExpression.Op.Kind.IsIncrementOrDecrement():
                     {
                         // Removed expressions may affect variable usage.
                         foreach (var varUsage in VariableUsage.Values)
-                            varUsage.Remove(node.Expression);
+                            varUsage.Remove(expression);
 
                         return BoundNoOpStatement.Instance;
                     }
             }
 
-            var expression = RewriteExpression(node.Expression);
             if (expression == node.Expression)
                 return node;
 
@@ -320,6 +322,7 @@ namespace VSharp.Binding
                     BoundNodeKind.BinaryExpression => RewriteBinaryExpression((BoundBinaryExpression)node),
                     BoundNodeKind.CallExpression => RewriteCallExpression((BoundCallExpression)node),
                     BoundNodeKind.ExplicitCastExpression => RewriteExplicitCastExpression((BoundExplicitCastExpression)node),
+                    BoundNodeKind.ArrayInitializationExpression => RewriteArrayInitializationExpression((BoundArrayInitializationExpression)node),
 
                     _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
                 };
@@ -453,6 +456,17 @@ namespace VSharp.Binding
                 return node;
 
             return new BoundExplicitCastExpression(node.Type, expression);
+        }
+
+        protected virtual BoundExpression RewriteArrayInitializationExpression(BoundArrayInitializationExpression node)
+        {
+            var sizeExpression = RewriteExpression(node.SizeExpression);
+            var initializer = RewriteExpressions(node.Initializer);
+
+            if (node.SizeExpression == sizeExpression && node.Initializer == initializer)
+                return node;
+
+            return new BoundArrayInitializationExpression(node.Type, sizeExpression, initializer);
         }
 
         #endregion RewriteExpression

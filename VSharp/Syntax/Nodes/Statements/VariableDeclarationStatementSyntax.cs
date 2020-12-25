@@ -16,15 +16,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 
 namespace VSharp.Syntax
 {
     public sealed class VariableDeclarationStatementSyntax : StatementSyntax
     {
-        internal VariableDeclarationStatementSyntax(SyntaxToken keyword, SyntaxToken? explicitType, SyntaxToken identifier, SyntaxToken equalsToken, ExpressionSyntax initializer, SyntaxToken? semicolonToken)
+        internal VariableDeclarationStatementSyntax(SyntaxToken? varOrSetKeyword, TypeExpressionSyntax? explicitType, SyntaxToken identifier, SyntaxToken equalsToken, ExpressionSyntax initializer, SyntaxToken? semicolonToken)
         {
-            Keyword = keyword;
+            if (varOrSetKeyword is null && explicitType is null)
+                throw new ArgumentException("varOrSetKeyword or explicitType must have a value (or both).");
+
+            VarOrSetKeyword = varOrSetKeyword;
             ExplicitType = explicitType;
             Identifier = identifier;
             EqualsToken = equalsToken;
@@ -36,8 +40,8 @@ namespace VSharp.Syntax
 
         public override SyntaxKind Kind => SyntaxKind.VariableDeclarationStatement;
 
-        public SyntaxToken Keyword { get; }
-        public SyntaxToken? ExplicitType { get; }
+        public SyntaxToken? VarOrSetKeyword { get; }
+        public TypeExpressionSyntax? ExplicitType { get; }
         public SyntaxToken Identifier { get; }
         public SyntaxToken EqualsToken { get; }
         public ExpressionSyntax Initializer { get; }
@@ -49,7 +53,9 @@ namespace VSharp.Syntax
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return Keyword;
+            if (VarOrSetKeyword is not null)
+                yield return VarOrSetKeyword;
+
             if (ExplicitType is not null)
                 yield return ExplicitType;
 

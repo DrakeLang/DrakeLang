@@ -23,7 +23,7 @@ namespace VSharp.Syntax
 {
     public abstract class NamespaceDeclarationSyntax : DeclarationSyntax
     {
-        protected NamespaceDeclarationSyntax(SyntaxToken namespaceToken, SeparatedSyntaxList<SyntaxToken> names, ImmutableArray<StatementSyntax> statements)
+        internal NamespaceDeclarationSyntax(SyntaxToken namespaceToken, SeparatedSyntaxList<SyntaxToken> names, ImmutableArray<StatementSyntax> statements)
         {
             NamespaceToken = namespaceToken;
             Names = names;

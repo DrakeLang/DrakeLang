@@ -35,22 +35,42 @@ namespace VSharp.Utils
                 return Types.String;
             else if (type == typeof(char))
                 return Types.Char;
-
+            if (type == typeof(object))
+                return Types.Object;
+            
             throw new Exception($"Clr type '{type}' is illegal.");
         }
 
-        public static TypeSymbol FromValue(object value)
+        public static Type ToClrType(TypeSymbol type)
         {
-            return value switch
-            {
-                bool _ => Types.Boolean,
-                int _ => Types.Int,
-                double _ => Types.Float,
-                string _ => Types.String,
-                char _ => Types.Char,
+            if (type.GetGenericTypeDefinition() == Types.Array)
+                return Array.CreateInstance(ToClrType(type.GenericTypeArguments[0]), 0).GetType();
+            
+            if (type == Types.Boolean)
+                return typeof(bool);
+            else if (type == Types.Int)
+                return typeof(int);
+            else if (type == Types.Float)
+                return typeof(double);
+            else if (type == Types.String)
+                return typeof(string);
+            else if (type == Types.Char)
+                return typeof(char);
+            else if (type == Types.Object)
+                return typeof(object);
 
-                _ => throw new Exception($"Value '{value}' of type '{value.GetType()}' is illegal."),
-            };
+            throw new Exception($"Type '{type}' is not a legal Clr type.");
         }
+
+        public static TypeSymbol FromValue(object value) => value switch
+        {
+            bool => Types.Boolean,
+            int => Types.Int,
+            double => Types.Float,
+            string => Types.String,
+            char => Types.Char,
+
+            _ => throw new Exception($"Value '{value}' of type '{value.GetType()}' is illegal."),
+        };
     }
 }

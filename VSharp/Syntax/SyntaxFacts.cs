@@ -130,6 +130,8 @@ namespace VSharp.Syntax
             SyntaxKind.CloseParenthesisToken => ")",
             SyntaxKind.OpenBraceToken => "{",
             SyntaxKind.CloseBraceToken => "}",
+            SyntaxKind.OpenBracketToken => "[",
+            SyntaxKind.CloseBracketToken => "]",
             SyntaxKind.DotToken => ".",
             SyntaxKind.CommaToken => ",",
             SyntaxKind.UnderscoreToken => "_",

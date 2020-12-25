@@ -19,6 +19,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
+using VSharp.Text;
 
 namespace VSharp.Syntax
 {
@@ -35,6 +37,17 @@ namespace VSharp.Syntax
         public int Count => (_nodesAndSeparators.Length + 1) / 2;
 
         public T this[int index] => (T)_nodesAndSeparators[index * 2];
+
+        public TextSpan Span
+        {
+            get
+            {
+                var start = _nodesAndSeparators.Min(node => node.Span.Start);
+                var end = _nodesAndSeparators.Max(node => node.Span.End);
+
+                return TextSpan.FromBounds(start, end);
+            }
+        }
 
         public SyntaxToken GetSeparator(int index) => (SyntaxToken)_nodesAndSeparators[index * 2 + 1];
 

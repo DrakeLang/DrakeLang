@@ -23,6 +23,7 @@ using System.Globalization;
 using System.Linq;
 using VSharp.Binding;
 using VSharp.Symbols;
+using VSharp.Utils;
 using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp
@@ -155,6 +156,7 @@ namespace VSharp
                 BoundNodeKind.BinaryExpression => EvaluateBinaryExpression((BoundBinaryExpression)node),
                 BoundNodeKind.CallExpression => EvaluateCallExpression((BoundCallExpression)node),
                 BoundNodeKind.ExplicitCastExpression => EvaluateExplicitCastExpression((BoundExplicitCastExpression)node),
+                BoundNodeKind.ArrayInitializationExpression => EvaluateArrayInitializationExpression((BoundArrayInitializationExpression)node),
 
                 _ => throw new Exception($"Unexpected node '{node.Kind}'."),
             };
@@ -287,6 +289,21 @@ namespace VSharp
             {
                 var value = EvaluateExpression(node.Expression);
                 return LiteralEvaluator.EvaluateExplicitCastExpression(node.Type, value);
+            }
+
+            private object EvaluateArrayInitializationExpression(BoundArrayInitializationExpression node)
+            {
+                var size = (int)EvaluateExpression(node.SizeExpression);
+                var type = TypeSymbolUtil.ToClrType(node.Type.GenericTypeArguments[0]);
+                var value = Array.CreateInstance(type, size);
+
+                for (int i = 0; i < value.Length; i++)
+                {
+                    var subval = node.Initializer.Length == 1 ? EvaluateExpression(node.Initializer[0]) : EvaluateExpression(node.Initializer[i]);
+                    value.SetValue(subval, i);
+                }
+
+                return value;
             }
 
             #endregion EvaluateExpression

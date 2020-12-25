@@ -48,5 +48,6 @@ namespace VSharp.Binding
         BinaryExpression,
         CallExpression,
         ExplicitCastExpression,
+        ArrayInitializationExpression,
     }
 }

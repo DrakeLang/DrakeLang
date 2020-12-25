@@ -237,6 +237,16 @@ namespace VSharp.Syntax
                     syntaxKind = SyntaxKind.CloseBraceToken;
                     return true;
 
+                case '[':
+                    Next();
+                    syntaxKind = SyntaxKind.OpenBracketToken;
+                    return true;
+
+                case ']':
+                    Next();
+                    syntaxKind = SyntaxKind.CloseBracketToken;
+                    return true;
+
                 case '.' when !char.IsNumber(LookAhead):
                     Next();
                     syntaxKind = SyntaxKind.DotToken;

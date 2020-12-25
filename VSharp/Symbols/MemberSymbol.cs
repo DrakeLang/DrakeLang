@@ -18,7 +18,13 @@
 
 namespace VSharp.Symbols
 {
-    public abstract class MemberSymbol : Symbol
+    public interface IMemberSymbol : ISymbol
+    {
+        NamespaceSymbol? Namespace { get; }
+        string FullName => Namespace is null ? Name : Namespace.Name + "." + Name;
+    }
+
+    public abstract class MemberSymbol : Symbol, IMemberSymbol
     {
         private protected MemberSymbol(string name) : base(name)
         {
@@ -26,5 +32,7 @@ namespace VSharp.Symbols
 
         public abstract NamespaceSymbol? Namespace { get; }
         public virtual string FullName => Namespace is null ? Name : Namespace.Name + "." + Name;
+
+        public override string ToString() => FullName;
     }
 }

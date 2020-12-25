@@ -23,7 +23,7 @@ namespace VSharp.Syntax
 {
     public abstract class BodyStatementSyntax : StatementSyntax
     {
-        protected BodyStatementSyntax(ImmutableArray<StatementSyntax> statements)
+        internal BodyStatementSyntax(ImmutableArray<StatementSyntax> statements)
         {
             Statements = statements;
         }

@@ -84,6 +84,14 @@ namespace VSharp.Symbols
             public static readonly TypeSymbol Float = new("float");
             public static readonly TypeSymbol String = new("string");
             public static readonly TypeSymbol Char = new("char");
+
+            public static readonly GenericTypeSymbol Array = new(new TypeSymbolBuilder
+            {
+                BaseSymbolName = "Array",
+                GenericArgumentsDescriptions = ImmutableArray.Create(
+                    new GenericTypeArgumentSymbol("T")
+                ),
+            });
         }
     }
 }

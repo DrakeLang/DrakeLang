@@ -116,6 +116,10 @@ namespace VSharp.Binding
                     WriteExplicitCastExpression((BoundExplicitCastExpression)node, context);
                     break;
 
+                case BoundNodeKind.ArrayInitializationExpression:
+                    WriteArrayInitializationExpression((BoundArrayInitializationExpression)node, context);
+                    break;
+
                 default:
                     throw new Exception($"Unexpected node '{node.Kind}'.");
             }
@@ -292,6 +296,23 @@ namespace VSharp.Binding
             PrintChildren(node, context);
         }
 
+        private static void WriteArrayInitializationExpression(BoundArrayInitializationExpression node, WriteContext context)
+        {
+            context.Writer.WriteSyntaxKind(node.Kind);
+            context.Writer.Write(" ");
+            context.Writer.WriteType(node.Type);
+            context.Writer.Write('[');
+
+            if (node.SizeExpression is BoundLiteralExpression literalSize)
+                context.Writer.WriteClr(literalSize.Value, ConsoleColor.Magenta);
+
+            context.Writer.Write(']');
+
+            context.Writer.WriteLine();
+
+            PrintChildren(node.Initializer, context);
+        }
+
         #endregion WriteNode
 
         #region WriteHelpers
@@ -299,8 +320,8 @@ namespace VSharp.Binding
         private static void PrintChildren(BoundNode node, WriteContext context)
         {
             PrintChildren(node.GetChildren(), context);
-        }    
-        
+        }
+
         private static void PrintChildren(IEnumerable<BoundNode> children, WriteContext context)
         {
             var lastChild = children.LastOrDefault();

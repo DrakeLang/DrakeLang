@@ -262,6 +262,18 @@ namespace VSharp
             Report(span, message);
         }
 
+        public void ReportSizeMustBeConstantWithInitializer(TextSpan span)
+        {
+            string message = "Array size must be a constant value when using an array initializer.";
+            Report(span, message);
+        }
+
+        public void ReportArraySizeMismatch(TextSpan span)
+        {
+            string message = "Size of array initializer must be the same as explicitly specified size.";
+            Report(span, message);
+        }
+
         #endregion Report
 
         #region IEnumerable

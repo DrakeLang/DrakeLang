@@ -290,29 +290,31 @@ namespace VSharp.Binding
         {
             string name = syntax.Identifier.Text ?? "?";
             bool declare = syntax.Identifier.Text != null;
-            var isReadOnly = syntax.Keyword.Kind is SyntaxKind.SetKeyword;
+            var isReadOnly = syntax.VarOrSetKeyword?.Kind is SyntaxKind.SetKeyword;
 
             var initializer = BindExpression(syntax.Initializer);
 
             // Only allow explicit type in combination with 'set'
-            if (syntax.ExplicitType is not null && syntax.Keyword.Kind is not SyntaxKind.SetKeyword)
+            if (syntax.ExplicitType is not null && syntax.VarOrSetKeyword is not null and { Kind: not SyntaxKind.SetKeyword })
             {
                 Diagnostics.ReportIllegalExplicitType(syntax.ExplicitType.Span);
             }
 
             // Don't allow void assignment
-            if (initializer.Type == Types.Void && syntax.Keyword.Kind.IsImplicitTypeKeyword())
+            if (initializer.Type == Types.Void && syntax.ExplicitType is null)
             {
                 var span = TextSpan.FromBounds(syntax.Identifier.Span.Start, syntax.Initializer.Span.End);
                 Diagnostics.ReportCannotAssignVoid(span);
             }
 
-            var typeToken = syntax.ExplicitType ?? syntax.Keyword;
-            var type = ResolveType(typeToken.Kind);
-            if (type is null)
-                type = initializer.Type;
-            else
+            TypeSymbol? type;
+            if (syntax.ExplicitType is not null)
+            {
+                type = ResolveType(syntax.ExplicitType) ?? Types.Error;
                 initializer = BindConvertion(syntax.Initializer.Span, initializer, type);
+            }
+            else
+                type = initializer.Type;
 
             var variable = new VariableSymbol(name, isReadOnly, type);
             if (declare && !_scope.TryDeclareVariable(variable))
@@ -505,6 +507,7 @@ namespace VSharp.Binding
                 SyntaxKind.AssignmentExpression => BindAssignmentExpression((AssignmentExpressionSyntax)syntax),
                 SyntaxKind.CallExpression => BindCallExpression((CallExpressionSyntax)syntax),
                 SyntaxKind.ExplicitCastExpression => BindExplicitCastExpression((ExplicitCastExpressionSyntax)syntax),
+                SyntaxKind.ArrayInitializationExpression => BindArrayInitializationExpression((ArrayInitializationExpressionSyntax)syntax),
 
                 _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
             };
@@ -600,7 +603,7 @@ namespace VSharp.Binding
 
         private static BoundExpression BindTypeofExpression(TypeofExpressionSyntax syntax)
         {
-            var type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? Types.Error;
+            var type = ResolveType(syntax.TypeExpression) ?? Types.Error;
             return new BoundLiteralExpression(type.Name);
         }
 
@@ -711,6 +714,9 @@ namespace VSharp.Binding
                 var argument = boundArguments[i];
                 var parameter = method.Parameters[i];
 
+                if (argument.Type.IsError())
+                    continue;
+
                 boundArguments[i] = BindConvertion(syntax.Span, argument, parameter.Type);
 
                 if (boundArguments[i] is BoundErrorExpression)
@@ -729,7 +735,7 @@ namespace VSharp.Binding
             if (expression.Type == Types.Error)
                 return BoundErrorExpression.Instance;
 
-            var type = ResolveType(syntax.TypeExpression.TypeIdentifier.Kind) ?? Types.Error;
+            var type = ResolveType(syntax.TypeExpression) ?? Types.Error;
             if (type == Types.Error)
                 return BoundErrorExpression.Instance;
 
@@ -741,6 +747,58 @@ namespace VSharp.Binding
             }
 
             return new BoundExplicitCastExpression(type, expression);
+        }
+
+        private BoundExpression BindArrayInitializationExpression(ArrayInitializationExpressionSyntax syntax)
+        {
+            var itemType = ResolveType(syntax.TypeToken);
+            if (itemType is null)
+                return BoundErrorExpression.Instance;
+
+            var arrayType = Types.Array.MakeGenericType(itemType);
+
+            var boundInitializer = ImmutableArray.CreateBuilder<BoundExpression>();
+            var sizeExpression = BindExpression(syntax.SizeExpression, Types.Int);
+            if (sizeExpression.Type.IsError())
+                return sizeExpression;
+
+            if (syntax is BodiedArrayInitializationExpressionSyntax bodiedInitialization)
+            {
+                BindArrayInitializer(bodiedInitialization.Initializer);
+            }
+            else if (syntax is SimpleArrayInitializerExpressionSyntax simpleInitialization)
+            {
+                if (simpleInitialization.Initializer.Count == 1)
+                {
+                    boundInitializer.Add(BindExpression(simpleInitialization.Initializer[0], itemType));
+                }
+                else
+                {
+                    BindArrayInitializer(simpleInitialization.Initializer);
+                }
+            }
+            else throw new Exception();
+
+            return new BoundArrayInitializationExpression(arrayType, sizeExpression, boundInitializer.ToImmutable());
+
+            void BindArrayInitializer(SeparatedSyntaxList<ExpressionSyntax> initializer)
+            {
+                if (sizeExpression is not BoundLiteralExpression literalSizeExpression)
+                {
+                    Diagnostics.ReportSizeMustBeConstantWithInitializer(syntax.SizeExpression.Span);
+                    return;
+                }
+
+                if (!literalSizeExpression.Value.Equals(initializer.Count))
+                {
+                    Diagnostics.ReportArraySizeMismatch(initializer.Span);
+                }
+
+                foreach (var item in initializer)
+                {
+                    boundInitializer.Add(BindExpression(item, itemType));
+                }
+            }
         }
 
         #endregion BindExpression
@@ -957,7 +1015,7 @@ namespace VSharp.Binding
         private static ParameterSymbol BindParameter(ParameterSyntax parameter)
         {
             var name = parameter.Identifier.Text ?? "?";
-            var type = ResolveType(parameter.TypeToken.TypeIdentifier.Kind) ?? Types.Error;
+            var type = ResolveType(parameter.TypeToken) ?? Types.Error;
 
             return new ParameterSymbol(name, type);
         }
@@ -1102,17 +1160,29 @@ namespace VSharp.Binding
 
         #region Utilities
 
-        private static TypeSymbol? ResolveType(SyntaxKind typeKeyword) => typeKeyword switch
+        private static TypeSymbol? ResolveType(TypeExpressionSyntax typeExpression)
         {
-            SyntaxKind.ObjectKeyword => Types.Object,
-            SyntaxKind.BoolKeyword => Types.Boolean,
-            SyntaxKind.IntKeyword => Types.Int,
-            SyntaxKind.FloatKeyword => Types.Float,
-            SyntaxKind.StringKeyword => Types.String,
-            SyntaxKind.CharKeyword => Types.Char,
+            var type = ResolveType(typeExpression.TypeIdentifiers[0].Kind) ?? Types.Error;
+            if (typeExpression.IsArray)
+                return Types.Array.MakeGenericType(type);
+            else
+                return type;
+        }
 
-            _ => null,
-        };
+        private static TypeSymbol? ResolveType(SyntaxKind typeKeyword)
+        {
+            return typeKeyword switch
+            {
+                SyntaxKind.ObjectKeyword => Types.Object,
+                SyntaxKind.BoolKeyword => Types.Boolean,
+                SyntaxKind.IntKeyword => Types.Int,
+                SyntaxKind.FloatKeyword => Types.Float,
+                SyntaxKind.StringKeyword => Types.String,
+                SyntaxKind.CharKeyword => Types.Char,
+
+                _ => null,
+            };
+        }
 
         private static BoundScope? _rootScope;
 

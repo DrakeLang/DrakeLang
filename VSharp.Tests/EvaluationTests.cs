@@ -373,6 +373,32 @@ namespace VSharp.Tests
                 yield return ("var a = 10f; var result = a *= 2f;", 20d);
                 yield return ("var a = 10f; var result = a /= 2f;", 5d);
 
+                // Array
+
+                yield return ("var result = int[2] { 1, 2 };", new[] { 1, 2 });
+                yield return ("var result = int[2] => 1, 2;", new[] { 1, 2 });
+                yield return ("var result = int[2] => 3;", new[] { 3, 3 });
+                yield return ("var result = string[2] => \"a\", \"b\";", new[] { "a", "b" });
+                yield return ("var result = string[2] => \"c\";", new[] { "c", "c" });
+                yield return ("var result = object[2] => 1, \"b\";", new object[] { 1, "b" });
+                yield return ("var result = object[2] => \"c\";", new[] { "c", "c" });
+
+                //yield return ("var result = int[] { 1, 2 };", new[] { 1, 2 });
+                //yield return ("var result = int[] => 1, 2;", new[] { 1, 2 });
+                //yield return ("var result = string[] => \"1\", \"a\";", new[] { "1", "a" });
+                //yield return ("var result = [] { 1, 2};", new[] { 1, 2 });
+                //yield return ("var result = [] => 1, 2;", new[] { 1, 2 });
+                //yield return ("var result = [2] => 1, 2;", new[] { 1, 2 });
+                //yield return ("var result = [2] => 3;", new[] { 3, 3 });
+                //yield return ("var result = [] { [] { 1 }, [] { 2 } };", new[] { new[] { 3 }, new[] { 3 } });
+                //yield return ("var result = [] { [] => 1 , [] => 2 };", new[] { new[] { 3 }, new[] { 3 } });
+                //yield return ("var result = [2] { [] => 3 };", new[] { new[] { 3 }, new[] { 3 } });
+                //yield return ("var result = [2, 1] => 4;", new int[2, 1] { { 4 }, { 4 } });
+                //yield return ("var result = [2, 1] { { 1 }, { 2 } };", new int[2, 1] { { 1 }, { 2 } });
+                //yield return ("var result = object[] => 1, \"a\";", new object[] { 1, "a" });
+                //yield return ("var result = [] => 1, \"a\";", new object[] { 1, "a" });
+                //yield return ("var result = [2] => 1, \"a\";", new object[] { 1, "a" });
+
                 // If-else-statement
                 yield return ("var a = 0; if (a == 0) a = 10; var result = a;", 10);
                 yield return ("var a = 4; if (a == 0) a = 10; var result = a;", 4);

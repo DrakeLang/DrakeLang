@@ -51,6 +51,8 @@ namespace VSharp.Symbols
 
         public ImmutableArray<string> Names { get; }
 
+        #region Operators
+
         public override bool Equals(object? obj)
         {
             return obj is NamespaceSymbol other
@@ -58,6 +60,21 @@ namespace VSharp.Symbols
         }
 
         public override int GetHashCode() => HashCode.Combine(Name);
+
+        public static bool operator ==(NamespaceSymbol? left, NamespaceSymbol? right)
+        {
+            if (left is null)
+                return right is null;
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(NamespaceSymbol? left, NamespaceSymbol? right)
+        {
+            return !(left == right);
+        }
+
+        #endregion Operators
 
         #region Utilities
 

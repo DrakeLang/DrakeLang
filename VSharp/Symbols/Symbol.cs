@@ -16,9 +16,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System.Diagnostics;
+
 namespace VSharp.Symbols
 {
-    public abstract class Symbol
+    public interface ISymbol
+    {
+        string Name { get; }
+    }
+
+    [DebuggerDisplay("{ToString()}")]
+    public abstract class Symbol : ISymbol
     {
         private protected Symbol(string name)
         {
@@ -26,7 +34,7 @@ namespace VSharp.Symbols
         }
 
         public abstract SymbolKind Kind { get; }
-        public string Name { get; }
+        public virtual string Name { get; }
 
         public override string ToString() => Name;
     }

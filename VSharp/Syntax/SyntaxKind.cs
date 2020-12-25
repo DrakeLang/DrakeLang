@@ -63,6 +63,8 @@ namespace VSharp.Syntax
         CloseParenthesisToken,
         OpenBraceToken,
         CloseBraceToken,
+        OpenBracketToken,
+        CloseBracketToken,
         IdentifierToken,
         DotToken,
         CommaToken,
@@ -138,5 +140,6 @@ namespace VSharp.Syntax
         AssignmentExpression,
         CallExpression,
         ExplicitCastExpression,
+        ArrayInitializationExpression,
     }
 }

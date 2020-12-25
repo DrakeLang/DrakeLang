@@ -107,7 +107,9 @@ namespace VSharp.Syntax
             {
                 if (LookAhead.Kind == SyntaxKind.IdentifierToken && Peek(2).Kind == SyntaxKind.OpenParenthesisToken)
                     return ParseMethodDeclarationStatement();
-                else
+                else if (LookAhead.Kind.IsExplicitTypeKeyword() || LookAhead.Kind == SyntaxKind.IdentifierToken)
+                    return ParseVariableDeclarationStatement(requireSemicolon);
+                else if (LookAhead.Kind == SyntaxKind.OpenBracketToken && Peek(2).Kind == SyntaxKind.CloseBracketToken && Peek(4).Kind == SyntaxKind.EqualsToken)
                     return ParseVariableDeclarationStatement(requireSemicolon);
             }
 
@@ -159,8 +161,8 @@ namespace VSharp.Syntax
 
         private VariableDeclarationStatementSyntax ParseVariableDeclarationStatement(bool requireSemicolon)
         {
-            var keyword = NextToken();
-            var explicitType = Current.Kind.IsExplicitTypeKeyword() ? NextToken() : null;
+            var keyword = Current.Kind.IsImplicitTypeKeyword() ? NextToken() : null;
+            var explicitType = (keyword is null || Current.Kind.IsExplicitTypeKeyword()) ? ParseTypeExpression() : null;
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
             var equals = MatchToken(SyntaxKind.EqualsToken);
             var initializer = ParseExpression();
@@ -458,6 +460,9 @@ namespace VSharp.Syntax
                 SyntaxKind.IdentifierToken when LookAhead.Kind is
                     SyntaxKind.OpenParenthesisToken or SyntaxKind.DotToken
                     => ParseCallExpression(),
+
+                _ when LookAhead.Kind is SyntaxKind.OpenBracketToken
+                    => ParseArrayInitializationExpression(),
                 _ => ParseNameExpression(),
             };
         }
@@ -481,6 +486,30 @@ namespace VSharp.Syntax
             return new ParenthesizedExpressionSyntax(leftParenthesis, expression, rightParenthesis);
         }
 
+        private ArrayInitializationExpressionSyntax ParseArrayInitializationExpression()
+        {
+            var typeKeyword = ParseTypeExpression(isArray: true);
+            var openBracket = MatchToken(SyntaxKind.OpenBracketToken);
+            var sizeExpression = ParseExpression();
+            var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
+
+            if (Current.Kind == SyntaxKind.EqualsGreaterToken)
+            {
+                var lambdaOperator = NextToken();
+                var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken, () => Current.Kind == SyntaxKind.SemicolonToken);
+
+                return new SimpleArrayInitializerExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, lambdaOperator, initializer);
+            }
+            else
+            {
+                var openBrace = MatchToken(SyntaxKind.OpenBraceToken);
+                var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken, () => Current.Kind is SyntaxKind.CloseBraceToken or SyntaxKind.SemicolonToken);
+                var closeBrace = MatchToken(SyntaxKind.CloseBraceToken);
+
+                return new BodiedArrayInitializationExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, openBrace, initializer, closeBrace);
+            }
+        }
+
         private TypeofExpressionSyntax ParseTypeofExpression()
         {
             var typeofKeyword = MatchToken(SyntaxKind.TypeofKeyword);
@@ -501,7 +530,7 @@ namespace VSharp.Syntax
             return new NameofExpressionSyntax(nameofKeyword, leftParenthesis, identifierToken, rightParenthesis);
         }
 
-        private TypeExpressionSyntax ParseTypeExpression()
+        private TypeExpressionSyntax ParseTypeExpression(bool isArray = false)
         {
             if (!Current.Kind.IsExplicitTypeKeyword())
             {
@@ -509,7 +538,28 @@ namespace VSharp.Syntax
             }
 
             var typeToken = NextToken();
-            return new TypeExpressionSyntax(typeToken);
+            var type = new TypeExpressionSyntax(typeToken);
+
+            return TryParseArrayTypeExpression(type, isArray);
+        }
+
+        private TypeExpressionSyntax TryParseArrayTypeExpression(TypeExpressionSyntax currentTypeExpression, bool isArray = false)
+        {
+            if (isArray)
+            {
+                if (LookAhead.Kind == SyntaxKind.CloseBracketToken && Peek(2).Kind != SyntaxKind.OpenBracketToken)
+                    return currentTypeExpression;
+                else if (Peek(2).Kind == SyntaxKind.CloseBracketToken && Peek(3).Kind != SyntaxKind.OpenBracketToken)
+                    return currentTypeExpression;
+            }
+
+            if (Current.Kind != SyntaxKind.OpenBracketToken)
+                return currentTypeExpression;
+
+            var openBracket = NextToken();
+            var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
+
+            return new(currentTypeExpression.TypeIdentifiers.AddRange(new[] { openBracket, closeBracket }));
         }
 
         private LiteralExpressionSyntax ParseBooleanLiteral(bool isTrue)
