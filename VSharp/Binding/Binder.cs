@@ -758,9 +758,7 @@ namespace VSharp.Binding
             var arrayType = Types.Array.MakeGenericType(itemType);
 
             var boundInitializer = ImmutableArray.CreateBuilder<BoundExpression>();
-            var sizeExpression = BindExpression(syntax.SizeExpression, Types.Int);
-            if (sizeExpression.Type.IsError())
-                return sizeExpression;
+            var sizeExpression = syntax.SizeExpression is not null ? BindExpression(syntax.SizeExpression, Types.Int) : null;
 
             if (syntax is BodiedArrayInitializationExpressionSyntax bodiedInitialization)
             {
@@ -779,13 +777,21 @@ namespace VSharp.Binding
             }
             else throw new Exception();
 
+            sizeExpression ??= new BoundLiteralExpression(boundInitializer.Count);
             return new BoundArrayInitializationExpression(arrayType, sizeExpression, boundInitializer.ToImmutable());
 
             void BindArrayInitializer(SeparatedSyntaxList<ExpressionSyntax> initializer)
             {
+                if (sizeExpression is null)
+                    sizeExpression = new BoundLiteralExpression(initializer.Count);
+
                 if (sizeExpression is not BoundLiteralExpression literalSizeExpression)
                 {
-                    Diagnostics.ReportSizeMustBeConstantWithInitializer(syntax.SizeExpression.Span);
+                    if (syntax.SizeExpression is not null)
+                        Diagnostics.ReportSizeMustBeConstantWithInitializer(syntax.SizeExpression.Span);
+                    else
+                        Diagnostics.ReportSizeMustBeConstantWithInitializer(syntax.TypeToken.Span);
+
                     return;
                 }
 

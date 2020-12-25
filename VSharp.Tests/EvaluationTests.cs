@@ -383,9 +383,14 @@ namespace VSharp.Tests
                 yield return ("var result = object[2] => 1, \"b\";", new object[] { 1, "b" });
                 yield return ("var result = object[2] => \"c\";", new[] { "c", "c" });
 
-                //yield return ("var result = int[] { 1, 2 };", new[] { 1, 2 });
-                //yield return ("var result = int[] => 1, 2;", new[] { 1, 2 });
-                //yield return ("var result = string[] => \"1\", \"a\";", new[] { "1", "a" });
+                yield return ("int[] result = int[2] { 1, 2 };", new[] { 1, 2 });
+                yield return ("var result = int[2] { 1, 2 + 10 };", new[] { 1, 12 });
+                yield return ("var a = 5; int[] result = int[2] { 1, a };", new[] { 1, 5 });
+
+                yield return ("var result = int[] { 1, 2 };", new[] { 1, 2 });
+                yield return ("var result = int[] => 1, 2;", new[] { 1, 2 });
+                yield return ("var result = string[] => \"1\", \"a\";", new[] { "1", "a" });
+                yield return ("var result = object[] => 1, \"a\";", new object[] { 1, "a" });
                 //yield return ("var result = [] { 1, 2};", new[] { 1, 2 });
                 //yield return ("var result = [] => 1, 2;", new[] { 1, 2 });
                 //yield return ("var result = [2] => 1, 2;", new[] { 1, 2 });
@@ -395,7 +400,6 @@ namespace VSharp.Tests
                 //yield return ("var result = [2] { [] => 3 };", new[] { new[] { 3 }, new[] { 3 } });
                 //yield return ("var result = [2, 1] => 4;", new int[2, 1] { { 4 }, { 4 } });
                 //yield return ("var result = [2, 1] { { 1 }, { 2 } };", new int[2, 1] { { 1 }, { 2 } });
-                //yield return ("var result = object[] => 1, \"a\";", new object[] { 1, "a" });
                 //yield return ("var result = [] => 1, \"a\";", new object[] { 1, "a" });
                 //yield return ("var result = [2] => 1, \"a\";", new object[] { 1, "a" });
 

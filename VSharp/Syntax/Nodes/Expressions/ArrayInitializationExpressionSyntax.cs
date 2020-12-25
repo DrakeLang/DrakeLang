@@ -24,7 +24,7 @@ namespace VSharp.Syntax
     {
         internal ArrayInitializationExpressionSyntax(
             TypeExpressionSyntax typeToken,
-            SyntaxToken openBracketToken, ExpressionSyntax sizeExpression, SyntaxToken closeBracketToken)
+            SyntaxToken openBracketToken, ExpressionSyntax? sizeExpression, SyntaxToken closeBracketToken)
         {
             TypeToken = typeToken;
             OpenBracketToken = openBracketToken;
@@ -36,14 +36,17 @@ namespace VSharp.Syntax
 
         public TypeExpressionSyntax TypeToken { get; }
         public SyntaxToken OpenBracketToken { get; }
-        public ExpressionSyntax SizeExpression { get; }
+        public ExpressionSyntax? SizeExpression { get; }
         public SyntaxToken CloseBracketToken { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             yield return TypeToken;
             yield return OpenBracketToken;
-            yield return SizeExpression;
+
+            if (SizeExpression is not null)
+                yield return SizeExpression;
+
             yield return CloseBracketToken;
         }
     }
@@ -52,7 +55,7 @@ namespace VSharp.Syntax
     {
         internal BodiedArrayInitializationExpressionSyntax(
             TypeExpressionSyntax typeToken,
-            SyntaxToken openBracketToken, ExpressionSyntax sizeExpression, SyntaxToken closeBracketToken,
+            SyntaxToken openBracketToken, ExpressionSyntax? sizeExpression, SyntaxToken closeBracketToken,
             SyntaxToken openBraceToken, SeparatedSyntaxList<ExpressionSyntax> initializer, SyntaxToken closeBraceToken)
             : base(typeToken, openBracketToken, sizeExpression, closeBracketToken)
         {
@@ -83,7 +86,7 @@ namespace VSharp.Syntax
     {
         internal SimpleArrayInitializerExpressionSyntax(
             TypeExpressionSyntax typeToken,
-            SyntaxToken openBracketToken, ExpressionSyntax sizeExpression, SyntaxToken closeBracketToken,
+            SyntaxToken openBracketToken, ExpressionSyntax? sizeExpression, SyntaxToken closeBracketToken,
             SyntaxToken lambdaOperator, SeparatedSyntaxList<ExpressionSyntax> initializer)
             : base(typeToken, openBracketToken, sizeExpression, closeBracketToken)
         {

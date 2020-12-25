@@ -490,7 +490,7 @@ namespace VSharp.Syntax
         {
             var typeKeyword = ParseTypeExpression(isArray: true);
             var openBracket = MatchToken(SyntaxKind.OpenBracketToken);
-            var sizeExpression = ParseExpression();
+            var sizeExpression = Current.Kind is not SyntaxKind.CloseBracketToken ? ParseExpression() : null;
             var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
 
             if (Current.Kind == SyntaxKind.EqualsGreaterToken)
