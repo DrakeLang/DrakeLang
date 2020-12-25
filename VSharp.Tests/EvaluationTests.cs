@@ -386,6 +386,8 @@ namespace VSharp.Tests
                 yield return ("int[] result = int[2] { 1, 2 };", new[] { 1, 2 });
                 yield return ("var result = int[2] { 1, 2 + 10 };", new[] { 1, 12 });
                 yield return ("var a = 5; int[] result = int[2] { 1, a };", new[] { 1, 5 });
+                yield return ("var a = 5; int[] result = int[a] => a;", new[] { 5, 5, 5, 5, 5 });
+                yield return ("var a = 5; int[] result = int[a++] => ++a;", new[] { 7, 8, 9, 10, 11 });
 
                 yield return ("var result = int[] { 1, 2 };", new[] { 1, 2 });
                 yield return ("var result = int[] => 1, 2;", new[] { 1, 2 });

@@ -545,16 +545,14 @@ namespace VSharp.Syntax
 
         private TypeExpressionSyntax TryParseArrayTypeExpression(TypeExpressionSyntax currentTypeExpression, bool isArray = false)
         {
+            if (Current.Kind != SyntaxKind.OpenBracketToken || LookAhead.Kind != SyntaxKind.CloseBracketToken)
+                return currentTypeExpression;
+
             if (isArray)
             {
                 if (LookAhead.Kind == SyntaxKind.CloseBracketToken && Peek(2).Kind != SyntaxKind.OpenBracketToken)
                     return currentTypeExpression;
-                else if (Peek(2).Kind == SyntaxKind.CloseBracketToken && Peek(3).Kind != SyntaxKind.OpenBracketToken)
-                    return currentTypeExpression;
             }
-
-            if (Current.Kind != SyntaxKind.OpenBracketToken)
-                return currentTypeExpression;
 
             var openBracket = NextToken();
             var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
