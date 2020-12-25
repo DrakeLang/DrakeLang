@@ -305,6 +305,8 @@ namespace VSharp.Binding
 
             if (node.SizeExpression is BoundLiteralExpression literalSize)
                 context.Writer.WriteClr(literalSize.Value, ConsoleColor.Magenta);
+            else
+                context.Writer.WriteClr(node.SizeExpression.ToFriendlyString(), ConsoleColor.Cyan);
 
             context.Writer.Write(']');
 

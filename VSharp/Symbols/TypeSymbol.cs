@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -177,6 +178,32 @@ namespace VSharp.Symbols
             GenericTypeArguments = genericArguments,
         }.Build();
 
+        internal virtual GenericTypeSymbol FindCommonAncestor(GenericTypeSymbol other)
+        {
+            if (this == other || this == TypeSymbol.Object)
+                return this;
+            else if (other == TypeSymbol.Object)
+                return other;
+
+            var stack = new Stack<(GenericTypeSymbol, GenericTypeSymbol)>();
+            stack.Push((this, other));
+            while (stack.Count > 0)
+            {
+                var (c1, c2) = stack.Pop();
+                if (c1 == c2)
+                    return c1;
+
+                if (c1.BaseType != TypeSymbol.Object && c2.BaseType != TypeSymbol.Object)
+                {
+                    stack.Push((c1.BaseType, c2.BaseType));
+                    stack.Push((c1, c2.BaseType));
+                    stack.Push((c1.BaseType, c2));
+                }
+            }
+
+            return TypeSymbol.Object;
+        }
+
         public override string Name
         {
             get
@@ -254,6 +281,8 @@ namespace VSharp.Symbols
             }
         }
 
+        internal override TypeBaseSymbol FindCommonAncestor(GenericTypeSymbol other) => (TypeBaseSymbol)base.FindCommonAncestor(other);
+
         #region Operators
 
         public override bool Equals(object? obj)
@@ -305,6 +334,8 @@ namespace VSharp.Symbols
             else
                 return new GenericTypeSymbolBuilder(this).Build();
         }
+
+        internal override TypeSymbol FindCommonAncestor(GenericTypeSymbol other) => (TypeSymbol)base.FindCommonAncestor(other);
 
         #region Operators
 

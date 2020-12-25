@@ -513,9 +513,12 @@ namespace VSharp.Binding
             };
         }
 
-        private BoundExpression BindExpression(ExpressionSyntax syntax, TypeSymbol targetType)
+        private BoundExpression BindExpression(ExpressionSyntax syntax, TypeSymbol? targetType)
         {
             var expression = BindExpression(syntax);
+            if (targetType is null)
+                return expression;
+
             if (!expression.Type.IsError() && !targetType.IsError())
                 return BindConvertion(syntax.Span, expression, targetType);
 
@@ -751,11 +754,9 @@ namespace VSharp.Binding
 
         private BoundExpression BindArrayInitializationExpression(ArrayInitializationExpressionSyntax syntax)
         {
-            var itemType = ResolveType(syntax.TypeToken);
-            if (itemType is null)
-                return BoundErrorExpression.Instance;
-
-            var arrayType = Types.Array.MakeGenericType(itemType);
+            TypeSymbol? itemType = null;
+            if (syntax.TypeToken is not null)
+                itemType = ResolveType(syntax.TypeToken) ?? Types.Error;
 
             var boundInitializer = ImmutableArray.CreateBuilder<BoundExpression>();
             var sizeExpression = syntax.SizeExpression is not null ? BindExpression(syntax.SizeExpression, Types.Int) : null;
@@ -769,6 +770,7 @@ namespace VSharp.Binding
                 if (simpleInitialization.Initializer.Count == 1)
                 {
                     boundInitializer.Add(BindExpression(simpleInitialization.Initializer[0], itemType));
+                    itemType ??= boundInitializer[0].Type;
                 }
                 else
                 {
@@ -777,6 +779,7 @@ namespace VSharp.Binding
             }
             else throw new Exception();
 
+            var arrayType = Types.Array.MakeGenericType(itemType ?? Types.Object);
             sizeExpression ??= new BoundLiteralExpression(boundInitializer.Count);
             return new BoundArrayInitializationExpression(arrayType, sizeExpression, boundInitializer.ToImmutable());
 
@@ -787,11 +790,17 @@ namespace VSharp.Binding
 
                 if (sizeExpression is not BoundLiteralExpression literalSizeExpression)
                 {
+                    TextSpan span;
                     if (syntax.SizeExpression is not null)
-                        Diagnostics.ReportSizeMustBeConstantWithInitializer(syntax.SizeExpression.Span);
+                        span = syntax.SizeExpression.Span;
                     else
-                        Diagnostics.ReportSizeMustBeConstantWithInitializer(syntax.TypeToken.Span);
+                    {
+                        SyntaxNode startNode = (SyntaxNode?)syntax.TypeToken ?? syntax.OpenBracketToken;
+                        span = TextSpan.FromBounds(startNode.Span.Start, syntax.CloseBracketToken.Span.End);
+                    }
 
+                    Diagnostics.ReportSizeMustBeConstantWithInitializer(span);
+                    itemType ??= Types.Error;
                     return;
                 }
 
@@ -800,9 +809,17 @@ namespace VSharp.Binding
                     Diagnostics.ReportArraySizeMismatch(initializer.Span);
                 }
 
-                foreach (var item in initializer)
+                foreach (var expression in initializer)
                 {
-                    boundInitializer.Add(BindExpression(item, itemType));
+                    boundInitializer.Add(BindExpression(expression, itemType));
+                }
+
+                foreach (var expression in boundInitializer)
+                {
+                    if (itemType is null)
+                        itemType = expression.Type;
+                    else if (itemType != Types.Object)
+                        itemType = itemType.FindCommonAncestor(expression.Type);
                 }
             }
         }
