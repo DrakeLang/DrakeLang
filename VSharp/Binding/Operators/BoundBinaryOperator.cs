@@ -58,15 +58,18 @@ namespace VSharp.Binding
 
         public static BoundBinaryOperator? Bind(SyntaxKind syntaxKind, TypeSymbol leftType, TypeSymbol rightType)
         {
+            if (!leftType.IsConcreteType || !rightType.IsConcreteType)
+                return null;
+
             var result = _operators.SingleOrDefault(op => op.SyntaxKind == syntaxKind && op.LeftType == leftType && op.RightType == rightType);
             if (result is null && leftType != TypeSymbol.Object)
             {
-                result = Bind(syntaxKind, leftType.BaseType, rightType);
+                result = Bind(syntaxKind, leftType.BaseType!, rightType);
             }
 
             if (result is null && rightType != TypeSymbol.Object)
             {
-                result = Bind(syntaxKind, leftType, rightType.BaseType);
+                result = Bind(syntaxKind, leftType, rightType.BaseType!);
             }
 
             return result;
@@ -74,15 +77,18 @@ namespace VSharp.Binding
 
         public static BoundBinaryOperator? Bind(BoundBinaryOperatorKind operatorKind, TypeSymbol leftType, TypeSymbol rightType)
         {
+            if (!leftType.IsConcreteType || !rightType.IsConcreteType)
+                return null;
+
             var result = _operators.SingleOrDefault(op => op.Kind == operatorKind && op.LeftType == leftType && op.RightType == rightType);
             if (result is null && leftType != TypeSymbol.Object)
             {
-                result = Bind(operatorKind, leftType.BaseType, rightType);
+                result = Bind(operatorKind, leftType.BaseType!, rightType);
             }
 
             if (result is null && rightType != TypeSymbol.Object)
             {
-                result = Bind(operatorKind, leftType, rightType.BaseType);
+                result = Bind(operatorKind, leftType, rightType.BaseType!);
             }
 
             return result;

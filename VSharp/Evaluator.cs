@@ -23,7 +23,6 @@ using System.Globalization;
 using System.Linq;
 using VSharp.Binding;
 using VSharp.Symbols;
-using VSharp.Utils;
 using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp
@@ -156,6 +155,7 @@ namespace VSharp
                 BoundNodeKind.BinaryExpression => EvaluateBinaryExpression((BoundBinaryExpression)node),
                 BoundNodeKind.CallExpression => EvaluateCallExpression((BoundCallExpression)node),
                 BoundNodeKind.ExplicitCastExpression => EvaluateExplicitCastExpression((BoundExplicitCastExpression)node),
+                BoundNodeKind.IndexerExpression => EvaluateIndexerExpression((BoundIndexerExpression)node),
                 BoundNodeKind.ArrayInitializationExpression => EvaluateArrayInitializationExpression((BoundArrayInitializationExpression)node),
 
                 _ => throw new Exception($"Unexpected node '{node.Kind}'."),
@@ -291,16 +291,38 @@ namespace VSharp
                 return LiteralEvaluator.EvaluateExplicitCastExpression(node.Type, value);
             }
 
-            private object EvaluateArrayInitializationExpression(BoundArrayInitializationExpression node)
+            public object EvaluateIndexerExpression(BoundIndexerExpression node)
+            {
+                var operand = EvaluateExpression(node.Operand);
+                var parameter = EvaluateExpression(node.Parameter);
+
+                if (node.Operand.Type.IsGenericType)
+                {
+                    if (node.Indexer == Types.Array.MakeConcreteType(node.Operand.Type.GenericTypeArguments[0]).Indexer)
+                    {
+                        var array = (object[])operand;
+                        var index = (int)parameter;
+                        return array[index];
+                    }
+                }
+                else if (node.Indexer == Types.String.Indexer)
+                {
+                    var str = (string)operand;
+                    var index = (int)parameter;
+                    return str[index];
+                }
+
+                throw new Exception($"Indexer for type '{node.Operand.Type}' not handled.");
+            }
+
+            public object EvaluateArrayInitializationExpression(BoundArrayInitializationExpression node)
             {
                 var size = (int)EvaluateExpression(node.SizeExpression);
-                var type = TypeSymbolUtil.ToClrType(node.Type.GenericTypeArguments[0]);
-                var value = Array.CreateInstance(type, size);
+                var value = new object[size];
 
                 for (int i = 0; i < value.Length; i++)
                 {
-                    var subval = node.Initializer.Length == 1 ? EvaluateExpression(node.Initializer[0]) : EvaluateExpression(node.Initializer[i]);
-                    value.SetValue(subval, i);
+                    value[i] = node.Initializer.Length == 1 ? EvaluateExpression(node.Initializer[0]) : EvaluateExpression(node.Initializer[i]);
                 }
 
                 return value;

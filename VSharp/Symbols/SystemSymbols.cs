@@ -82,16 +82,30 @@ namespace VSharp.Symbols
             public static readonly TypeSymbol Boolean = new("bool");
             public static readonly TypeSymbol Int = new("int");
             public static readonly TypeSymbol Float = new("float");
-            public static readonly TypeSymbol String = new("string");
             public static readonly TypeSymbol Char = new("char");
 
-            public static readonly GenericTypeSymbol Array = new(new TypeSymbolBuilder
+            #region String
+
+            public static readonly TypeSymbol String = new TypeSymbolBuilder
             {
-                BaseSymbolName = "Array",
-                GenericArgumentsDescriptions = ImmutableArray.Create(
-                    new GenericTypeArgumentSymbol("T")
+                Name = "string",
+                Indexer = new(new ParameterSymbol("index", Int), Char),
+            }.Build();
+
+            #endregion String
+
+            #region Array
+
+            public static readonly TypeSymbol Array = new TypeSymbolBuilder
+            {
+                Name = "Array",
+                GenericTypeArguments = ImmutableArray.Create(
+                    new TypeSymbol(new GenericArgumentSymbolBuilder { Name = "T" })
                 ),
-            });
+                Indexer = new(new ParameterSymbol("index", Int), new TypeSymbol(new GenericArgumentSymbolBuilder { Name = "T" })),
+            }.Build();
+
+            #endregion Array
         }
     }
 }

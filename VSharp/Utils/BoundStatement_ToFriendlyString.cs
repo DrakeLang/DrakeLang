@@ -40,6 +40,8 @@ namespace VSharp.Binding
             BoundNodeKind.BinaryExpression => StringifyBinaryExpression((BoundBinaryExpression)node),
             BoundNodeKind.CallExpression => StringifyCallExpression((BoundCallExpression)node),
             BoundNodeKind.ExplicitCastExpression => StringifyExplicitCastExpression((BoundExplicitCastExpression)node),
+            BoundNodeKind.IndexerExpression => StringifyIndexerExpression((BoundIndexerExpression)node),
+            BoundNodeKind.ArrayInitializationExpression => StringifyArrayInitializationExpression((BoundArrayInitializationExpression)node),
 
             _ => throw new Exception($"Unexpected node '{node.Kind}'."),
         };
@@ -154,6 +156,17 @@ namespace VSharp.Binding
         private static string StringifyExplicitCastExpression(BoundExplicitCastExpression node)
         {
             return "(" + node.Type + ")" + ToFriendlyString(node.Expression);
+        }
+
+        private static string StringifyIndexerExpression(BoundIndexerExpression node)
+        {
+            return node.Operand.ToFriendlyString() + "[" + node.Parameter.ToFriendlyString() + "]";
+        }
+
+        private static string StringifyArrayInitializationExpression(BoundArrayInitializationExpression node)
+        {
+            return node.Type.GenericTypeArguments[0] + "[" + node.SizeExpression.ToFriendlyString() + "]" + 
+                " => " + string.Join(", ", node.Initializer.Select(init => init.ToFriendlyString()));
         }
     }
 }

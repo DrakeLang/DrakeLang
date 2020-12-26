@@ -388,6 +388,9 @@ namespace VSharp.Syntax
                 left = ParsePrimaryExpression();
             }
 
+            if (Current.Kind == SyntaxKind.OpenBracketToken)
+                left = ParseIndexerExpression(left);
+
             while (true)
             {
                 int precedence = Current.Kind.GetBinaryOperatorPrecedence();
@@ -472,7 +475,7 @@ namespace VSharp.Syntax
                     => ParseCallExpression(),
 
                 _ when Current.Kind is SyntaxKind.OpenBracketToken ||
-                    LookAhead.Kind is SyntaxKind.OpenBracketToken
+                    (Current.Kind.IsExplicitTypeKeyword() && LookAhead.Kind is SyntaxKind.OpenBracketToken)
                     => ParseArrayInitializationExpression(),
 
                 _ => ParseNameExpression(),
@@ -496,30 +499,6 @@ namespace VSharp.Syntax
             var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 
             return new ParenthesizedExpressionSyntax(leftParenthesis, expression, rightParenthesis);
-        }
-
-        private ArrayInitializationExpressionSyntax ParseArrayInitializationExpression()
-        {
-            var typeKeyword = Current.Kind.IsExplicitTypeKeyword() ? ParseTypeExpression(isArray: true) : null;
-            var openBracket = MatchToken(SyntaxKind.OpenBracketToken);
-            var sizeExpression = Current.Kind is not SyntaxKind.CloseBracketToken ? ParseExpression() : null;
-            var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
-
-            if (Current.Kind == SyntaxKind.EqualsGreaterToken)
-            {
-                var lambdaOperator = NextToken();
-                var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken);
-
-                return new SimpleArrayInitializerExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, lambdaOperator, initializer);
-            }
-            else
-            {
-                var openBrace = MatchToken(SyntaxKind.OpenBraceToken);
-                var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken);
-                var closeBrace = MatchToken(SyntaxKind.CloseBraceToken);
-
-                return new BodiedArrayInitializationExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, openBrace, initializer, closeBrace);
-            }
         }
 
         private TypeofExpressionSyntax ParseTypeofExpression()
@@ -666,6 +645,39 @@ namespace VSharp.Syntax
             }
 
             return new SeparatedSyntaxList<SyntaxNode>(builder.ToImmutable());
+        }
+
+        private IndexerExpressionSyntax ParseIndexerExpression(ExpressionSyntax operand)
+        {
+            var openBracket = MatchToken(SyntaxKind.OpenBracketToken);
+            var bracketExpression = ParseExpression();
+            var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
+
+            return new(operand, openBracket, bracketExpression, closeBracket);
+        }
+
+        private ArrayInitializationExpressionSyntax ParseArrayInitializationExpression()
+        {
+            var typeKeyword = Current.Kind.IsExplicitTypeKeyword() ? ParseTypeExpression(isArray: true) : null;
+            var openBracket = MatchToken(SyntaxKind.OpenBracketToken);
+            var sizeExpression = Current.Kind is not SyntaxKind.CloseBracketToken ? ParseExpression() : null;
+            var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
+
+            if (Current.Kind == SyntaxKind.EqualsGreaterToken)
+            {
+                var lambdaOperator = NextToken();
+                var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken);
+
+                return new SimpleArrayInitializerExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, lambdaOperator, initializer);
+            }
+            else
+            {
+                var openBrace = MatchToken(SyntaxKind.OpenBraceToken);
+                var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken);
+                var closeBrace = MatchToken(SyntaxKind.CloseBraceToken);
+
+                return new BodiedArrayInitializationExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, openBrace, initializer, closeBrace);
+            }
         }
 
         private NameExpressionSyntax ParseNameExpression()

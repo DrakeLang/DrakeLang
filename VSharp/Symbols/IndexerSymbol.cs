@@ -20,22 +20,18 @@ using System;
 
 namespace VSharp.Symbols
 {
-    public class VariableSymbol : Symbol
+    public sealed class IndexerSymbol : MemberSymbol
     {
-        internal VariableSymbol(string name, bool isReadOnly, TypeSymbol type) : base(name)
+        internal IndexerSymbol(ParameterSymbol parameter, TypeSymbol returnType) : base("[]")
         {
-            IsReadOnly = isReadOnly;
-            Type = type;
+            Parameter = parameter;
+            ReturnType = returnType;
         }
 
-        public override SymbolKind Kind => SymbolKind.Variable;
-        public bool IsReadOnly { get; }
-        public TypeSymbol Type { get; }
-
-        public override string ToString()
-        {
-            return Type + " " + Name;
-        }
+        public override NamespaceSymbol? Namespace => null;
+        public override SymbolKind Kind => SymbolKind.Property;
+        public ParameterSymbol Parameter { get; }
+        public TypeSymbol ReturnType { get; }
 
         #region Operators
 
@@ -44,20 +40,21 @@ namespace VSharp.Symbols
             if (ReferenceEquals(this, obj))
                 return true;
 
-            if (obj is not VariableSymbol other)
+            if (obj is not IndexerSymbol other)
                 return false;
 
             return Name == other.Name &&
-                IsReadOnly == other.IsReadOnly &&
-                Type == other.Type;
+                Namespace == other.Namespace &&
+                Parameter == other.Parameter &&
+                ReturnType == other.ReturnType;
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Name, IsReadOnly, Type);
+            return HashCode.Combine(Name, Namespace, Parameter, ReturnType);
         }
 
-        public static bool operator ==(VariableSymbol? left, VariableSymbol? right)
+        public static bool operator ==(IndexerSymbol? left, IndexerSymbol? right)
         {
             if (left is null)
                 return right is null;
@@ -65,7 +62,7 @@ namespace VSharp.Symbols
             return left.Equals(right);
         }
 
-        public static bool operator !=(VariableSymbol? left, VariableSymbol? right)
+        public static bool operator !=(IndexerSymbol? left, IndexerSymbol? right)
         {
             return !(left == right);
         }

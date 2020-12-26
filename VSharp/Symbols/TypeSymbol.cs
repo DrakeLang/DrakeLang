@@ -17,71 +17,22 @@
 //------------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace VSharp.Symbols
 {
-    /// <summary>
-    /// Base type for type-related symbols
-    /// </summary>
-    public abstract class BaseTypeSymbol : Symbol
+    internal sealed class TypeSymbolBuilder
     {
-        private protected BaseTypeSymbol(string name) : base(name)
-        { }
-
-        #region Operators
-
-        public override bool Equals(object? obj)
+        public TypeSymbolBuilder()
         {
-            if (ReferenceEquals(this, obj))
-                return true;
-
-            return obj is BaseTypeSymbol other &&
-                Name == other.Name &&
-                GetType() == other.GetType();
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(Name);
-        }
-
-        public static bool operator ==(BaseTypeSymbol? left, BaseTypeSymbol? right)
-        {
-            if (left is null)
-                return right is null;
-
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(BaseTypeSymbol? left, BaseTypeSymbol? right)
-        {
-            return !(left == right);
-        }
-
-        #endregion Operators
-    }
-
-    internal class GenericTypeSymbolBuilder
-    {
-        public GenericTypeSymbolBuilder()
-        {
-        }
-
-        public GenericTypeSymbolBuilder(GenericTypeSymbol basedOn)
-        {
-            BaseSymbolName = basedOn.BaseSymbolName;
-            Namespace = basedOn.Namespace;
-            BaseType = basedOn.BaseType;
-            GenericArgumentsDescriptions = basedOn.GenericArgumentsDescriptions;
         }
 
         /// <summary>
         /// Gets or sets the name of the type.
         /// </summary>
-        public string? BaseSymbolName { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// Gets or sets the namespace of the type.
@@ -89,269 +40,266 @@ namespace VSharp.Symbols
         public NamespaceSymbol? Namespace { get; set; }
 
         /// <summary>
-        /// Gets or sets the parent type. If null, the type will just inherit from <see cref="TypeSymbol.Object"/>.
-        /// </summary>
-        public TypeBaseSymbol? BaseType { get; set; }
-
-        /// <summary>
         /// Gets or sets the generic type arguments of the type.
         /// </summary>
-        public ImmutableArray<GenericTypeArgumentSymbol> GenericArgumentsDescriptions { get; set; } = ImmutableArray<GenericTypeArgumentSymbol>.Empty;
+        public ImmutableArray<TypeSymbol> GenericTypeArguments { get; set; } = ImmutableArray<TypeSymbol>.Empty;
 
-        public virtual GenericTypeSymbol Build() => new(this);
+        public IndexerSymbol? Indexer { get; set; }
+
+        public TypeSymbol Build() => new(this);
     }
 
-    internal class TypeBaseSymbolBuilder : GenericTypeSymbolBuilder
+    internal sealed class GenericArgumentSymbolBuilder
     {
-        public TypeBaseSymbolBuilder()
-        { }
-
-        public TypeBaseSymbolBuilder(GenericTypeSymbol basedOn) : base(basedOn)
+        public GenericArgumentSymbolBuilder()
         {
-            if (basedOn is TypeBaseSymbol baseType)
-            {
-                GenericTypeArguments = baseType.GenericTypeArguments;
-            }
         }
 
-        public virtual ImmutableArray<BaseTypeSymbol> GenericTypeArguments { get; set; } = ImmutableArray<BaseTypeSymbol>.Empty;
-
-        public override TypeBaseSymbol Build() => new(this);
+        /// <summary>
+        /// Gets or sets the name of the type argument.
+        /// </summary>
+        public string? Name { get; set; }
     }
 
-    internal sealed class TypeSymbolBuilder : TypeBaseSymbolBuilder
-    {
-        public TypeSymbolBuilder()
-        {
-            GenericTypeArguments = ImmutableArray<TypeSymbol>.Empty;
-        }
-
-        public TypeSymbolBuilder(GenericTypeSymbol basedOn) : base(basedOn)
-        {
-            GenericTypeArguments = ImmutableArray<TypeSymbol>.Empty;
-        }
-
-        public new ImmutableArray<TypeSymbol> GenericTypeArguments
-        {
-            get => base.GenericTypeArguments.CastArray<TypeSymbol>();
-            set => base.GenericTypeArguments = ImmutableArray<BaseTypeSymbol>.CastUp(value);
-        }
-
-        public override TypeSymbol Build() => new(this);
-    }
-
-    public class GenericTypeSymbol : BaseTypeSymbol, IMemberSymbol
-    {
-        private readonly TypeBaseSymbol? _baseType;
-
-        internal GenericTypeSymbol(string name) : this(new GenericTypeSymbolBuilder { BaseSymbolName = name })
-        { }
-
-        internal GenericTypeSymbol(GenericTypeSymbolBuilder builder) : base(builder.BaseSymbolName ?? throw new ArgumentException("Type must have a name", nameof(builder)))
-        {
-            if (builder.BaseType is not null &&
-                builder.BaseType.GenericTypeArguments.Any(arg => arg is GenericTypeArgumentSymbol genericArg && !builder.GenericArgumentsDescriptions.Contains(genericArg)))
-            {
-                throw new Exception($"Base type cannot have generic arguments not that differ from implementors arguments.");
-            }
-
-            Namespace = builder.Namespace;
-            _baseType = builder.BaseType;
-            GenericArgumentsDescriptions = builder.GenericArgumentsDescriptions;
-        }
-
-        public NamespaceSymbol? Namespace { get; }
-
-        public override SymbolKind Kind => SymbolKind.Type;
-        public TypeBaseSymbol BaseType => _baseType ?? TypeSymbol.Object;
-        public ImmutableArray<GenericTypeArgumentSymbol> GenericArgumentsDescriptions { get; }
-
-        internal TypeSymbol MakeGenericType(params TypeSymbol[] typeArguments) => MakeGenericType(typeArguments.ToImmutableArray());
-
-        internal TypeSymbol MakeGenericType(ImmutableArray<TypeSymbol> typeArguments) => new TypeSymbolBuilder(this)
-        {
-            GenericTypeArguments = typeArguments,
-        }.Build();
-
-        internal TypeBaseSymbol CreateBaseType(ImmutableArray<BaseTypeSymbol> genericArguments) => new TypeBaseSymbolBuilder(this)
-        {
-            GenericTypeArguments = genericArguments,
-        }.Build();
-
-        internal virtual GenericTypeSymbol FindCommonAncestor(GenericTypeSymbol other)
-        {
-            if (this == other || this == TypeSymbol.Object)
-                return this;
-            else if (other == TypeSymbol.Object)
-                return other;
-
-            var stack = new Stack<(GenericTypeSymbol, GenericTypeSymbol)>();
-            stack.Push((this, other));
-            while (stack.Count > 0)
-            {
-                var (c1, c2) = stack.Pop();
-                if (c1 == c2)
-                    return c1;
-
-                if (c1.BaseType != TypeSymbol.Object && c2.BaseType != TypeSymbol.Object)
-                {
-                    stack.Push((c1.BaseType, c2.BaseType));
-                    stack.Push((c1, c2.BaseType));
-                    stack.Push((c1.BaseType, c2));
-                }
-            }
-
-            return TypeSymbol.Object;
-        }
-
-        public override string Name
-        {
-            get
-            {
-                if (GenericArgumentsDescriptions.Length == 0)
-                    return BaseSymbolName;
-                else
-                    return BaseSymbolName + "<" + string.Join(", ", GenericArgumentsDescriptions) + ">";
-            }
-        }
-
-        public virtual string FullName => Namespace is null ? Name : Namespace.Name + "." + Name;
-
-        public override string ToString() => FullName;
-
-        public string BaseSymbolName => base.Name;
-
-        #region Operators
-
-        public override bool Equals(object? obj)
-        {
-            if (ReferenceEquals(this, obj))
-                return true;
-
-            if (!base.Equals(obj))
-                return false;
-
-            if (obj is not GenericTypeSymbol other)
-                return false;
-
-            return Namespace == other.Namespace &&
-                BaseType == other.BaseType &&
-                GenericArgumentsDescriptions.SequenceEqual(other.GenericArgumentsDescriptions);
-        }
-
-        public override int GetHashCode()
-        {
-            if (BaseType == TypeSymbol.Object)
-                return -1;
-
-            return HashCode.Combine(base.GetHashCode(), Namespace, _baseType);
-        }
-
-        #endregion Operators
-    }
-
-    /// <summary>
-    /// Represents the base type of other classes.
-    /// </summary>
-    public class TypeBaseSymbol : GenericTypeSymbol
-    {
-        internal TypeBaseSymbol(string name) : base(name)
-        { }
-
-        internal TypeBaseSymbol(TypeBaseSymbolBuilder builder) : base(builder)
-        {
-            if (builder.GenericTypeArguments.IsDefaultOrEmpty)
-                GenericTypeArguments = ImmutableArray<BaseTypeSymbol>.CastUp(builder.GenericArgumentsDescriptions);
-            else if (GenericArgumentsDescriptions.Length != builder.GenericTypeArguments.Length)
-                throw new Exception($"The type '{Name}' was given {builder.GenericTypeArguments.Length} type arguments, but has {GenericArgumentsDescriptions.Length} generic arguments. Count must be equal.");
-            else
-                GenericTypeArguments = builder.GenericTypeArguments;
-        }
-
-        public ImmutableArray<BaseTypeSymbol> GenericTypeArguments { get; }
-
-        public override string Name
-        {
-            get
-            {
-                if (GenericTypeArguments.Length == 0)
-                    return BaseSymbolName;
-                else
-                    return BaseSymbolName + "<" + string.Join(", ", GenericTypeArguments) + ">";
-            }
-        }
-
-        internal override TypeBaseSymbol FindCommonAncestor(GenericTypeSymbol other) => (TypeBaseSymbol)base.FindCommonAncestor(other);
-
-        #region Operators
-
-        public override bool Equals(object? obj)
-        {
-            if (ReferenceEquals(this, obj))
-                return true;
-
-            if (!base.Equals(obj))
-                return false;
-
-            return obj is TypeBaseSymbol other &&
-                GenericTypeArguments.SequenceEqual(other.GenericTypeArguments);
-        }
-
-        public override int GetHashCode() => base.GetHashCode();
-
-        #endregion Operators
-    }
-
-    public sealed class TypeSymbol : TypeBaseSymbol
+    public sealed class TypeSymbol : MemberSymbol
     {
         /// <summary>
         /// The base type of all types.
         /// </summary>
         public static readonly TypeSymbol Object = new TypeSymbol("object");
 
-        internal TypeSymbol(string name) : this(new TypeSymbolBuilder { BaseSymbolName = name })
+        private readonly TypeSymbol? _genericTypeDefinition;
+
+        #region Constructors
+
+        public TypeSymbol(string name) : this(new TypeSymbolBuilder { Name = name })
         {
         }
 
-        internal TypeSymbol(TypeSymbolBuilder builder) : base(builder)
+        internal TypeSymbol(TypeSymbolBuilder builder) : base(builder.Name ?? throw new ArgumentException("Type must have a name.", nameof(builder)))
         {
-            if (builder.BaseType is not null and not TypeSymbol)
-                throw new ArgumentException($"Concrete type cannot have generic base type '{builder.BaseType}'.", nameof(builder));
+            BaseType = Object;
+            _genericTypeDefinition = this;
 
-            if (GenericArgumentsDescriptions.Length != builder.GenericTypeArguments.Length)
-                throw new Exception($"The type '{Name}' was given {builder.GenericTypeArguments.Length} type arguments, but has {GenericArgumentsDescriptions.Length} generic arguments. Count must be equal.");
+            if (builder.GenericTypeArguments.IsDefaultOrEmpty)
+            {
+                IsGenericTypeDefinition = false;
+                IsGenericType = false;
+                IsConcreteType = true;
+            }
+            else
+            {
+                IsGenericTypeDefinition = true;
+                IsGenericType = true;
+                IsConcreteType = false;
 
-            GenericTypeArguments = builder.GenericTypeArguments;
+                GenericTypeArguments = builder.GenericTypeArguments;
+            }
+
+            Namespace = builder.Namespace;
+            Indexer = builder.Indexer;
+
+            if (Indexer is not null)
+            {
+                if (IsConcreteType)
+                {
+                    AssureTypeIsConcrete(Indexer.ReturnType);
+                    AssureTypeIsConcrete(Indexer.Parameter.Type);
+                }
+                else
+                {
+                    AssureIsConcreteOrTypeArgument(Indexer.ReturnType, GenericTypeArguments);
+                    AssureIsConcreteOrTypeArgument(Indexer.Parameter.Type, GenericTypeArguments);
+                }
+            }
         }
 
-        public new TypeSymbol BaseType => (TypeSymbol)base.BaseType;
-        public new ImmutableArray<TypeSymbol> GenericTypeArguments { get; }
-
-        internal GenericTypeSymbol GetGenericTypeDefinition()
+        internal TypeSymbol(GenericArgumentSymbolBuilder builder) : base(builder.Name ?? throw new ArgumentException("Generic type argument must have a name.", nameof(builder)))
         {
-            if (GenericTypeArguments.Length == 0)
+            IsGenericTypeArgument = true;
+        }
+
+        private TypeSymbol(TypeSymbol genericType, ImmutableArray<TypeSymbol> typeArguments) : base(genericType.BaseSymbolName)
+        {
+            _genericTypeDefinition = genericType;
+
+            IsGenericTypeDefinition = false;
+            IsGenericType = true;
+            IsConcreteType = typeArguments.All(arg => arg.IsConcreteType);
+
+            Namespace = genericType.Namespace;
+            GenericTypeArguments = typeArguments;
+
+            Indexer = MakeConcrete(genericType.Indexer);
+        }
+
+        private static void AssureTypeIsConcrete(TypeSymbol type)
+        {
+            if (!type.IsConcreteType)
+                throw new ArgumentException($"Cannot declare concrete type containing non-concrete type '{type}' as a member parameter type or return type.");
+        }
+
+        private static void AssureIsConcreteOrTypeArgument(TypeSymbol type, ImmutableArray<TypeSymbol> typeArguments)
+        {
+            if (type.IsConcreteType)
+                return;
+
+            if (!typeArguments.Contains(type))
+                throw new ArgumentException(
+                    $"Generic type arguments in members of generic types must match type's generic type's arguments. " +
+                    $"Type '{type}' is not a generic argument of the constructed type."
+                );
+        }
+
+        [return: NotNullIfNotNull("indexer")]
+        private IndexerSymbol? MakeConcrete(IndexerSymbol? indexer)
+        {
+            if (indexer is null)
+                return null;
+
+            var parameter = MakeConcrete(indexer.Parameter);
+            var returnType = MakeConcrete(indexer.ReturnType);
+
+            if (parameter == indexer.Parameter && returnType == indexer.ReturnType)
+                return indexer;
+
+            return new(parameter, returnType);
+        }
+
+        private ParameterSymbol MakeConcrete(ParameterSymbol parameter)
+        {
+            var type = MakeConcrete(parameter.Type);
+
+            if (type == parameter.Type)
+                return parameter;
+
+            return new(parameter.Name, type);
+        }
+
+        private TypeSymbol MakeConcrete(TypeSymbol type)
+        {
+            if (type.IsConcreteType)
+                return type;
+
+            if (type.IsGenericType)
+            {
+                var typeArguments = type.GenericTypeArguments.Select(arg => MakeConcrete(arg)).ToImmutableArray();
+                return type.MakeConcreteType(typeArguments);
+            }
+
+            // Type is generic type argument.
+            var index = _genericTypeDefinition!.GenericTypeArguments.IndexOf(type);
+            return GenericTypeArguments[index];
+        }
+
+        #endregion Constructors
+
+        public override NamespaceSymbol? Namespace { get; }
+
+        public override SymbolKind Kind => SymbolKind.Type;
+
+        /// <summary>
+        /// This type's base type.
+        /// </summary>
+        public TypeSymbol? BaseType { get; }
+
+        public ImmutableArray<TypeSymbol> GenericTypeArguments { get; } = ImmutableArray<TypeSymbol>.Empty;
+        public IndexerSymbol? Indexer { get; }
+
+        public override string Name
+        {
+            get
+            {
+                if (IsGenericType)
+                    return BaseSymbolName + "<" + string.Join(", ", GenericTypeArguments) + ">";
+                else
+                    return BaseSymbolName;
+            }
+        }
+
+        public string BaseSymbolName => base.Name;
+
+        public bool IsGenericTypeDefinition { get; }
+        public bool IsGenericType { get; }
+        public bool IsConcreteType { get; }
+        public bool IsGenericTypeArgument { get; }
+
+        public TypeSymbol MakeConcreteType(params TypeSymbol[] typeArguments) => MakeConcreteType(typeArguments.ToImmutableArray());
+
+        public TypeSymbol MakeConcreteType(ImmutableArray<TypeSymbol> typeArguments)
+        {
+            if (!IsGenericType)
+                throw new Exception($"Cannot create concrete type from non-generic type '{Name}'.");
+            else if (!IsGenericTypeDefinition)
+                return GetGenericDefinition().MakeConcreteType(typeArguments);
+
+            if (GenericTypeArguments.Length != typeArguments.Length)
+                throw new Exception($"The type '{Name}' was given {typeArguments.Length} type arguments, but has {GenericTypeArguments.Length} generic arguments. Count must be equal.");
+            else if (!typeArguments.All(arg => arg.IsConcreteType))
+                throw new Exception($"Cannot create concrete type with any non-concrete type arguments.");
+
+            return new(this, typeArguments);
+        }
+
+        public TypeSymbol GetGenericDefinition()
+        {
+            if (!IsGenericType)
+                throw new InvalidOperationException($"Cannot get generic defintion of non-generic type '{Name}'.");
+
+            if (IsGenericTypeDefinition)
+                return this;
+
+            return _genericTypeDefinition!.GetGenericDefinition();
+        }
+
+        public TypeSymbol FindCommonAncestor(TypeSymbol other)
+        {
+            if (IsGenericTypeArgument)
+                throw new InvalidOperationException($"Cannot find ancestor of generic type argument '{Name}'.");
+
+            if (this == other)
                 return this;
             else
-                return new GenericTypeSymbolBuilder(this).Build();
+                return Object;
         }
-
-        internal override TypeSymbol FindCommonAncestor(GenericTypeSymbol other) => (TypeSymbol)base.FindCommonAncestor(other);
 
         #region Operators
 
-        public override bool Equals(object? obj) => base.Equals(obj);
-
-        public override int GetHashCode() => base.GetHashCode();
-
-        #endregion Operators
-    }
-
-    public sealed class GenericTypeArgumentSymbol : BaseTypeSymbol
-    {
-        internal GenericTypeArgumentSymbol(string name) : base(name)
+        public override bool Equals(object? obj)
         {
+            if (ReferenceEquals(this, obj))
+                return true;
+
+            if (obj is not TypeSymbol other)
+                return false;
+
+            return Name == other.Name &&
+                Namespace == other.Namespace &&
+                BaseType == other.BaseType &&
+                GenericTypeArguments.SequenceEqual(other.GenericTypeArguments);
         }
 
-        public override SymbolKind Kind => SymbolKind.Type;
+        public override int GetHashCode()
+        {
+            if (BaseType == Object)
+                return -1;
+
+            return HashCode.Combine(Name, Namespace, BaseType, Indexer);
+        }
+
+        public static bool operator ==(TypeSymbol? left, TypeSymbol? right)
+        {
+            if (left is null)
+                return right is null;
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(TypeSymbol? left, TypeSymbol? right)
+        {
+            return !(left == right);
+        }
+
+        #endregion Operators
     }
 }

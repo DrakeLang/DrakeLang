@@ -53,6 +53,9 @@ namespace VSharp.Binding
 
         public static BoundUnaryOperator? Bind(SyntaxKind syntaxKind, UnaryType unaryType, TypeSymbol operandType)
         {
+            if (!operandType.IsConcreteType)
+                return null;
+
             foreach (BoundUnaryOperator op in _operators)
             {
                 if (op.SyntaxKind == syntaxKind &&
@@ -64,7 +67,7 @@ namespace VSharp.Binding
             }
 
             if (operandType != TypeSymbol.Object)
-                return Bind(syntaxKind, unaryType, operandType.BaseType);
+                return Bind(syntaxKind, unaryType, operandType.BaseType!);
 
             return null;
         }

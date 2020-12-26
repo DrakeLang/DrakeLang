@@ -132,5 +132,13 @@ namespace VSharp.Utils
         {
             writer.WriteClr(label.Name, ConsoleColor.White);
         }
+
+        public static void WriteOneLineExpression(this TextWriter writer, BoundExpression expression)
+        {
+            if (expression is BoundLiteralExpression literalSize)
+                writer.WriteClr(literalSize.Value, ConsoleColor.Magenta);
+            else
+                writer.WriteClr(expression.ToFriendlyString(), ConsoleColor.Cyan);
+        }
     }
 }

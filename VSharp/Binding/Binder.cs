@@ -507,6 +507,7 @@ namespace VSharp.Binding
                 SyntaxKind.AssignmentExpression => BindAssignmentExpression((AssignmentExpressionSyntax)syntax),
                 SyntaxKind.CallExpression => BindCallExpression((CallExpressionSyntax)syntax),
                 SyntaxKind.ExplicitCastExpression => BindExplicitCastExpression((ExplicitCastExpressionSyntax)syntax),
+                SyntaxKind.IndexerExpression => BindIndexerExpression((IndexerExpressionSyntax)syntax),
                 SyntaxKind.ArrayInitializationExpression => BindArrayInitializationExpression((ArrayInitializationExpressionSyntax)syntax),
 
                 _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
@@ -752,6 +753,20 @@ namespace VSharp.Binding
             return new BoundExplicitCastExpression(type, expression);
         }
 
+        private BoundExpression BindIndexerExpression(IndexerExpressionSyntax syntax)
+        {
+            var operand = BindExpression(syntax.Operand);
+
+            if (operand.Type.Indexer is null)
+            {
+                Diagnostics.ReportTypeDoesNotHaveIndexer(syntax.Span, operand.Type.Name);
+                return BoundErrorExpression.Instance;
+            }
+
+            var parameter = BindExpression(syntax.Parameter, operand.Type.Indexer.Parameter.Type);
+            return new BoundIndexerExpression(operand, parameter);
+        }
+
         private BoundExpression BindArrayInitializationExpression(ArrayInitializationExpressionSyntax syntax)
         {
             TypeSymbol? itemType = null;
@@ -779,7 +794,7 @@ namespace VSharp.Binding
             }
             else throw new Exception();
 
-            var arrayType = Types.Array.MakeGenericType(itemType ?? Types.Object);
+            var arrayType = Types.Array.MakeConcreteType(itemType ?? Types.Object);
             sizeExpression ??= new BoundLiteralExpression(boundInitializer.Count);
             return new BoundArrayInitializationExpression(arrayType, sizeExpression, boundInitializer.ToImmutable());
 
@@ -1187,7 +1202,7 @@ namespace VSharp.Binding
         {
             var type = ResolveType(typeExpression.TypeIdentifiers[0].Kind) ?? Types.Error;
             if (typeExpression.IsArray)
-                return Types.Array.MakeGenericType(type);
+                return Types.Array.MakeConcreteType(type);
             else
                 return type;
         }

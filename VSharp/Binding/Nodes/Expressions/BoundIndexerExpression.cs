@@ -18,36 +18,33 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using VSharp.Symbols;
 
 namespace VSharp.Binding
 {
-    internal sealed class BoundArrayInitializationExpression : BoundExpression
+    internal sealed class BoundIndexerExpression : BoundExpression
     {
-        public BoundArrayInitializationExpression(TypeSymbol type, BoundExpression sizeExpression, ImmutableArray<BoundExpression> initializer)
+        public BoundIndexerExpression(BoundExpression operand, BoundExpression parameter)
         {
-            if (type.GetGenericDefinition() != SystemSymbols.Types.Array)
-                throw new ArgumentException($"Array type must be of type '{SystemSymbols.Types.Array}'.");
+            Operand = operand;
+            if (operand.Type.Indexer is null)
+                throw new ArgumentException($"Type of operand '{operand.Type}' does not have an indexer.");
 
-            Type = type;
-            SizeExpression = sizeExpression;
-            Initializer = initializer;
+            Parameter = parameter;
         }
 
-        public override TypeSymbol Type { get; }
-        public BoundExpression SizeExpression { get; }
-        public ImmutableArray<BoundExpression> Initializer { get; }
+        public override TypeSymbol Type => Indexer.ReturnType;
+        public override BoundNodeKind Kind => BoundNodeKind.IndexerExpression;
 
-        public override BoundNodeKind Kind => BoundNodeKind.ArrayInitializationExpression;
+        public BoundExpression Operand { get; }
+        public BoundExpression Parameter { get; }
+
+        public IndexerSymbol Indexer => Operand.Type.Indexer!;
 
         public override IEnumerable<BoundNode> GetChildren()
         {
-            yield return SizeExpression;
-            foreach (var item in Initializer)
-            {
-                yield return item;
-            }
+            yield return Operand;
+            yield return Parameter;
         }
     }
 }

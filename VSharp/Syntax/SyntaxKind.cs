@@ -140,6 +140,7 @@ namespace VSharp.Syntax
         AssignmentExpression,
         CallExpression,
         ExplicitCastExpression,
+        IndexerExpression,
         ArrayInitializationExpression,
     }
 }

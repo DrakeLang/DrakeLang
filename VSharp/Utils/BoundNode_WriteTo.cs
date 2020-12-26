@@ -116,6 +116,10 @@ namespace VSharp.Binding
                     WriteExplicitCastExpression((BoundExplicitCastExpression)node, context);
                     break;
 
+                case BoundNodeKind.IndexerExpression:
+                    WriteIndexerExpression((BoundIndexerExpression)node, context);
+                    break;
+
                 case BoundNodeKind.ArrayInitializationExpression:
                     WriteArrayInitializationExpression((BoundArrayInitializationExpression)node, context);
                     break;
@@ -296,18 +300,24 @@ namespace VSharp.Binding
             PrintChildren(node, context);
         }
 
+        private static void WriteIndexerExpression(BoundIndexerExpression node, WriteContext context)
+        {
+            context.Writer.WriteSyntaxKind(node.Kind);
+            context.Writer.WriteClr(" returns ", ConsoleColor.Cyan);
+            context.Writer.WriteType(node.Type);
+
+            context.Writer.WriteLine();
+
+            PrintChildren(node, context);
+        }
+
         private static void WriteArrayInitializationExpression(BoundArrayInitializationExpression node, WriteContext context)
         {
             context.Writer.WriteSyntaxKind(node.Kind);
             context.Writer.Write(" ");
             context.Writer.WriteType(node.Type);
             context.Writer.Write('[');
-
-            if (node.SizeExpression is BoundLiteralExpression literalSize)
-                context.Writer.WriteClr(literalSize.Value, ConsoleColor.Magenta);
-            else
-                context.Writer.WriteClr(node.SizeExpression.ToFriendlyString(), ConsoleColor.Cyan);
-
+            context.Writer.WriteOneLineExpression(node.SizeExpression);
             context.Writer.Write(']');
 
             context.Writer.WriteLine();

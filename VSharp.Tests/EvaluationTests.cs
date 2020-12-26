@@ -373,6 +373,12 @@ namespace VSharp.Tests
                 yield return ("var a = 10f; var result = a *= 2f;", 20d);
                 yield return ("var a = 10f; var result = a /= 2f;", 5d);
 
+                // String
+
+                yield return ("var result = \"abc\";", "abc");
+                yield return ("var a = \"abc\"; var result = a[1];", 'b');
+                yield return ("var result = \"abc\"[2];", 'c');
+
                 // Array
 
                 yield return ("var result = int[2] { 1, 2 };", new[] { 1, 2 });
@@ -405,6 +411,8 @@ namespace VSharp.Tests
                 yield return ("var result = [2] => ([] => 3);", new[] { new[] { 3 }, new[] { 3 } });
                 yield return ("var result = [] => 1, \"a\";", new object[] { 1, "a" });
                 yield return ("var result = [2] => 1, \"a\";", new object[] { 1, "a" });
+
+                yield return ("var a = [] => 1, 2, 3; var result = a[1];", 2);
 
                 // If-else-statement
                 yield return ("var a = 0; if (a == 0) a = 10; var result = a;", 10);

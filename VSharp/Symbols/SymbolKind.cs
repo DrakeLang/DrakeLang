@@ -26,5 +26,6 @@ namespace VSharp.Symbols
         Variable,
         Parameter,
         Label,
+        Property,
     }
 }

@@ -44,17 +44,17 @@ namespace VSharp.Binding
         /// <summary>
         /// Keeps track of what expression uses what variables.
         /// </summary>
-        protected Dictionary<VariableSymbol, HashSet<BoundExpression>> VariableUsage { get; } = new Dictionary<VariableSymbol, HashSet<BoundExpression>>();
+        protected Dictionary<VariableSymbol, HashSet<BoundExpression>> VariableUsage { get; } = new Dictionary<VariableSymbol, HashSet<BoundExpression>>(ReferenceEqualityComparer.Instance);
 
         /// <summary>
         /// Keeps track of variables that are reassigned after initialization.
         /// </summary>
-        protected HashSet<VariableSymbol> ReassignedVariables { get; } = new HashSet<VariableSymbol>();
+        protected HashSet<VariableSymbol> ReassignedVariables { get; } = new HashSet<VariableSymbol>(ReferenceEqualityComparer.Instance);
 
         /// <summary>
         /// Mapping of updated variables.
         /// </summary>
-        protected Dictionary<VariableSymbol, VariableSymbol> UpdatedVariables { get; } = new Dictionary<VariableSymbol, VariableSymbol>();
+        protected Dictionary<VariableSymbol, VariableSymbol> UpdatedVariables { get; } = new Dictionary<VariableSymbol, VariableSymbol>(ReferenceEqualityComparer.Instance);
 
         #endregion Properties
 
@@ -314,6 +314,7 @@ namespace VSharp.Binding
                     BoundNodeKind.BinaryExpression => RewriteBinaryExpression((BoundBinaryExpression)node),
                     BoundNodeKind.CallExpression => RewriteCallExpression((BoundCallExpression)node),
                     BoundNodeKind.ExplicitCastExpression => RewriteExplicitCastExpression((BoundExplicitCastExpression)node),
+                    BoundNodeKind.IndexerExpression => RewriteIndexerExpression((BoundIndexerExpression)node),
                     BoundNodeKind.ArrayInitializationExpression => RewriteArrayInitializationExpression((BoundArrayInitializationExpression)node),
 
                     _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
@@ -448,6 +449,17 @@ namespace VSharp.Binding
                 return node;
 
             return new BoundExplicitCastExpression(node.Type, expression);
+        }
+
+        protected virtual BoundExpression RewriteIndexerExpression(BoundIndexerExpression node)
+        {
+            var operand = RewriteExpression(node.Operand);
+            var parameter = RewriteExpression(node.Parameter);
+
+            if (operand == node.Operand && parameter == node.Parameter)
+                return node;
+
+            return new BoundIndexerExpression(operand, parameter);
         }
 
         protected virtual BoundExpression RewriteArrayInitializationExpression(BoundArrayInitializationExpression node)

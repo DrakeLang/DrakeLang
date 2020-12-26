@@ -262,6 +262,12 @@ namespace VSharp
             Report(span, message);
         }
 
+        public void ReportTypeDoesNotHaveIndexer(TextSpan span, string name)
+        {
+            string message = $"Type '{name}' does not expose an indexer.";
+            Report(span, message);
+        }
+
         public void ReportSizeMustBeConstantWithInitializer(TextSpan span)
         {
             string message = "Array size must be a constant value when using an array initializer.";
