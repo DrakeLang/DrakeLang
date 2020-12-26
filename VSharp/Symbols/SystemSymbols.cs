@@ -55,7 +55,7 @@ namespace VSharp.Symbols
 
             public static readonly MethodSymbol Sys_String_Length = new(Namespaces.Sys_String, "Length", ImmutableArray.Create(new ParameterSymbol("str", Types.String)), Types.Int);
 
-            public static readonly MethodSymbol Sys_String_CharAt = new(Namespaces.Sys_String, "CharAt",
+            public static readonly MethodSymbol Sys_String_CharAt = new(Namespaces.Sys_String, "GetChar",
                 ImmutableArray.Create(
                     new ParameterSymbol("pos", Types.Int),
                     new ParameterSymbol("str", Types.String)
@@ -89,7 +89,11 @@ namespace VSharp.Symbols
             public static readonly TypeSymbol String = new TypeSymbolBuilder
             {
                 Name = "string",
-                Indexer = new(new ParameterSymbol("index", Int), Char),
+                Methods = ImmutableArray.Create(new MethodSymbol[]
+                {
+                    new(MethodSymbol.GetIndexerName, ImmutableArray.Create(new ParameterSymbol("index", Int)), Char),
+                    new("Length", ImmutableArray<ParameterSymbol>.Empty, Int),
+                }),
             }.Build();
 
             #endregion String
@@ -102,7 +106,12 @@ namespace VSharp.Symbols
                 GenericTypeArguments = ImmutableArray.Create(
                     new TypeSymbol(new GenericArgumentSymbolBuilder { Name = "T" })
                 ),
-                Indexer = new(new ParameterSymbol("index", Int), new TypeSymbol(new GenericArgumentSymbolBuilder { Name = "T" })),
+                Methods = ImmutableArray.Create(new MethodSymbol[]
+                {
+                    new(MethodSymbol.GetIndexerName, 
+                        parameters: ImmutableArray.Create(new ParameterSymbol("index", Int)), 
+                        returnType: new TypeSymbol(new GenericArgumentSymbolBuilder { Name = "T" }))
+                }),
             }.Build();
 
             #endregion Array

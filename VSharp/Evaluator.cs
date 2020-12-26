@@ -19,10 +19,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using VSharp.Binding;
 using VSharp.Symbols;
+using VSharp.Utils;
 using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp
@@ -155,7 +157,6 @@ namespace VSharp
                 BoundNodeKind.BinaryExpression => EvaluateBinaryExpression((BoundBinaryExpression)node),
                 BoundNodeKind.CallExpression => EvaluateCallExpression((BoundCallExpression)node),
                 BoundNodeKind.ExplicitCastExpression => EvaluateExplicitCastExpression((BoundExplicitCastExpression)node),
-                BoundNodeKind.IndexerExpression => EvaluateIndexerExpression((BoundIndexerExpression)node),
                 BoundNodeKind.ArrayInitializationExpression => EvaluateArrayInitializationExpression((BoundArrayInitializationExpression)node),
 
                 _ => throw new Exception($"Unexpected node '{node.Kind}'."),
@@ -225,7 +226,38 @@ namespace VSharp
 
             public object EvaluateCallExpression(BoundCallExpression node)
             {
-                var args = node.Arguments;
+                if (node.Operand is not null)
+                    return EvaluateInstanceCallExpression(node);
+                else
+                    return EvaluateStaticCallExpression(node);
+            }
+
+            private object EvaluateInstanceCallExpression(BoundCallExpression node)
+            {
+                Debug.Assert(node.Operand is not null);
+
+                var operand = EvaluateExpression(node.Operand);
+                var args = node.Arguments.Select(arg => EvaluateExpression(arg)).ToArray();
+
+                if (LiteralEvaluator.TryEvaluateCallExpression(operand, args, node.Method, out var result))
+                    return result;
+
+                if (node.Operand.Type.IsGenericType)
+                {
+                    if (node.Method == Types.Array.MakeConcreteType(node.Operand.Type.GenericTypeArguments[0]).FindGetIndexers().Single())
+                    {
+                        var array = (object[])operand;
+                        var index = (int)args[0];
+                        return array[index];
+                    }
+                }
+
+                throw new Exception($"Indexer for type '{node.Operand.Type}' not handled.");
+            }
+
+            private object EvaluateStaticCallExpression(BoundCallExpression node)
+            {
+                var args = node.Arguments.Select(arg => EvaluateExpression(arg)).ToArray();
 
                 if (node.Method == Methods.Sys_Console_ReadLine)
                 {
@@ -233,17 +265,17 @@ namespace VSharp
                 }
                 else if (node.Method == Methods.Sys_Console_Write)
                 {
-                    var message = toInvariantString(EvaluateExpression(args[0]));
+                    var message = toInvariantString(args[0]);
                     Console.Write(message);
                 }
                 else if (node.Method == Methods.Sys_Console_WriteLine)
                 {
-                    var message = toInvariantString(EvaluateExpression(args[0]));
+                    var message = toInvariantString(args[0]);
                     Console.WriteLine(message);
                 }
                 else if (node.Method == Methods.Sys_IO_File_ReadAllText)
                 {
-                    var path = (string)EvaluateExpression(args[0]);
+                    var path = (string)args[0];
                     if (!System.IO.File.Exists(path))
                         return "";
 
@@ -251,13 +283,13 @@ namespace VSharp
                 }
                 else if (node.Method == Methods.Sys_String_Length)
                 {
-                    var str = (string)EvaluateExpression(args[0]);
+                    var str = (string)args[0];
                     return str.Length;
                 }
                 else if (node.Method == Methods.Sys_String_CharAt)
                 {
-                    var pos = (int)EvaluateExpression(args[0]);
-                    var str = (string)EvaluateExpression(args[1]);
+                    var pos = (int)args[0];
+                    var str = (string)args[1];
 
                     if (pos < 0 || pos >= str.Length)
                         return default(char);
@@ -269,7 +301,7 @@ namespace VSharp
                     var stackFrame = new Dictionary<VariableSymbol, object>();
                     for (int i = 0; i < node.Method.Parameters.Length; i++)
                     {
-                        stackFrame[node.Method.Parameters[i]] = EvaluateExpression(args[i]);
+                        stackFrame[node.Method.Parameters[i]] = args[i];
                     }
 
                     return new InternalEvaluator(method.Declaration, stackFrame, _methods).Evaluate();
@@ -289,27 +321,6 @@ namespace VSharp
             {
                 var value = EvaluateExpression(node.Expression);
                 return LiteralEvaluator.EvaluateExplicitCastExpression(node.Type, value);
-            }
-
-            public object EvaluateIndexerExpression(BoundIndexerExpression node)
-            {
-                var operand = EvaluateExpression(node.Operand);
-                var parameter = EvaluateExpression(node.Parameter);
-
-                if (LiteralEvaluator.TryEvaluateIndexerExpression(operand, parameter, node.Indexer, out var result))
-                    return result;
-
-                if (node.Operand.Type.IsGenericType)
-                {
-                    if (node.Indexer == Types.Array.MakeConcreteType(node.Operand.Type.GenericTypeArguments[0]).Indexer)
-                    {
-                        var array = (object[])operand;
-                        var index = (int)parameter;
-                        return array[index];
-                    }
-                }
-
-                throw new Exception($"Indexer for type '{node.Operand.Type}' not handled.");
             }
 
             public object EvaluateArrayInitializationExpression(BoundArrayInitializationExpression node)

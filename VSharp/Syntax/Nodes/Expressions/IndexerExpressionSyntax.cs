@@ -22,11 +22,11 @@ namespace VSharp.Syntax
 {
     public sealed class IndexerExpressionSyntax : ExpressionSyntax
     {
-        internal IndexerExpressionSyntax(ExpressionSyntax operand, SyntaxToken openBracketToken, ExpressionSyntax parameter, SyntaxToken closeBracketToken)
+        internal IndexerExpressionSyntax(ExpressionSyntax operand, SyntaxToken openBracketToken, SeparatedSyntaxList<ExpressionSyntax> parameters, SyntaxToken closeBracketToken)
         {
             Operand = operand;
             OpenBracketToken = openBracketToken;
-            Parameter = parameter;
+            Parameters = parameters;
             CloseBracketToken = closeBracketToken;
         }
 
@@ -34,14 +34,19 @@ namespace VSharp.Syntax
 
         public ExpressionSyntax Operand { get; }
         public SyntaxToken OpenBracketToken { get; }
-        public ExpressionSyntax Parameter { get; }
+        public SeparatedSyntaxList<ExpressionSyntax> Parameters { get; }
         public SyntaxToken CloseBracketToken { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             yield return Operand;
             yield return OpenBracketToken;
-            yield return Parameter;
+
+            foreach (var parameter in Parameters.GetWithSeparators())
+            {
+                yield return parameter;
+            }
+
             yield return CloseBracketToken;
         }
     }

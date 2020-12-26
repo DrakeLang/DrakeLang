@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using VSharp.Symbols;
 using static VSharp.Symbols.SystemSymbols;
 
@@ -51,5 +53,11 @@ namespace VSharp.Utils
 
             _ => throw new Exception($"Value '{value}' of type '{value.GetType()}' is illegal."),
         };
+
+        public static IEnumerable<MethodSymbol> FindMethods(this TypeSymbol type, string name) => type.Methods.Where(m => m.Name == name);
+
+        public static IEnumerable<MethodSymbol> FindGetIndexers(this TypeSymbol type) => type.FindMethods(MethodSymbol.GetIndexerName);
+
+        public static IEnumerable<MethodSymbol> FindSetIndexers(this TypeSymbol type) => type.FindMethods(MethodSymbol.SetIndexerName);
     }
 }

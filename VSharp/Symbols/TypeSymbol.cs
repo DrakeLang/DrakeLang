@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace VSharp.Symbols
@@ -44,7 +43,7 @@ namespace VSharp.Symbols
         /// </summary>
         public ImmutableArray<TypeSymbol> GenericTypeArguments { get; set; } = ImmutableArray<TypeSymbol>.Empty;
 
-        public IndexerSymbol? Indexer { get; set; }
+        public ImmutableArray<MethodSymbol> Methods { get; set; } = ImmutableArray<MethodSymbol>.Empty;
 
         public TypeSymbol Build() => new(this);
     }
@@ -97,20 +96,11 @@ namespace VSharp.Symbols
             }
 
             Namespace = builder.Namespace;
-            Indexer = builder.Indexer;
 
-            if (Indexer is not null)
+            if (!builder.Methods.IsDefaultOrEmpty)
             {
-                if (IsConcreteType)
-                {
-                    AssureTypeIsConcrete(Indexer.ReturnType);
-                    AssureTypeIsConcrete(Indexer.Parameter.Type);
-                }
-                else
-                {
-                    AssureIsConcreteOrTypeArgument(Indexer.ReturnType, GenericTypeArguments);
-                    AssureIsConcreteOrTypeArgument(Indexer.Parameter.Type, GenericTypeArguments);
-                }
+                Methods = builder.Methods;
+                AssertValidMembers(Methods);
             }
         }
 
@@ -130,40 +120,111 @@ namespace VSharp.Symbols
             Namespace = genericType.Namespace;
             GenericTypeArguments = typeArguments;
 
-            Indexer = MakeConcrete(genericType.Indexer);
+            Methods = MakeConcrete(genericType.Methods);
         }
 
-        private static void AssureTypeIsConcrete(TypeSymbol type)
+        #region AssertValidMember
+
+        private void AssertValidMembers<T>(ImmutableArray<T> symbols) where T : ISymbol
         {
-            if (!type.IsConcreteType)
-                throw new ArgumentException($"Cannot declare concrete type containing non-concrete type '{type}' as a member parameter type or return type.");
+            foreach (T symbol in symbols)
+            {
+                switch (symbol)
+                {
+                    case MethodSymbol method:
+                        AssertValidMember(method);
+                        break;
+
+                    case ParameterSymbol parameter:
+                        AssertValidMember(parameter);
+                        break;
+
+                    case TypeSymbol type:
+                        AssertValidMember(type);
+                        break;
+
+                    default:
+                        throw new Exception($"Unhandled symbol kind '{symbol.GetType()}'.");
+                }
+            }
         }
 
-        private static void AssureIsConcreteOrTypeArgument(TypeSymbol type, ImmutableArray<TypeSymbol> typeArguments)
+        private void AssertValidMember(MethodSymbol method)
         {
-            if (type.IsConcreteType)
-                return;
+            AssertValidMembers(method.Parameters);
+            AssertValidMember(method.ReturnType);
 
-            if (!typeArguments.Contains(type))
-                throw new ArgumentException(
-                    $"Generic type arguments in members of generic types must match type's generic type's arguments. " +
-                    $"Type '{type}' is not a generic argument of the constructed type."
-                );
+            if (method.Namespace is not null)
+                throw new ArgumentException($"Instance methods cannot have a namespace (offending method was '{method.Name}' with namespace '{method.Namespace}'.");
         }
 
-        [return: NotNullIfNotNull("indexer")]
-        private IndexerSymbol? MakeConcrete(IndexerSymbol? indexer)
+        private void AssertValidMember(ParameterSymbol parameter)
         {
-            if (indexer is null)
-                return null;
+            AssertValidMember(parameter.Type);
+        }
 
-            var parameter = MakeConcrete(indexer.Parameter);
-            var returnType = MakeConcrete(indexer.ReturnType);
+        private void AssertValidMember(TypeSymbol type)
+        {
+            if (IsConcreteType)
+            {
+                if (!type.IsConcreteType)
+                    throw new ArgumentException($"Cannot declare concrete type containing non-concrete type '{type}' as a member parameter type or return type.");
+            }
+            else if (IsGenericType)
+            {
+                if (type.IsGenericTypeArgument && !GenericTypeArguments.Contains(type))
+                    throw new ArgumentException(
+                        $"Generic type arguments in members of generic types must match type's generic type's arguments. " +
+                        $"Type '{type}' is not a generic argument of the constructed type."
+                    );
+            }
+        }
 
-            if (parameter == indexer.Parameter && returnType == indexer.ReturnType)
-                return indexer;
+        #endregion AssertValidMember
 
-            return new(parameter, returnType);
+        #region MakeConcrete
+
+        private ImmutableArray<T> MakeConcrete<T>(ImmutableArray<T> symbols) where T : ISymbol
+        {
+            ImmutableArray<T>.Builder? builder = null;
+
+            for (int i = 0; i < symbols.Length; i++)
+            {
+                T oldSymbol = symbols[i];
+                ISymbol newSymbol = oldSymbol switch
+                {
+                    MethodSymbol method => MakeConcrete(method),
+                    ParameterSymbol parameter => MakeConcrete(parameter),
+                    TypeSymbol type => MakeConcrete(type),
+
+                    _ => throw new Exception($"Unhandled symbol kind '{oldSymbol.GetType()}'."),
+                };
+
+                if (builder is null && !ReferenceEquals(oldSymbol, newSymbol))
+                {
+                    builder = ImmutableArray.CreateBuilder<T>(symbols.Length);
+                    for (int j = 0; j < i; j++)
+                    {
+                        builder.Add(symbols[i]);
+                    }
+                }
+
+                if (builder is not null)
+                    builder.Add((T)newSymbol);
+            }
+
+            return builder?.MoveToImmutable() ?? symbols;
+        }
+
+        private MethodSymbol MakeConcrete(MethodSymbol method)
+        {
+            var parameters = MakeConcrete(method.Parameters);
+            var returnType = MakeConcrete(method.ReturnType);
+
+            if (parameters == method.Parameters && returnType == method.ReturnType)
+                return method;
+
+            return new(method.Name, parameters, returnType);
         }
 
         private ParameterSymbol MakeConcrete(ParameterSymbol parameter)
@@ -192,6 +253,8 @@ namespace VSharp.Symbols
             return GenericTypeArguments[index];
         }
 
+        #endregion MakeConcrete
+
         #endregion Constructors
 
         public override NamespaceSymbol? Namespace { get; }
@@ -204,7 +267,7 @@ namespace VSharp.Symbols
         public TypeSymbol? BaseType { get; }
 
         public ImmutableArray<TypeSymbol> GenericTypeArguments { get; } = ImmutableArray<TypeSymbol>.Empty;
-        public IndexerSymbol? Indexer { get; }
+        public ImmutableArray<MethodSymbol> Methods { get; } = ImmutableArray<MethodSymbol>.Empty;
 
         public override string Name
         {
@@ -276,7 +339,8 @@ namespace VSharp.Symbols
             return Name == other.Name &&
                 Namespace == other.Namespace &&
                 BaseType == other.BaseType &&
-                GenericTypeArguments.SequenceEqual(other.GenericTypeArguments);
+                GenericTypeArguments.SequenceEqual(other.GenericTypeArguments) &&
+                Methods.SequenceEqual(other.Methods);
         }
 
         public override int GetHashCode()
@@ -284,7 +348,7 @@ namespace VSharp.Symbols
             if (BaseType == Object)
                 return -1;
 
-            return HashCode.Combine(Name, Namespace, BaseType, Indexer);
+            return HashCode.Combine(Name, Namespace, BaseType, GenericTypeArguments.Length, Methods.Length);
         }
 
         public static bool operator ==(TypeSymbol? left, TypeSymbol? right)

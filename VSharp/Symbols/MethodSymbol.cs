@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -23,6 +24,9 @@ namespace VSharp.Symbols
 {
     public sealed class MethodSymbol : MemberSymbol
     {
+        public const string SetIndexerName = "set[]";
+        public const string GetIndexerName = "get[]";
+
         public MethodSymbol(string name, ImmutableArray<ParameterSymbol> parameters, TypeSymbol returnType) : base(name)
         {
             Parameters = parameters;
@@ -55,5 +59,41 @@ namespace VSharp.Symbols
 
             return ReturnType + " " + FullName + "(" + string.Join(", ", paramExpression) + ")";
         }
+
+
+        #region Operators
+
+        public override bool Equals(object? obj)
+        {
+            if (ReferenceEquals(this, obj))
+                return true;
+
+            if (obj is not MethodSymbol other)
+                return false;
+
+            return Name == other.Name &&
+                Parameters.SequenceEqual(other.Parameters) &&
+                ReturnType == other.ReturnType;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Name, Parameters.Length, ReturnType);
+        }
+
+        public static bool operator ==(MethodSymbol? left, MethodSymbol? right)
+        {
+            if (left is null)
+                return right is null;
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(MethodSymbol? left, MethodSymbol? right)
+        {
+            return !(left == right);
+        }
+
+        #endregion Operators
     }
 }

@@ -28,6 +28,7 @@ using VSharp.Lowering;
 using VSharp.Symbols;
 using VSharp.Syntax;
 using VSharp.Text;
+using VSharp.Utils;
 using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp.Binding
@@ -757,14 +758,31 @@ namespace VSharp.Binding
         {
             var operand = BindExpression(syntax.Operand);
 
-            if (operand.Type.Indexer is null)
+            var indexer = operand.Type.FindGetIndexers().FirstOrDefault();
+            if (indexer is null)
             {
                 Diagnostics.ReportTypeDoesNotHaveIndexer(syntax.Span, operand.Type.Name);
                 return BoundErrorExpression.Instance;
             }
 
-            var parameter = BindExpression(syntax.Parameter, operand.Type.Indexer.Parameter.Type);
-            return new BoundIndexerExpression(operand, parameter);
+            if (syntax.Parameters.Count != indexer.Parameters.Length)
+            {
+                Diagnostics.ReportWrongArgumentCount(syntax.Span, operand.Type + "[]", indexer.Parameters.Length, syntax.Parameters.Count);
+                return BoundErrorExpression.Instance;
+            }
+
+            var boundParameters = ImmutableArray.CreateBuilder<BoundExpression>(syntax.Parameters.Count);
+
+            for (int i = 0; i < syntax.Parameters.Count; i++)
+            {
+                var parameter = syntax.Parameters[i];
+                var expectedType = indexer.Parameters[i].Type;
+
+                var boundParameter = BindExpression(parameter, expectedType);
+                boundParameters.Add(boundParameter);
+            }
+
+            return new BoundCallExpression(operand, indexer, boundParameters.MoveToImmutable());
         }
 
         private BoundExpression BindArrayInitializationExpression(ArrayInitializationExpressionSyntax syntax)

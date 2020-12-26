@@ -30,10 +30,19 @@ namespace VSharp.Binding
             Arguments = arguments;
         }
 
+        public BoundCallExpression(BoundExpression? operand, MethodSymbol method, ImmutableArray<BoundExpression> arguments)
+        {
+            Operand = operand;
+            Method = method;
+            Arguments = arguments;
+        }
+
         #region Properties
 
         public override BoundNodeKind Kind => BoundNodeKind.CallExpression;
         public override TypeSymbol Type => Method.ReturnType;
+
+        public BoundExpression? Operand { get; }
         public MethodSymbol Method { get; }
         public ImmutableArray<BoundExpression> Arguments { get; }
 
@@ -41,7 +50,13 @@ namespace VSharp.Binding
 
         public override IEnumerable<BoundNode> GetChildren()
         {
-            return Arguments;
+            if (Operand is not null)
+                yield return Operand;
+
+            foreach (var arg in Arguments)
+            {
+                yield return arg;
+            }
         }
     }
 }

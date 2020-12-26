@@ -314,7 +314,6 @@ namespace VSharp.Binding
                     BoundNodeKind.BinaryExpression => RewriteBinaryExpression((BoundBinaryExpression)node),
                     BoundNodeKind.CallExpression => RewriteCallExpression((BoundCallExpression)node),
                     BoundNodeKind.ExplicitCastExpression => RewriteExplicitCastExpression((BoundExplicitCastExpression)node),
-                    BoundNodeKind.IndexerExpression => RewriteIndexerExpression((BoundIndexerExpression)node),
                     BoundNodeKind.ArrayInitializationExpression => RewriteArrayInitializationExpression((BoundArrayInitializationExpression)node),
 
                     _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
@@ -420,11 +419,21 @@ namespace VSharp.Binding
 
         protected virtual BoundExpression RewriteCallExpression(BoundCallExpression node)
         {
+            var operand = node.Operand is not null ? RewriteExpression(node.Operand) : null;
             var arguments = RewriteExpressions(node.Arguments);
-            if (arguments == node.Arguments)
+
+            if (operand is BoundLiteralExpression literalOperand && arguments.All(arg => arg is BoundLiteralExpression))
+            {
+                var literalArguments = arguments.Cast<BoundLiteralExpression>().Select(arg => arg.Value).ToArray();
+                var result = LiteralEvaluator.EvaluateCallExpression(literalOperand.Value, literalArguments, node.Method);
+
+                return new BoundLiteralExpression(result);
+            }
+
+            if (operand == node.Operand && arguments == node.Arguments)
                 return node;
 
-            return new BoundCallExpression(node.Method, arguments);
+            return new BoundCallExpression(operand, node.Method, arguments);
         }
 
         protected virtual BoundExpression RewriteExplicitCastExpression(BoundExplicitCastExpression node)
@@ -442,23 +451,6 @@ namespace VSharp.Binding
                 return node;
 
             return new BoundExplicitCastExpression(node.Type, expression);
-        }
-
-        protected virtual BoundExpression RewriteIndexerExpression(BoundIndexerExpression node)
-        {
-            var operand = RewriteExpression(node.Operand);
-            var parameter = RewriteExpression(node.Parameter);
-
-            if (operand is BoundLiteralExpression literalOperand && parameter is BoundLiteralExpression literalParameter)
-            {
-                var result = LiteralEvaluator.EvaluateIndexerExpression(literalOperand.Value, literalParameter.Value, node.Indexer);
-                return new BoundLiteralExpression(result);
-            }
-
-            if (operand == node.Operand && parameter == node.Parameter)
-                return node;
-
-            return new BoundIndexerExpression(operand, parameter);
         }
 
         protected virtual BoundExpression RewriteArrayInitializationExpression(BoundArrayInitializationExpression node)

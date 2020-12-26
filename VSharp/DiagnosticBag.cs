@@ -116,7 +116,7 @@ namespace VSharp
 
         public void ReportWrongArgumentCount(TextSpan span, string name, int expected, int actual)
         {
-            string message = $"Method '{name}' requires {expected} arguments, but recieved {actual}.";
+            string message = $"Method or indexer '{name}' requires {expected} arguments, but recieved {actual}.";
             Report(span, message);
         }
 

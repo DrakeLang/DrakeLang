@@ -19,8 +19,10 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using VSharp.Binding;
 using VSharp.Symbols;
+using VSharp.Utils;
 using static VSharp.Symbols.SystemSymbols;
 
 namespace VSharp
@@ -172,12 +174,12 @@ namespace VSharp
             else throw new Exception($"Unexpected type '{type}'.");
         }
 
-        public static bool TryEvaluateIndexerExpression(object operand, object parameter, IndexerSymbol indexer, [NotNullWhen(true)] out object? result)
+        public static bool TryEvaluateCallExpression(object operand, object[] args, MethodSymbol method, [NotNullWhen(true)] out object? result)
         {
-            if (indexer == Types.String.Indexer)
+            if (method == Types.String.FindGetIndexers().Single())
             {
                 var str = (string)operand;
-                var index = (int)parameter;
+                var index = (int)args[0];
 
                 result = str[index];
                 return true;
@@ -187,9 +189,9 @@ namespace VSharp
             return false;
         }
 
-        public static object EvaluateIndexerExpression(object operand, object parameter, IndexerSymbol indexer)
+        public static object EvaluateCallExpression(object operand, object[] args, MethodSymbol method)
         {
-            if (TryEvaluateIndexerExpression(operand, parameter, indexer, out var result))
+            if (TryEvaluateCallExpression(operand, args, method, out var result))
                 return result;
 
             throw new Exception($"Indexer for literal type '{operand.GetType()}' not handled.");

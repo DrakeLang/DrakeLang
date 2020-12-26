@@ -650,10 +650,10 @@ namespace VSharp.Syntax
         private IndexerExpressionSyntax ParseIndexerExpression(ExpressionSyntax operand)
         {
             var openBracket = MatchToken(SyntaxKind.OpenBracketToken);
-            var bracketExpression = ParseExpression();
+            var parameters = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken);
             var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
 
-            return new(operand, openBracket, bracketExpression, closeBracket);
+            return new(operand, openBracket, parameters, closeBracket);
         }
 
         private ArrayInitializationExpressionSyntax ParseArrayInitializationExpression()
