@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using VSharp.Binding;
 using VSharp.Symbols;
@@ -169,6 +170,29 @@ namespace VSharp
                 return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
             }
             else throw new Exception($"Unexpected type '{type}'.");
+        }
+
+        public static bool TryEvaluateIndexerExpression(object operand, object parameter, IndexerSymbol indexer, [NotNullWhen(true)] out object? result)
+        {
+            if (indexer == Types.String.Indexer)
+            {
+                var str = (string)operand;
+                var index = (int)parameter;
+
+                result = str[index];
+                return true;
+            }
+
+            result = null;
+            return false;
+        }
+
+        public static object EvaluateIndexerExpression(object operand, object parameter, IndexerSymbol indexer)
+        {
+            if (TryEvaluateIndexerExpression(operand, parameter, indexer, out var result))
+                return result;
+
+            throw new Exception($"Indexer for literal type '{operand.GetType()}' not handled.");
         }
     }
 }

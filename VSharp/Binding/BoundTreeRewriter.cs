@@ -408,14 +408,7 @@ namespace VSharp.Binding
             {
                 var value = LiteralEvaluator.EvaluateBinaryExpression(node.Op, literalLeft.Value, literalRight.Value);
 
-                BoundLiteralExpression result;
-                if (value == literalLeft.Value)
-                    result = literalLeft;
-                else if (value == literalRight.Value)
-                    result = literalRight;
-                else
-                    result = new BoundLiteralExpression(value);
-
+                var result = new BoundLiteralExpression(value);
                 return RewriteExpression(result);
             }
 
@@ -455,6 +448,12 @@ namespace VSharp.Binding
         {
             var operand = RewriteExpression(node.Operand);
             var parameter = RewriteExpression(node.Parameter);
+
+            if (operand is BoundLiteralExpression literalOperand && parameter is BoundLiteralExpression literalParameter)
+            {
+                var result = LiteralEvaluator.EvaluateIndexerExpression(literalOperand.Value, literalParameter.Value, node.Indexer);
+                return new BoundLiteralExpression(result);
+            }
 
             if (operand == node.Operand && parameter == node.Parameter)
                 return node;

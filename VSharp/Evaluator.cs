@@ -296,6 +296,9 @@ namespace VSharp
                 var operand = EvaluateExpression(node.Operand);
                 var parameter = EvaluateExpression(node.Parameter);
 
+                if (LiteralEvaluator.TryEvaluateIndexerExpression(operand, parameter, node.Indexer, out var result))
+                    return result;
+
                 if (node.Operand.Type.IsGenericType)
                 {
                     if (node.Indexer == Types.Array.MakeConcreteType(node.Operand.Type.GenericTypeArguments[0]).Indexer)
@@ -304,12 +307,6 @@ namespace VSharp
                         var index = (int)parameter;
                         return array[index];
                     }
-                }
-                else if (node.Indexer == Types.String.Indexer)
-                {
-                    var str = (string)operand;
-                    var index = (int)parameter;
-                    return str[index];
                 }
 
                 throw new Exception($"Indexer for type '{node.Operand.Type}' not handled.");
