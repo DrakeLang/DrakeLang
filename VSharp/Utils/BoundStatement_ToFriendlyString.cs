@@ -80,6 +80,7 @@ namespace VSharp.Binding
 
         private static string StringifyErrorExpression(BoundErrorExpression node)
         {
+            GC.KeepAlive(node);
             return "??";
         }
 
@@ -149,7 +150,11 @@ namespace VSharp.Binding
                 .Select(pair => pair.parameterSymbol.Type + ": " + pair.argument.ToFriendlyString());
             var formattedArguments = string.Join(", ", arguments);
 
-            return $"{method.FullName}({formattedArguments})";
+            var str = $"{method.FullName}({formattedArguments})";
+            if (node.Operand is not null)
+                return node.Operand.ToFriendlyString() + "." + str;
+            else
+                return str;
         }
 
         private static string StringifyExplicitCastExpression(BoundExplicitCastExpression node)
@@ -157,10 +162,9 @@ namespace VSharp.Binding
             return "(" + node.Type + ")" + ToFriendlyString(node.Expression);
         }
 
-
         private static string StringifyArrayInitializationExpression(BoundArrayInitializationExpression node)
         {
-            return node.Type.GenericTypeArguments[0] + "[" + node.SizeExpression.ToFriendlyString() + "]" + 
+            return node.Type.GenericTypeArguments[0] + "[" + node.SizeExpression.ToFriendlyString() + "]" +
                 " => " + string.Join(", ", node.Initializer.Select(init => init.ToFriendlyString()));
         }
     }
