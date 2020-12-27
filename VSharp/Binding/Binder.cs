@@ -794,23 +794,16 @@ namespace VSharp.Binding
             var boundInitializer = ImmutableArray.CreateBuilder<BoundExpression>();
             var sizeExpression = syntax.SizeExpression is not null ? BindExpression(syntax.SizeExpression, Types.Int) : null;
 
-            if (syntax is BodiedArrayInitializationExpressionSyntax bodiedInitialization)
+            if (syntax is LambdaArrayInitializerExpressionSyntax lambdaInitialization &&
+                lambdaInitialization.Initializer.Count == 1)
             {
-                BindArrayInitializer(bodiedInitialization.Initializer);
-            }
-            else if (syntax is SimpleArrayInitializerExpressionSyntax simpleInitialization)
-            {
-                if (simpleInitialization.Initializer.Count == 1)
-                {
-                    boundInitializer.Add(BindExpression(simpleInitialization.Initializer[0], itemType));
+                    boundInitializer.Add(BindExpression(lambdaInitialization.Initializer[0], itemType));
                     itemType ??= boundInitializer[0].Type;
-                }
-                else
-                {
-                    BindArrayInitializer(simpleInitialization.Initializer);
-                }
             }
-            else throw new Exception();
+            else
+            {
+                BindArrayInitializer(syntax.Initializer);
+            }
 
             var arrayType = Types.Array.MakeConcreteType(itemType ?? Types.Object);
             sizeExpression ??= new BoundLiteralExpression(boundInitializer.Count);

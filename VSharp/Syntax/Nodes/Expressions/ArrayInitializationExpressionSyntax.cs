@@ -24,12 +24,13 @@ namespace VSharp.Syntax
     {
         internal ArrayInitializationExpressionSyntax(
             TypeExpressionSyntax? typeToken,
-            SyntaxToken openBracketToken, ExpressionSyntax? sizeExpression, SyntaxToken closeBracketToken)
+            SyntaxToken openBracketToken, ExpressionSyntax? sizeExpression, SyntaxToken closeBracketToken, SeparatedSyntaxList<ExpressionSyntax> initializer)
         {
             TypeToken = typeToken;
             OpenBracketToken = openBracketToken;
             SizeExpression = sizeExpression;
             CloseBracketToken = closeBracketToken;
+            Initializer = initializer;
         }
 
         public override SyntaxKind Kind => SyntaxKind.ArrayInitializationExpression;
@@ -38,6 +39,23 @@ namespace VSharp.Syntax
         public SyntaxToken OpenBracketToken { get; }
         public ExpressionSyntax? SizeExpression { get; }
         public SyntaxToken CloseBracketToken { get; }
+        public SeparatedSyntaxList<ExpressionSyntax> Initializer { get; }
+    }
+
+    public sealed class BodiedArrayInitializationExpressionSyntax : ArrayInitializationExpressionSyntax
+    {
+        internal BodiedArrayInitializationExpressionSyntax(
+            TypeExpressionSyntax? typeToken,
+            SyntaxToken openBracketToken, ExpressionSyntax? sizeExpression, SyntaxToken closeBracketToken,
+            SyntaxToken openBraceToken, SeparatedSyntaxList<ExpressionSyntax> initializer, SyntaxToken closeBraceToken)
+            : base(typeToken, openBracketToken, sizeExpression, closeBracketToken, initializer)
+        {
+            OpenBraceToken = openBraceToken;
+            CloseBraceToken = closeBraceToken;
+        }
+
+        public SyntaxToken OpenBraceToken { get; }
+        public SyntaxToken CloseBraceToken { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
@@ -50,30 +68,6 @@ namespace VSharp.Syntax
                 yield return SizeExpression;
 
             yield return CloseBracketToken;
-        }
-    }
-
-    public sealed class BodiedArrayInitializationExpressionSyntax : ArrayInitializationExpressionSyntax
-    {
-        internal BodiedArrayInitializationExpressionSyntax(
-            TypeExpressionSyntax? typeToken,
-            SyntaxToken openBracketToken, ExpressionSyntax? sizeExpression, SyntaxToken closeBracketToken,
-            SyntaxToken openBraceToken, SeparatedSyntaxList<ExpressionSyntax> initializer, SyntaxToken closeBraceToken)
-            : base(typeToken, openBracketToken, sizeExpression, closeBracketToken)
-        {
-            OpenBraceToken = openBraceToken;
-            Initializer = initializer;
-            CloseBraceToken = closeBraceToken;
-        }
-
-        public SyntaxToken OpenBraceToken { get; }
-        public SeparatedSyntaxList<ExpressionSyntax> Initializer { get; }
-        public SyntaxToken CloseBraceToken { get; }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            foreach (var c in base.GetChildren())
-                yield return c;
 
             yield return OpenBraceToken;
             foreach (var item in Initializer.GetWithSeparators())
@@ -84,31 +78,55 @@ namespace VSharp.Syntax
         }
     }
 
-    public sealed class SimpleArrayInitializerExpressionSyntax : ArrayInitializationExpressionSyntax
+    public sealed class LambdaArrayInitializerExpressionSyntax : ArrayInitializationExpressionSyntax
     {
-        internal SimpleArrayInitializerExpressionSyntax(
+        internal LambdaArrayInitializerExpressionSyntax(
             TypeExpressionSyntax? typeToken,
             SyntaxToken openBracketToken, ExpressionSyntax? sizeExpression, SyntaxToken closeBracketToken,
             SyntaxToken lambdaOperator, SeparatedSyntaxList<ExpressionSyntax> initializer)
-            : base(typeToken, openBracketToken, sizeExpression, closeBracketToken)
+            : base(typeToken, openBracketToken, sizeExpression, closeBracketToken, initializer)
         {
             LambdaOperator = lambdaOperator;
-            Initializer = initializer;
         }
 
         public SyntaxToken LambdaOperator { get; }
-        public SeparatedSyntaxList<ExpressionSyntax> Initializer { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            foreach (var c in base.GetChildren())
-                yield return c;
+            if (TypeToken is not null)
+                yield return TypeToken;
 
+            yield return OpenBracketToken;
+
+            if (SizeExpression is not null)
+                yield return SizeExpression;
+
+            yield return CloseBracketToken;
             yield return LambdaOperator;
+
             foreach (var item in Initializer.GetWithSeparators())
             {
                 yield return item;
             }
+        }
+    }
+
+    public sealed class SimpleArrayInitializerExpressionSyntax : ArrayInitializationExpressionSyntax
+    {
+        internal SimpleArrayInitializerExpressionSyntax(SyntaxToken openBracketToken, SeparatedSyntaxList<ExpressionSyntax> initializer, SyntaxToken closeBracketToken)
+            : base(typeToken: null, openBracketToken, sizeExpression: null, closeBracketToken, initializer)
+        { }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return OpenBracketToken;
+
+            foreach (var item in Initializer.GetWithSeparators())
+            {
+                yield return item;
+            }
+
+            yield return CloseBracketToken;
         }
     }
 }

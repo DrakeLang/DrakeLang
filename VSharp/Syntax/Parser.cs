@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using VSharp.Text;
 using static VSharp.Symbols.SystemSymbols;
@@ -660,23 +661,51 @@ namespace VSharp.Syntax
         {
             var typeKeyword = Current.Kind.IsExplicitTypeKeyword() ? ParseTypeExpression(isArray: true) : null;
             var openBracket = MatchToken(SyntaxKind.OpenBracketToken);
-            var sizeExpression = Current.Kind is not SyntaxKind.CloseBracketToken ? ParseExpression() : null;
-            var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
+            var sizeOrFirstElementExpression = Current.Kind is not SyntaxKind.CloseBracketToken ? ParseExpression() : null;
 
-            if (Current.Kind == SyntaxKind.EqualsGreaterToken)
+            if (sizeOrFirstElementExpression is not null && 
+                (Current.Kind is SyntaxKind.CommaToken || (Current.Kind is SyntaxKind.CloseBracketToken && LookAhead.Kind is not SyntaxKind.EqualsGreaterToken and not SyntaxKind.OpenBraceToken)))
             {
-                var lambdaOperator = NextToken();
-                var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken);
+                // Simple array initializer
 
-                return new SimpleArrayInitializerExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, lambdaOperator, initializer);
+                var firstElementExpression = sizeOrFirstElementExpression;
+                
+                // We already parsed the first expression,
+                // So we give the list parser the first element (and optionally the first separator).
+                var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
+                builder.Add(firstElementExpression);
+                if (Current.Kind == SyntaxKind.CommaToken)
+                    builder.Add(NextToken());
+
+                var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken, builder: builder);
+                var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
+
+                return new SimpleArrayInitializerExpressionSyntax(openBracket, initializer, closeBracket);
             }
             else
             {
-                var openBrace = MatchToken(SyntaxKind.OpenBraceToken);
-                var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken);
-                var closeBrace = MatchToken(SyntaxKind.CloseBraceToken);
+                var sizeExpression = sizeOrFirstElementExpression;
+                var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
 
-                return new BodiedArrayInitializationExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, openBrace, initializer, closeBrace);
+                if (Current.Kind == SyntaxKind.EqualsGreaterToken)
+                {
+                    // Lambda initializer
+
+                    var lambdaOperator = NextToken();
+                    var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken);
+
+                    return new LambdaArrayInitializerExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, lambdaOperator, initializer);
+                }
+                else
+                {
+                    // Bodied initializer
+
+                    var openBrace = MatchToken(SyntaxKind.OpenBraceToken);
+                    var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken);
+                    var closeBrace = MatchToken(SyntaxKind.CloseBraceToken);
+
+                    return new BodiedArrayInitializationExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, openBrace, initializer, closeBrace);
+                }
             }
         }
 
@@ -716,10 +745,10 @@ namespace VSharp.Syntax
             return new SyntaxToken(kind, Current.Position, null, null);
         }
 
-        private SeparatedSyntaxList<T> ParseSyntaxList<T>(Func<T> valueParser, SyntaxKind seperator, Func<bool>? escapeConditions = null)
+        private SeparatedSyntaxList<T> ParseSyntaxList<T>(Func<T> valueParser, SyntaxKind seperator, Func<bool>? escapeConditions = null, ImmutableArray<SyntaxNode>.Builder? builder = null)
             where T : SyntaxNode
         {
-            var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
+            builder ??= ImmutableArray.CreateBuilder<SyntaxNode>();
 
             var extendedEscapeCondition = escapeConditions;
             escapeConditions = () => _listTerminators.Contains(Current.Kind) || (extendedEscapeCondition?.Invoke() ?? false);

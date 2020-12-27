@@ -400,7 +400,7 @@ namespace VSharp.Tests
                 yield return ("var result = int[] => 1, 2;", new[] { 1, 2 });
                 yield return ("var result = string[] => \"1\", \"a\";", new[] { "1", "a" });
                 yield return ("var result = object[] => 1, \"a\";", new object[] { 1, "a" });
-                
+
                 yield return ("var result = [] { 1, 2};", new[] { 1, 2 });
                 yield return ("var result = [] => 1, 2;", new[] { 1, 2 });
                 yield return ("var result = [2] => 1, 2;", new[] { 1, 2 });
@@ -411,6 +411,11 @@ namespace VSharp.Tests
                 yield return ("var result = [2] => ([] => 3);", new[] { new[] { 3 }, new[] { 3 } });
                 yield return ("var result = [] => 1, \"a\";", new object[] { 1, "a" });
                 yield return ("var result = [2] => 1, \"a\";", new object[] { 1, "a" });
+
+                yield return ("var result = [1];", new[] { 1 });
+                yield return ("var result = [1, 4];", new[] { 1, 4 });
+                yield return ("var result = [\"a\"];", new[] { "a" });
+                yield return ("var result = [77, \"a\"];", new object[] { 77, "a" });
 
                 yield return ("var a = [] => 1, 2, 3; var result = a[1];", 2);
 
