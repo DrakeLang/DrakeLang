@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using VSharp.Symbols;
 using static VSharp.Symbols.SystemSymbols;
@@ -53,6 +54,17 @@ namespace VSharp.Utils
 
             _ => throw new Exception($"Value '{value}' of type '{value.GetType()}' is illegal."),
         };
+
+        private static readonly ImmutableHashSet<TypeSymbol> _primitiveTypes = ImmutableHashSet.Create(new[]
+        {
+            Types.Boolean,
+            Types.Int,
+            Types.Float,
+            Types.Char,
+            Types.String,
+        });
+
+        public static bool IsPrimitive(TypeSymbol type) => _primitiveTypes.Contains(type);
 
         public static IEnumerable<MethodSymbol> FindMethods(this TypeSymbol type, string name) => type.Methods.Where(m => m.Name == name);
 

@@ -104,13 +104,13 @@ namespace VSharp.Symbols
             {
                 Name = "Array",
                 GenericTypeArguments = ImmutableArray.Create(
-                    new TypeSymbol(new GenericArgumentSymbolBuilder { Name = "T" })
+                    new GenericArgumentSymbolBuilder("T").Build()
                 ),
                 Methods = ImmutableArray.Create(new MethodSymbol[]
                 {
-                    new(MethodSymbol.GetIndexerName, 
-                        parameters: ImmutableArray.Create(new ParameterSymbol("index", Int)), 
-                        returnType: new TypeSymbol(new GenericArgumentSymbolBuilder { Name = "T" }))
+                    new(MethodSymbol.GetIndexerName,
+                        parameters: ImmutableArray.Create(new ParameterSymbol("index", Int)),
+                        returnType: new GenericArgumentSymbolBuilder("T").Build())
                 }),
             }.Build();
 

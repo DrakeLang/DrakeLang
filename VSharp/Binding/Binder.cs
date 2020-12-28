@@ -317,7 +317,16 @@ namespace VSharp.Binding
             else
                 type = initializer.Type;
 
-            var variable = new VariableSymbol(name, isReadOnly, type);
+            VariableSymbol variable;
+            if (isReadOnly && ExpressionIsConstant(initializer, out var value) && TypeSymbolUtil.IsPrimitive(type))
+            {
+                variable = new ConstantSymbol(name, value);
+            }
+            else
+            {
+                variable = new VariableSymbol(name, isReadOnly, type);
+            }
+
             if (declare && !_scope.TryDeclareVariable(variable))
                 Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
 
@@ -797,8 +806,8 @@ namespace VSharp.Binding
             if (syntax is LambdaArrayInitializerExpressionSyntax lambdaInitialization &&
                 lambdaInitialization.Initializer.Count == 1)
             {
-                    boundInitializer.Add(BindExpression(lambdaInitialization.Initializer[0], itemType));
-                    itemType ??= boundInitializer[0].Type;
+                boundInitializer.Add(BindExpression(lambdaInitialization.Initializer[0], itemType));
+                itemType ??= boundInitializer[0].Type;
             }
             else
             {
@@ -812,9 +821,14 @@ namespace VSharp.Binding
             void BindArrayInitializer(SeparatedSyntaxList<ExpressionSyntax> initializer)
             {
                 if (sizeExpression is null)
-                    sizeExpression = new BoundLiteralExpression(initializer.Count);
-
-                if (sizeExpression is not BoundLiteralExpression literalSizeExpression)
+                {
+                    BindArrayInitializer(initializer.Count);
+                }
+                else if (ExpressionIsConstant(sizeExpression, out var value))
+                {
+                    BindArrayInitializer(value);
+                }
+                else
                 {
                     TextSpan span;
                     if (syntax.SizeExpression is not null)
@@ -827,25 +841,27 @@ namespace VSharp.Binding
 
                     Diagnostics.ReportSizeMustBeConstantWithInitializer(span);
                     itemType ??= Types.Error;
-                    return;
                 }
 
-                if (!literalSizeExpression.Value.Equals(initializer.Count))
+                void BindArrayInitializer(object size)
                 {
-                    Diagnostics.ReportArraySizeMismatch(initializer.Span);
-                }
+                    if (!size.Equals(initializer.Count))
+                    {
+                        Diagnostics.ReportArraySizeMismatch(initializer.Span);
+                    }
 
-                foreach (var expression in initializer)
-                {
-                    boundInitializer.Add(BindExpression(expression, itemType));
-                }
+                    foreach (var expression in initializer)
+                    {
+                        boundInitializer.Add(BindExpression(expression, itemType));
+                    }
 
-                foreach (var expression in boundInitializer)
-                {
-                    if (itemType is null)
-                        itemType = expression.Type;
-                    else if (itemType != Types.Object)
-                        itemType = itemType.FindCommonAncestor(expression.Type);
+                    foreach (var expression in boundInitializer)
+                    {
+                        if (itemType is null)
+                            itemType = expression.Type;
+                        else if (itemType != Types.Object)
+                            itemType = itemType.FindCommonAncestor(expression.Type);
+                    }
                 }
             }
         }
@@ -1204,6 +1220,24 @@ namespace VSharp.Binding
         }
 
         #endregion TryFind
+
+        private static bool ExpressionIsConstant(BoundExpression expression, [NotNullWhen(true)] out object? value)
+        {
+            switch (expression)
+            {
+                case BoundLiteralExpression literalExpression:
+                    value = literalExpression.Value;
+                    return true;
+
+                case BoundVariableExpression variableExpression when variableExpression.Variable is ConstantSymbol constant:
+                    value = constant.Value;
+                    return true;
+
+                default:
+                    value = null;
+                    return false;
+            }
+        }
 
         #endregion Helpers
 

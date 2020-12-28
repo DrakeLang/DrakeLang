@@ -557,6 +557,9 @@ namespace VSharp.Tests
 
                 // Implicit upcast
                 yield return (@"object result = false;", false);
+
+                // Compile time constants
+                yield return ("set length = 2; var result = [length] => 5, 5;", new[] { 5, 5 });
             }
         }
 

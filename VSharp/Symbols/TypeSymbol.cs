@@ -54,10 +54,17 @@ namespace VSharp.Symbols
         {
         }
 
+        public GenericArgumentSymbolBuilder(string? name)
+        {
+            Name = name;
+        }
+
         /// <summary>
         /// Gets or sets the name of the type argument.
         /// </summary>
         public string? Name { get; set; }
+
+        public TypeSymbol Build() => new(this);
     }
 
     public sealed class TypeSymbol : MemberSymbol
