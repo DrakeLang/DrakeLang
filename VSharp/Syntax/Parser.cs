@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Immutable;
-using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using VSharp.Text;
 using static VSharp.Symbols.SystemSymbols;
@@ -604,48 +603,15 @@ namespace VSharp.Syntax
 
             var identifierToken = MatchToken(SyntaxKind.IdentifierToken);
             var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
-            var arguments = ParseArguments();
+            var arguments = ParseSyntaxList(ParseArgument, SyntaxKind.CommaToken);
             var rightParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
 
             return new CallExpressionSyntax(namespaceNames, identifierToken, leftParenthesis, arguments, rightParenthesis);
-        }
 
-        private SeparatedSyntaxList<SyntaxNode> ParseArguments()
-        {
-            var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
-
-            while (Current.Kind != SyntaxKind.CloseParenthesisToken &&
-                   Current.Kind != SyntaxKind.EndOfFileToken)
+            SyntaxNode ParseArgument()
             {
-                if (Current.Kind == SyntaxKind.UnderscoreToken)
-                {
-                    var pipeArgument = NextToken();
-                    builder.Add(pipeArgument);
-                }
-                else
-                {
-                    var currentToken = Current;
-
-                    var expression = ParseExpression();
-                    builder.Add(expression);
-
-                    // If no tokens were consumed by the parse call,
-                    // we should escape the loop. Parse errors will
-                    // have already been reported.
-                    if (currentToken == Current)
-                        break;
-                }
-
-                // Don't expect comma after final argument.
-                if (Current.Kind != SyntaxKind.CloseParenthesisToken &&
-                    Current.Kind != SyntaxKind.EndOfFileToken)
-                {
-                    var comma = MatchToken(SyntaxKind.CommaToken);
-                    builder.Add(comma);
-                }
+                return Current.Kind == SyntaxKind.UnderscoreToken ? NextToken() : ParseExpression();
             }
-
-            return new SeparatedSyntaxList<SyntaxNode>(builder.ToImmutable());
         }
 
         private IndexerExpressionSyntax ParseIndexerExpression(ExpressionSyntax operand)
@@ -663,13 +629,13 @@ namespace VSharp.Syntax
             var openBracket = MatchToken(SyntaxKind.OpenBracketToken);
             var sizeOrFirstElementExpression = Current.Kind is not SyntaxKind.CloseBracketToken ? ParseExpression() : null;
 
-            if (sizeOrFirstElementExpression is not null && 
+            if (sizeOrFirstElementExpression is not null &&
                 (Current.Kind is SyntaxKind.CommaToken || (Current.Kind is SyntaxKind.CloseBracketToken && LookAhead.Kind is not SyntaxKind.EqualsGreaterToken and not SyntaxKind.OpenBraceToken)))
             {
                 // Simple array initializer
 
                 var firstElementExpression = sizeOrFirstElementExpression;
-                
+
                 // We already parsed the first expression,
                 // So we give the list parser the first element (and optionally the first separator).
                 var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
