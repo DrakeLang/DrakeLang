@@ -92,10 +92,18 @@ namespace VSharp.Syntax
                 statements.Add(statement);
 
                 // If no tokens were consumed by the parse call,
-                // we should escape the loop. Parse errors will
-                // have already been reported.
+                // we skip forward to the next statement (after the following semicolon)
+                // Parse errors will have already been reported.
                 if (currentToken == Current)
-                    break;
+                {
+                    while (Current.Kind is not SyntaxKind.SemicolonToken and not SyntaxKind.EndOfFileToken)
+                        NextToken();
+
+                    if (Current.Kind is SyntaxKind.EndOfFileToken)
+                        break;
+
+                    NextToken();
+                }
             }
 
             return statements.ToImmutable();
@@ -258,16 +266,16 @@ namespace VSharp.Syntax
             var keyword = MatchToken(SyntaxKind.WithKeyword);
             var names = ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken,
                 () => Current.Kind is SyntaxKind.OpenBraceToken);
-            if (Current.Kind == SyntaxKind.SemicolonToken)
+            if (Current.Kind == SyntaxKind.OpenBraceToken)
+            {
+                var body = ParseBlockStatement();
+                return new BodiedWithNamespaceStatementSyntax(keyword, names, body);
+            }
+            else
             {
                 var semicolon = MatchToken(SyntaxKind.SemicolonToken);
                 var statements = ParseStatements(() => Current.Kind is SyntaxKind.CloseBraceToken);
                 return new SimpleWithNamespaceStatementSyntax(keyword, names, semicolon, statements);
-            }
-            else
-            {
-                var body = ParseBlockStatement();
-                return new BodiedWithNamespaceStatementSyntax(keyword, names, body);
             }
         }
 

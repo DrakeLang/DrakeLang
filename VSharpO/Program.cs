@@ -171,7 +171,7 @@ namespace VSharpO
 
         private static void HandleDiagonstics(SourceText text, ImmutableArray<Diagnostic> diagnostics)
         {
-            foreach (Diagnostic diagnostic in diagnostics.OrderBy(d => d.Span))
+            foreach (Diagnostic diagnostic in diagnostics.OrderBy(d => d.Span).Distinct(new SpanComparer()))
             {
                 int lineIndex = text.GetLineIndex(diagnostic.Span.Start);
                 TextLine line = text.Lines[lineIndex];
@@ -198,6 +198,16 @@ namespace VSharpO
             }
 
             Console.WriteLine();
+        }
+
+        private class SpanComparer : IEqualityComparer<Diagnostic>
+        {
+            public bool Equals(Diagnostic? x, Diagnostic? y)
+            {
+                return x?.Span == y?.Span;
+            }
+
+            public int GetHashCode(Diagnostic obj) => obj.Span.GetHashCode();
         }
     }
 }
