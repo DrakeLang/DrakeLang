@@ -1017,10 +1017,7 @@ namespace VSharp.Binding
                     if (expression.Type == Types.Void)
                     {
                         var expressionStatement = new BoundExpressionStatement(expression);
-                        var returnStatement = new BoundReturnStatement();
-
-                        var result = new BoundBlockStatement(ImmutableArray.Create<BoundStatement>(expressionStatement, returnStatement));
-                        return Lowerer.Lower(result, _labelGenerator);
+                        return Lowerer.Lower(expressionStatement, _labelGenerator);
                     }
                     else
                     {
@@ -1159,15 +1156,18 @@ namespace VSharp.Binding
             }
 
             // Try resolving local method first.
-            foreach (var parentStatement in _statementStacktrace)
+            if (namespaceSym is null)
             {
-                if (!TryGetChildren<MethodDeclarationSyntax>(parentStatement, out var localDeclarations))
-                    continue;
-
-                var localDeclaration = localDeclarations.FirstOrDefault(dec => dec.Identifier.Text == methodName);
-                if (localDeclaration is not null && _methodSymbols.TryGetValue(localDeclaration, out method))
+                foreach (var parentStatement in _statementStacktrace)
                 {
-                    return true;
+                    if (!TryGetChildren<MethodDeclarationSyntax>(parentStatement, out var localDeclarations))
+                        continue;
+
+                    var localDeclaration = localDeclarations.FirstOrDefault(dec => dec.Identifier.Text == methodName);
+                    if (localDeclaration is not null && _methodSymbols.TryGetValue(localDeclaration, out method))
+                    {
+                        return true;
+                    }
                 }
             }
 

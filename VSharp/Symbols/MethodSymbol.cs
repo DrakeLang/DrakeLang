@@ -72,13 +72,14 @@ namespace VSharp.Symbols
                 return false;
 
             return Name == other.Name &&
+                Namespace == other.Namespace &&
                 Parameters.SequenceEqual(other.Parameters) &&
                 ReturnType == other.ReturnType;
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Name, Parameters.Length, ReturnType);
+            return HashCode.Combine(Name, Namespace, Parameters.Length, ReturnType);
         }
 
         public static bool operator ==(MethodSymbol? left, MethodSymbol? right)
