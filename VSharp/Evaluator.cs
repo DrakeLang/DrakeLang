@@ -49,6 +49,8 @@ namespace VSharp
 
         private sealed class InternalEvaluator
         {
+            private static readonly Random _rnd = new();
+
             private readonly ImmutableArray<BoundStatement> _statements;
             private readonly Dictionary<VariableSymbol, object> _variables;
             private readonly Dictionary<LabelSymbol, int> _labelToIndex = new Dictionary<LabelSymbol, int>();
@@ -280,6 +282,12 @@ namespace VSharp
                         return "";
 
                     return System.IO.File.ReadAllText(path);
+                }
+                else if (node.Method == Methods.Sys_Random_Next)
+                {
+                    var min = (int)args[0];
+                    var max = (int)args[1];
+                    return _rnd.Next(min, max);
                 }
                 else if (node.Method == Methods.Sys_String_Length)
                 {

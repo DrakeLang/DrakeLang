@@ -30,6 +30,7 @@ namespace VSharp.Symbols
 
             public static readonly NamespaceSymbol Sys_Console = new(Sys, new[] { "Console" });
             public static readonly NamespaceSymbol Sys_IO = new(Sys, new[] { "IO" });
+            public static readonly NamespaceSymbol Sys_Random = new(Sys, new[] { "Random" });
             public static readonly NamespaceSymbol Sys_String = new(Sys, new[] { "String" });
 
             public static readonly NamespaceSymbol Sys_IO_File = new(Sys_IO, new[] { "File" });
@@ -50,6 +51,16 @@ namespace VSharp.Symbols
             public static readonly MethodSymbol Sys_IO_File_ReadAllText = new(Namespaces.Sys_IO_File, "ReadAllText", ImmutableArray.Create(new ParameterSymbol("path", Types.String)), Types.String);
 
             #endregion Sys.IO.File
+
+            #region Sys.Random
+
+            public static readonly MethodSymbol Sys_Random_Next = new(Namespaces.Sys_Random, "Next",
+                ImmutableArray.Create(
+                    new ParameterSymbol("min", Types.Int),
+                    new ParameterSymbol("max", Types.Int)
+                ), Types.Int);
+
+            #endregion Sys.Random
 
             #region Sys.String
 
