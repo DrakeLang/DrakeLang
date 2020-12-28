@@ -64,6 +64,17 @@ namespace VSharp
                 _variables = variables;
                 _methods = methods;
 
+                _staticSystemMethods = new Dictionary<MethodSymbol, CallEvaluator>
+                {
+                    { Methods.Sys_Console_Write, Sys_Console_Write },
+                    { Methods.Sys_Console_WriteLine, Sys_Console_WriteLine },
+                    { Methods.Sys_Console_ReadLine, Sys_Console_ReadLine },
+                    { Methods.Sys_IO_File_ReadAllText, Sys_IO_File_ReadAllText },
+                    { Methods.Sys_Random_Next, Sys_Random_Next },
+                    { Methods.Sys_String_Length, Sys_String_Length },
+                    { Methods.Sys_String_CharAt, Sys_String_CharAt },
+                }.ToImmutableDictionary();
+
                 // Create label-index mapping for goto statements.
                 for (int i = 0; i < statements.Length; i++)
                 {
@@ -261,48 +272,9 @@ namespace VSharp
             {
                 var args = node.Arguments.Select(arg => EvaluateExpression(arg)).ToArray();
 
-                if (node.Method == Methods.Sys_Console_ReadLine)
+                if (_staticSystemMethods.TryGetValue(node.Method, out var evaluator))
                 {
-                    return Console.ReadLine() ?? string.Empty;
-                }
-                else if (node.Method == Methods.Sys_Console_Write)
-                {
-                    var message = toInvariantString(args[0]);
-                    Console.Write(message);
-                }
-                else if (node.Method == Methods.Sys_Console_WriteLine)
-                {
-                    var message = toInvariantString(args[0]);
-                    Console.WriteLine(message);
-                }
-                else if (node.Method == Methods.Sys_IO_File_ReadAllText)
-                {
-                    var path = (string)args[0];
-                    if (!System.IO.File.Exists(path))
-                        return "";
-
-                    return System.IO.File.ReadAllText(path);
-                }
-                else if (node.Method == Methods.Sys_Random_Next)
-                {
-                    var min = (int)args[0];
-                    var max = (int)args[1];
-                    return _rnd.Next(min, max);
-                }
-                else if (node.Method == Methods.Sys_String_Length)
-                {
-                    var str = (string)args[0];
-                    return str.Length;
-                }
-                else if (node.Method == Methods.Sys_String_CharAt)
-                {
-                    var pos = (int)args[0];
-                    var str = (string)args[1];
-
-                    if (pos < 0 || pos >= str.Length)
-                        return default(char);
-
-                    return str[pos];
+                    return evaluator(args);
                 }
                 else if (_methods.TryGetValue(node.Method, out var method))
                 {
@@ -315,14 +287,7 @@ namespace VSharp
                     return new InternalEvaluator(method.Declaration, stackFrame, _methods).Evaluate();
                 }
 
-                return 0; // cannot return null due to nullable reference types being enabled.
-
-                static string? toInvariantString(object o)
-                {
-                    return o is IConvertible convertible ?
-                        convertible.ToString(CultureInfo.InvariantCulture) :
-                        o.ToString();
-                }
+                throw new Exception($"Method '{node.Method}' not handled.");
             }
 
             public object EvaluateExplicitCastExpression(BoundExplicitCastExpression node)
@@ -345,6 +310,79 @@ namespace VSharp
             }
 
             #endregion EvaluateExpression
+
+            #region CallEvaluation
+
+            private delegate object CallEvaluator(object[] args);
+
+            private readonly ImmutableDictionary<MethodSymbol, CallEvaluator> _staticSystemMethods;
+
+            private object Sys_Console_Write(object[] args)
+            {
+                var message = ToInvariantString(args[0]);
+                Console.Write(message);
+
+                return 0;
+            }
+
+            private object Sys_Console_WriteLine(object[] args)
+            {
+                var message = ToInvariantString(args[0]);
+                Console.WriteLine(message);
+
+                return 0;
+            }
+
+            private object Sys_Console_ReadLine(object[] args)
+            {
+                return Console.ReadLine() ?? string.Empty;
+            }
+
+            private object Sys_IO_File_ReadAllText(object[] args)
+            {
+                var path = (string)args[0];
+                if (!System.IO.File.Exists(path))
+                    return "";
+
+                return System.IO.File.ReadAllText(path);
+            }
+
+            private object Sys_Random_Next(object[] args)
+            {
+                var min = (int)args[0];
+                var max = (int)args[1];
+                return _rnd.Next(min, max);
+            }
+
+            private object Sys_String_Length(object[] args)
+            {
+                var str = (string)args[0];
+                return str.Length;
+            }
+
+            private object Sys_String_CharAt(object[] args)
+            {
+                var pos = (int)args[0];
+                var str = (string)args[1];
+
+                if (pos < 0 || pos >= str.Length)
+                    return default(char);
+
+                return str[pos];
+            }
+
+            #endregion CallEvaluation
+
+            #region Utilities
+
+            private static string? ToInvariantString(object? o)
+            {
+                return o is IConvertible convertible ?
+                    convertible.ToString(CultureInfo.InvariantCulture) :
+                    o?.ToString();
+            }
+
+            #endregion Utilities
         }
     }
 }
