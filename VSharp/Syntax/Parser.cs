@@ -132,7 +132,8 @@ namespace VSharp.Syntax
                 SyntaxKind.GoToKeyword => ParseGoToStatement(),
                 SyntaxKind.IdentifierToken when LookAhead.Kind == SyntaxKind.ColonToken => ParseLabelDeclarationStatement(),
                 SyntaxKind.ReturnKeyword => ParseReturnStatement(),
-                SyntaxKind.WithKeyword => ParseWithNamespaceSyntax(),
+                SyntaxKind.WithKeyword when Peek(2).Kind == SyntaxKind.EqualsToken => ParseWithMethodAliasStatement(),
+                SyntaxKind.WithKeyword => ParseWithNamespaceStatement(),
                 SyntaxKind.ContinueKeyword => ParseContinueStatement(),
                 SyntaxKind.BreakKeyword => ParseBreakStatement(),
 
@@ -261,7 +262,29 @@ namespace VSharp.Syntax
             return new ReturnStatementSyntax(keyword, expression, semicolon);
         }
 
-        private WithNamespaceStatementSyntax ParseWithNamespaceSyntax()
+        private WithAliasStatementSyntax ParseWithMethodAliasStatement()
+        {
+            var keyword = MatchToken(SyntaxKind.WithKeyword);
+            var identifier = MatchToken(SyntaxKind.IdentifierToken);
+            var equalsToken = MatchToken(SyntaxKind.EqualsToken);
+
+            var namespaceNames = ParseOptionalNamespacePrefix();
+            var methodName = MatchToken(SyntaxKind.IdentifierToken);
+
+            if (Current.Kind == SyntaxKind.OpenBraceToken)
+            {
+                var body = ParseBlockStatement();
+                return new BodiedWithMethodAliasStatementSyntax(keyword, identifier, equalsToken, namespaceNames, methodName, body);
+            }
+            else
+            {
+                var semicolon = MatchToken(SyntaxKind.SemicolonToken);
+                var statements = ParseStatements(() => Current.Kind is SyntaxKind.CloseBraceToken);
+                return new SimpleWithMethodAliasStatementSyntax(keyword, identifier, equalsToken, namespaceNames, methodName, semicolon, statements);
+            }
+        }
+
+        private WithNamespaceStatementSyntax ParseWithNamespaceStatement()
         {
             var keyword = MatchToken(SyntaxKind.WithKeyword);
             var names = ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken,
@@ -601,14 +624,7 @@ namespace VSharp.Syntax
 
         private CallExpressionSyntax ParseCallExpression()
         {
-            SeparatedSyntaxList<SyntaxToken>? namespaceNames;
-            if (LookAhead.Kind is SyntaxKind.DotToken)
-            {
-                namespaceNames = ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken,
-                    () => Current.Kind is not SyntaxKind.IdentifierToken and not SyntaxKind.DotToken || LookAhead.Kind is SyntaxKind.OpenParenthesisToken);
-            }
-            else namespaceNames = null;
-
+            var namespaceNames = ParseOptionalNamespacePrefix();
             var identifierToken = MatchToken(SyntaxKind.IdentifierToken);
             var leftParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
             var arguments = ParseSyntaxList(ParseArgument, SyntaxKind.CommaToken);
@@ -646,12 +662,18 @@ namespace VSharp.Syntax
 
                 // We already parsed the first expression,
                 // So we give the list parser the first element (and optionally the first separator).
-                var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
-                builder.Add(firstElementExpression);
+                SeparatedSyntaxList<ExpressionSyntax> initializer;
                 if (Current.Kind == SyntaxKind.CommaToken)
+                {
+                    var builder = ImmutableArray.CreateBuilder<SyntaxNode>();
+                    builder.Add(firstElementExpression);
                     builder.Add(NextToken());
-
-                var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken, builder: builder);
+                    initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken, builder: builder);
+                }
+                else
+                {
+                    initializer = new(ImmutableArray.Create<SyntaxNode>(firstElementExpression));
+                }
                 var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
 
                 return new SimpleArrayInitializerExpressionSyntax(openBracket, initializer, closeBracket);
@@ -719,7 +741,11 @@ namespace VSharp.Syntax
             return new SyntaxToken(kind, Current.Position, null, null);
         }
 
-        private SeparatedSyntaxList<T> ParseSyntaxList<T>(Func<T> valueParser, SyntaxKind seperator, Func<bool>? escapeConditions = null, ImmutableArray<SyntaxNode>.Builder? builder = null)
+        private SeparatedSyntaxList<T> ParseSyntaxList<T>(Func<T> valueParser,
+                                                          SyntaxKind seperator,
+                                                          Func<bool>? escapeConditions = null,
+                                                          ImmutableArray<SyntaxNode>.Builder? builder = null,
+                                                          bool withTrailingSeparator = false)
             where T : SyntaxNode
         {
             builder ??= ImmutableArray.CreateBuilder<SyntaxNode>();
@@ -727,11 +753,11 @@ namespace VSharp.Syntax
             var extendedEscapeCondition = escapeConditions;
             escapeConditions = () => _listTerminators.Contains(Current.Kind) || (extendedEscapeCondition?.Invoke() ?? false);
 
+            if (builder.Count == 0 && escapeConditions())
+                return new(ImmutableArray<SyntaxNode>.Empty);
+
             do
             {
-                if (escapeConditions())
-                    break;
-
                 var currentToken = Current;
 
                 var value = valueParser();
@@ -749,9 +775,27 @@ namespace VSharp.Syntax
                 // have already been reported.
                 if (currentToken == Current)
                     break;
+
+                if (withTrailingSeparator && escapeConditions())
+                    break;
             } while (true);
 
-            return new SeparatedSyntaxList<T>(builder.ToImmutable());
+            return new(builder.ToImmutable());
+        }
+
+        private SeparatedSyntaxList<SyntaxToken> ParseNamespacePrefix()
+        {
+            return ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken,
+                () => LookAhead.Kind is not SyntaxKind.IdentifierToken and not SyntaxKind.DotToken,
+                withTrailingSeparator: true);
+        }
+
+        private SeparatedSyntaxList<SyntaxToken>? ParseOptionalNamespacePrefix()
+        {
+            if (LookAhead.Kind == SyntaxKind.DotToken)
+                return ParseNamespacePrefix();
+
+            return null;
         }
 
         #endregion Helper methods

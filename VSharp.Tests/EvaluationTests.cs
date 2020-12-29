@@ -516,7 +516,7 @@ namespace VSharp.Tests
 
                     def GetVal() => ""a"";
 
-                    namespace B {} // Because of the way we avoid optimizing away variables, we have to escape the previous namespace.
+                    namespace B {}
 
                     with A;
                     var result = GetVal();",
@@ -538,7 +538,7 @@ namespace VSharp.Tests
                         }
                     }
 
-                    namespace B {} // Because of the way we avoid optimizing away variables, we have to escape the previous namespace.
+                    namespace B {} 
                     var result = GetValB();",
                     "a");
                 yield return (@"
@@ -553,6 +553,31 @@ namespace VSharp.Tests
                     }
 
                     var result = A.GetValue();",
+                    "a");
+
+                // With method alias
+                yield return ("def getValue() => \"a\"; with call = getValue; var result = call();", "a");
+                yield return (@"
+                    namespace A;
+                    
+                    def getValue() => ""a"";
+
+                    namespace B { }
+                    
+                    with call = A.getValue;
+                    var result = call();", 
+                    "a");
+
+                yield return (@"
+                    namespace A;
+                    
+                    def getValue() => ""a"";
+
+                    namespace B { }
+                    
+                    with A;
+                    with call = getValue;
+                    var result = call();",
                     "a");
 
                 // Implicit upcast

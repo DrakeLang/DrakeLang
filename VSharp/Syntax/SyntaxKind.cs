@@ -111,6 +111,7 @@ namespace VSharp.Syntax
         // Statements
 
         WithNamespaceStatement,
+        WithAliasStatement,
         BlockStatement,
         VariableDeclarationStatement,
         IfStatement,

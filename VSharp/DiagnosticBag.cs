@@ -156,6 +156,12 @@ namespace VSharp
             Report(span, message);
         }
 
+        public void ReportAliasAlreadyDeclared(TextSpan span, string? name)
+        {
+            string message = $"An alias with the name '{name}' has already been declared in this scope.";
+            Report(span, message);
+        }
+
         internal void ReportCannotInferReturnType(TextSpan span, string? name)
         {
             string message = $"Implicit return type of method '{name}' cannot be infered.";

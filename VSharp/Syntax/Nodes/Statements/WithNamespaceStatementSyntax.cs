@@ -23,32 +23,32 @@ namespace VSharp.Syntax
 {
     public abstract class WithNamespaceStatementSyntax : StatementSyntax
     {
-        protected WithNamespaceStatementSyntax(SyntaxToken withToken, SeparatedSyntaxList<SyntaxToken> names, ImmutableArray<StatementSyntax> statements)
+        protected WithNamespaceStatementSyntax(SyntaxToken withKeyword, SeparatedSyntaxList<SyntaxToken> names)
         {
-            WithToken = withToken;
+            WithKeyword = withKeyword;
             Names = names;
-            Statements = statements;
         }
 
         public override SyntaxKind Kind => SyntaxKind.WithNamespaceStatement;
-        public SyntaxToken WithToken { get; }
+        public SyntaxToken WithKeyword { get; }
         public SeparatedSyntaxList<SyntaxToken> Names { get; }
-        public ImmutableArray<StatementSyntax> Statements { get; }
+        public abstract ImmutableArray<StatementSyntax> Statements { get; }
     }
 
     public sealed class BodiedWithNamespaceStatementSyntax : WithNamespaceStatementSyntax
     {
-        internal BodiedWithNamespaceStatementSyntax(SyntaxToken withToken, SeparatedSyntaxList<SyntaxToken> names, BlockStatementSyntax body)
-            : base(withToken, names, body.Statements)
+        internal BodiedWithNamespaceStatementSyntax(SyntaxToken withKeyword, SeparatedSyntaxList<SyntaxToken> names, BlockStatementSyntax body)
+            : base(withKeyword, names)
         {
             Body = body;
         }
 
         public BlockStatementSyntax Body { get; }
+        public override ImmutableArray<StatementSyntax> Statements => Body.Statements;
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return WithToken;
+            yield return WithKeyword;
             foreach (var name in Names.GetWithSeparators())
             {
                 yield return name;
@@ -59,17 +59,19 @@ namespace VSharp.Syntax
 
     public sealed class SimpleWithNamespaceStatementSyntax : WithNamespaceStatementSyntax
     {
-        internal SimpleWithNamespaceStatementSyntax(SyntaxToken withToken, SeparatedSyntaxList<SyntaxToken> names, SyntaxToken semicolonToken, ImmutableArray<StatementSyntax> statements)
-            : base(withToken, names, statements)
+        internal SimpleWithNamespaceStatementSyntax(SyntaxToken withKeyword, SeparatedSyntaxList<SyntaxToken> names, SyntaxToken semicolonToken, ImmutableArray<StatementSyntax> statements)
+            : base(withKeyword, names)
         {
             SemicolonToken = semicolonToken;
+            Statements = statements;
         }
 
         public SyntaxToken SemicolonToken { get; }
+        public override ImmutableArray<StatementSyntax> Statements { get; }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return WithToken;
+            yield return WithKeyword;
             foreach (var name in Names.GetWithSeparators())
             {
                 yield return name;

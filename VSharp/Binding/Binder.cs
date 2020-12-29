@@ -242,6 +242,7 @@ namespace VSharp.Binding
                     SyntaxKind.ReturnStatement => BindReturnStatement((ReturnStatementSyntax)syntax),
                     SyntaxKind.LabelStatement => BindLabelStatement((LabelStatementSyntax)syntax),
                     SyntaxKind.WithNamespaceStatement => BindWithNamespaceStatement((WithNamespaceStatementSyntax)syntax),
+                    SyntaxKind.WithAliasStatement => BindWithAliasStatement((WithAliasStatementSyntax)syntax),
                     SyntaxKind.ContinueStatement => BindContinueStatement((ContinueStatementSyntax)syntax),
                     SyntaxKind.BreakStatement => BindBreakStatement((BreakStatementSyntax)syntax),
                     SyntaxKind.ExpressionStatement => BindExpressionStatement((ExpressionStatementSyntax)syntax),
@@ -469,6 +470,29 @@ namespace VSharp.Binding
                 if (wasIncluded)
                     _includedNamespaces.Remove(namespaceSym);
             }
+        }
+
+        private BoundStatement BindWithAliasStatement(WithAliasStatementSyntax syntax)
+        {
+            if (syntax is WithMethodAliasStatementSyntax methodAliasSyntax)
+            {
+                if (!TryFindMethod(methodAliasSyntax.NamespaceNames, methodAliasSyntax.Identifier, out var method))
+                    return BoundNoOpStatement.Instance;
+
+                PushScope();
+                try
+                {
+                    _scope.TryDeclareMethodAlias(method, syntax.Alias.Text);
+
+                    var statements = BindStatements(syntax.Statements);
+                    return new BoundBlockStatement(statements);
+                }
+                finally
+                {
+                    PopScope();
+                }
+            }
+            else throw new Exception($"Unsupported case '{syntax.GetType()}'.");
         }
 
         private BoundStatement BindContinueStatement(ContinueStatementSyntax syntax)

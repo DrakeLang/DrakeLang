@@ -29,6 +29,7 @@ namespace VSharp.Binding
         private Dictionary<string, VariableSymbol>? _variables;
         private Dictionary<string, LabelSymbol>? _labels;
         private Dictionary<string, MethodSymbol>? _methods;
+        private Dictionary<string, MethodSymbol>? _methodAliases;
         private readonly LabelSymbol? _continueLabel;
         private readonly LabelSymbol? _breakLabel;
 
@@ -218,7 +219,7 @@ namespace VSharp.Binding
 
             if (_methods is null)
             {
-                _methods = new Dictionary<string, MethodSymbol>
+                _methods = new()
                 {
                     [method.FullName] = method
                 };
@@ -239,7 +240,10 @@ namespace VSharp.Binding
                 return false;
             }
 
-            if (_methods != null && _methods.TryGetValue(name, out method))
+            if (_methods is not null && _methods.TryGetValue(name, out method))
+                return true;
+
+            if (_methodAliases is not null && _methodAliases.TryGetValue(name, out method))
                 return true;
 
             if (Parent is null)
@@ -249,6 +253,23 @@ namespace VSharp.Binding
             }
 
             return Parent.TryLookupMethod(name, out method);
+        }
+
+        public bool TryDeclareMethodAlias(MethodSymbol method, string? alias)
+        {
+            if (alias is null)
+                return false;
+
+            if (_methodAliases is null)
+            {
+                _methodAliases = new()
+                {
+                    [alias] = method,
+                };
+                return true;
+            }
+
+            return _methodAliases.TryAdd(alias, method);
         }
 
         public ImmutableArray<MethodSymbol> GetDeclaredMethods()
