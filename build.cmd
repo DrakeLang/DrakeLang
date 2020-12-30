@@ -1,4 +1,4 @@
 @echo off
 
-dotnet build VSharp.sln
-dotnet test VSharp.sln
+dotnet build DrakeLang.sln
+dotnet test DrakeLang.sln
