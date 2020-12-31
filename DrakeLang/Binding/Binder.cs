@@ -132,6 +132,7 @@ namespace DrakeLang.Binding
 
                 foreach (var declaration in enumerateDeclarations(statements))
                 {
+                    _currentText = declaration.Text;
                     var result = TryDeclareMethod(declaration);
                     if (result is not MethodDeclarationResult.CannotInferReturnType)
                     {
@@ -142,15 +143,17 @@ namespace DrakeLang.Binding
 
             foreach (var declaration in enumerateDeclarations(statements))
             {
+                _currentText = declaration.Text;
                 TryDeclareMethod(declaration, declareImplicitReturnTypesAsError: true);
 
-                GetDiagnosticBuilder(declaration.Text).ReportCannotInferReturnType(declaration.Identifier.Span, declaration.Identifier.TokenText);
+                DiagnosticsBuilder.ReportCannotInferReturnType(declaration.Identifier.Span, declaration.Identifier.TokenText);
             }
 
             IEnumerable<MethodDeclarationSyntax> enumerateDeclarations(IEnumerable<StatementSyntax> statements, bool isMethodBody = false)
             {
                 foreach (var statement in statements)
                 {
+                    _currentText = statement.Text;
                     _statementStacktrace.Push(statement);
                     switch (statement)
                     {
@@ -221,7 +224,7 @@ namespace DrakeLang.Binding
 
                         default:
                             if (!isMethodBody && CurrentNamespace is not null)
-                                GetDiagnosticBuilder(statement.Text).ReportIllegalStatementPlacement(statement.Span);
+                                DiagnosticsBuilder.ReportIllegalStatementPlacement(statement.Span);
                             break;
                     }
                     _statementStacktrace.Pop();
