@@ -22,7 +22,6 @@ namespace DrakeLang.Binding
     {
         // Statements
 
-        BlockStatement,
         VariableDeclarationStatement,
         IfStatement,
         WhileStatement,

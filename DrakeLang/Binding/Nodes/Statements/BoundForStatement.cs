@@ -18,15 +18,16 @@
 
 using DrakeLang.Symbols;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace DrakeLang.Binding
 {
     internal sealed class BoundForStatement : BoundLoopStatement
     {
-        public BoundForStatement(BoundStatement? initializationStatement,
+        public BoundForStatement(ImmutableArray<BoundStatement> initializationStatement,
                                  BoundExpression? condition,
-                                 BoundStatement? updateStatement,
-                                 BoundStatement body,
+                                 ImmutableArray<BoundStatement> updateStatement,
+                                 ImmutableArray<BoundStatement> body,
                                  LabelSymbol continueLabel,
                                  LabelSymbol breakLabel)
             : base(body, continueLabel, breakLabel)
@@ -40,18 +41,29 @@ namespace DrakeLang.Binding
 
         public override BoundNodeKind Kind => BoundNodeKind.ForStatement;
 
-        public BoundStatement? InitializationStatement { get; }
+        public ImmutableArray<BoundStatement> InitializationStatement { get; }
         public BoundExpression? Condition { get; }
-        public BoundStatement? UpdateStatement { get; }
+        public ImmutableArray<BoundStatement> UpdateStatement { get; }
 
         #endregion Properties
 
         public override IEnumerable<BoundNode> GetChildren()
         {
-            if (InitializationStatement is not null) yield return InitializationStatement;
+            foreach (var statement in InitializationStatement)
+            {
+                yield return statement;
+            }
+
             if (Condition is not null) yield return Condition;
-            if (UpdateStatement is not null) yield return UpdateStatement;
-            yield return Body;
+            foreach (var statement in UpdateStatement)
+            {
+                yield return statement;
+            }
+
+            foreach (var statement in Body)
+            {
+                yield return statement;
+            }
         }
     }
 }

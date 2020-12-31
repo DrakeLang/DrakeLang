@@ -22,13 +22,14 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Statements = System.Collections.Immutable.ImmutableArray<DrakeLang.Binding.BoundStatement>;
 
 namespace DrakeLang.Binding
 {
     internal abstract class BoundTreeRewriter
     {
-        private readonly List<BoundStatement> _statementStack = new List<BoundStatement>();
-        private readonly List<BoundExpression> _expressionStack = new List<BoundExpression>();
+        private readonly List<BoundStatement> _statementStack = new();
+        private readonly List<BoundExpression> _expressionStack = new();
 
         public BoundTreeRewriter()
         {
@@ -44,17 +45,17 @@ namespace DrakeLang.Binding
         /// <summary>
         /// Keeps track of what expression uses what variables.
         /// </summary>
-        protected Dictionary<VariableSymbol, HashSet<BoundExpression>> VariableUsage { get; } = new Dictionary<VariableSymbol, HashSet<BoundExpression>>(ReferenceEqualityComparer.Instance);
+        protected Dictionary<VariableSymbol, HashSet<BoundExpression>> VariableUsage { get; } = new(ReferenceEqualityComparer.Instance);
 
         /// <summary>
         /// Keeps track of variables that are reassigned after initialization.
         /// </summary>
-        protected HashSet<VariableSymbol> ReassignedVariables { get; } = new HashSet<VariableSymbol>(ReferenceEqualityComparer.Instance);
+        protected HashSet<VariableSymbol> ReassignedVariables { get; } = new(ReferenceEqualityComparer.Instance);
 
         /// <summary>
         /// Mapping of updated variables.
         /// </summary>
-        protected Dictionary<VariableSymbol, VariableSymbol> UpdatedVariables { get; } = new Dictionary<VariableSymbol, VariableSymbol>(ReferenceEqualityComparer.Instance);
+        protected Dictionary<VariableSymbol, VariableSymbol> UpdatedVariables { get; } = new(ReferenceEqualityComparer.Instance);
 
         #endregion Properties
 
@@ -98,16 +99,18 @@ namespace DrakeLang.Binding
 
         #region RewriteStatement
 
-        public ImmutableArray<BoundStatement> RewriteStatements(ImmutableArray<BoundStatement> statements)
+        public Statements RewriteStatements(Statements statements)
         {
             // Rewrite statements.
-            ImmutableArray<BoundStatement>.Builder? builder = null;
+            Statements.Builder? builder = null;
+
             for (int i = 0; i < statements.Length; i++)
             {
                 var oldStatement = statements[i];
-                var newStatement = RewriteStatement(oldStatement);
+                var newStatements = RewriteStatement(oldStatement);
 
-                if (builder is null && (newStatement != oldStatement))
+                if (builder is null && newStatements.HasValue &&
+                    (newStatements.Value.Length != 1 || newStatements.Value[0] != oldStatement))
                 {
                     // There's at least one different element, so we initialize the builder and copy all ignored lines over.
                     builder = ImmutableArray.CreateBuilder<BoundStatement>(statements.Length);
@@ -118,20 +121,24 @@ namespace DrakeLang.Binding
                 }
 
                 if (builder is not null)
-                    builder.Add(newStatement);
+                {
+                    if (newStatements is null)
+                        builder.AddRange(oldStatement);
+                    else
+                        builder.AddRange(newStatements.Value);
+                }
             }
 
-            return builder?.MoveToImmutable() ?? statements;
+            return builder?.ToImmutable() ?? statements;
         }
 
-        public virtual BoundStatement RewriteStatement(BoundStatement node)
+        public Statements? RewriteStatement(BoundStatement node)
         {
             _statementStack.Add(node);
             try
             {
                 return node.Kind switch
                 {
-                    BoundNodeKind.BlockStatement => RewriteBlockStatement((BoundBlockStatement)node),
                     BoundNodeKind.VariableDeclarationStatement => RewriteVariableDeclarationStatement((BoundVariableDeclarationStatement)node),
                     BoundNodeKind.IfStatement => RewriteIfStatement((BoundIfStatement)node),
                     BoundNodeKind.WhileStatement => RewriteWhileStatement((BoundWhileStatement)node),
@@ -141,7 +148,7 @@ namespace DrakeLang.Binding
                     BoundNodeKind.ConditionalGotoStatement => RewriteConditionalGotoStatement((BoundConditionalGotoStatement)node),
                     BoundNodeKind.ReturnStatement => RewriteReturnStatement((BoundReturnStatement)node),
                     BoundNodeKind.ExpressionStatement => RewriteExpressionStatement((BoundExpressionStatement)node),
-                    BoundNodeKind.NoOpStatement => node,
+                    BoundNodeKind.NoOpStatement => Statements.Empty,
 
                     _ => throw new Exception($"Unexpected node: '{node.Kind}'."),
                 };
@@ -152,23 +159,7 @@ namespace DrakeLang.Binding
             }
         }
 
-        protected virtual BoundStatement RewriteBlockStatement(BoundBlockStatement node)
-        {
-            switch (node.Statements.Length)
-            {
-                case 0:
-                    return BoundNoOpStatement.Instance;
-
-                case 1:
-                    return RewriteStatement(node.Statements[0]);
-
-                default:
-                    var statements = RewriteStatements(node.Statements);
-                    return statements == node.Statements ? node : new BoundBlockStatement(statements);
-            }
-        }
-
-        protected virtual BoundStatement RewriteVariableDeclarationStatement(BoundVariableDeclarationStatement node)
+        protected virtual Statements? RewriteVariableDeclarationStatement(BoundVariableDeclarationStatement node)
         {
             var initializer = RewriteExpression(node.Initializer);
 
@@ -178,80 +169,74 @@ namespace DrakeLang.Binding
                 var constant = new ConstantSymbol(variable.Name, literalExpression.Value);
                 UpdateVariable(variable, constant);
 
-                return BoundNoOpStatement.Instance;
+                return Statements.Empty;
             }
 
             if (initializer == node.Initializer &&
                 variable == node.Variable)
             {
-                return node;
+                return null;
             }
 
-            return new BoundVariableDeclarationStatement(variable, initializer);
+            return Wrap(new BoundVariableDeclarationStatement(variable, initializer));
         }
 
-        protected virtual BoundStatement RewriteIfStatement(BoundIfStatement node)
+        protected virtual Statements? RewriteIfStatement(BoundIfStatement node)
         {
             var condition = RewriteExpression(node.Condition);
-            var thenStatement = RewriteStatement(node.ThenStatement);
-            var elseStatement = (node.ElseStatement == null) ? null : RewriteStatement(node.ElseStatement);
+            var thenStatement = RewriteStatements(node.ThenBody);
+            var elseStatement = RewriteStatements(node.ElseBody);
 
             if (condition == node.Condition &&
-                thenStatement == node.ThenStatement &&
-                elseStatement == node.ElseStatement)
+                thenStatement == node.ThenBody &&
+                elseStatement == node.ElseBody)
             {
-                return node;
+                return null;
             }
 
-            return new BoundIfStatement(condition, thenStatement, elseStatement);
+            return Wrap(new BoundIfStatement(condition, thenStatement, elseStatement));
         }
 
-        protected virtual BoundStatement RewriteWhileStatement(BoundWhileStatement node)
+        protected virtual Statements? RewriteWhileStatement(BoundWhileStatement node)
         {
             var condition = RewriteExpression(node.Condition);
-            var body = RewriteStatement(node.Body);
+            var body = RewriteStatements(node.Body);
 
             if (condition == node.Condition && body == node.Body)
-                return node;
+                return null;
 
-            return new BoundWhileStatement(condition, body, node.ContinueLabel, node.BreakLabel);
+            return Wrap(new BoundWhileStatement(condition, body, node.ContinueLabel, node.BreakLabel));
         }
 
-        protected virtual BoundStatement RewriteForStatement(BoundForStatement node)
+        protected virtual Statements? RewriteForStatement(BoundForStatement node)
         {
-            var initializationStatement = node.InitializationStatement is null ? null : RewriteStatement(node.InitializationStatement);
+            var initializationStatement = RewriteStatements(node.InitializationStatement);
             var condition = node.Condition is null ? null : RewriteExpression(node.Condition);
-            var updateStatement = node.UpdateStatement is null ? null : RewriteStatement(node.UpdateStatement);
-            var body = RewriteStatement(node.Body);
+            var updateStatement = RewriteStatements(node.UpdateStatement);
+            var body = RewriteStatements(node.Body);
 
             if (initializationStatement == node.InitializationStatement &&
                 condition == node.Condition &&
                 updateStatement == node.UpdateStatement &&
                 body == node.Body)
             {
-                return node;
+                return null;
             }
 
-            return new BoundForStatement(initializationStatement, condition, updateStatement, body, node.ContinueLabel, node.BreakLabel);
+            return Wrap(new BoundForStatement(initializationStatement, condition, updateStatement, body, node.ContinueLabel, node.BreakLabel));
         }
 
-        protected virtual BoundStatement RewriteLabelStatement(BoundLabelStatement node)
-        {
-            return node;
-        }
+        protected virtual Statements? RewriteLabelStatement(BoundLabelStatement node) => null;
 
-        protected virtual BoundStatement RewriteGotoStatement(BoundGotoStatement node)
-        {
-            return node;
-        }
+        protected virtual Statements? RewriteGotoStatement(BoundGotoStatement node) => null;
 
-        protected virtual BoundStatement RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
+        protected virtual Statements? RewriteConditionalGotoStatement(BoundConditionalGotoStatement node)
         {
             var condition = RewriteExpression(node.Condition);
             if (condition is BoundLiteralExpression literalCondition)
             {
                 if (node.JumpIfFalse.Equals(literalCondition.Value))
-                    return BoundNoOpStatement.Instance;
+                    return Statements.Empty;
                 else
                 {
                     var result = new BoundGotoStatement(node.Label);
@@ -260,24 +245,24 @@ namespace DrakeLang.Binding
             }
 
             if (condition == node.Condition)
-                return node;
+                return null;
 
-            return new BoundConditionalGotoStatement(node.Label, condition, node.JumpIfFalse);
+            return Wrap(new BoundConditionalGotoStatement(node.Label, condition, node.JumpIfFalse));
         }
 
-        protected virtual BoundStatement RewriteReturnStatement(BoundReturnStatement node)
+        protected virtual Statements? RewriteReturnStatement(BoundReturnStatement node)
         {
             if (node.Expression is null)
-                return node;
+                return null;
 
             var expression = RewriteExpression(node.Expression);
             if (expression == node.Expression)
-                return node;
+                return null;
 
-            return new BoundReturnStatement(expression);
+            return Wrap(new BoundReturnStatement(expression));
         }
 
-        protected virtual BoundStatement RewriteExpressionStatement(BoundExpressionStatement node)
+        protected virtual Statements? RewriteExpressionStatement(BoundExpressionStatement node)
         {
             var expression = RewriteExpression(node.Expression);
 
@@ -288,13 +273,13 @@ namespace DrakeLang.Binding
                 foreach (var varUsage in VariableUsage.Values)
                     varUsage.Remove(expression);
 
-                return BoundNoOpStatement.Instance;
+                return Statements.Empty;
             }
 
             if (expression == node.Expression)
-                return node;
+                return null;
 
-            return new BoundExpressionStatement(expression);
+            return Wrap(new BoundExpressionStatement(expression));
         }
 
         #endregion RewriteStatement
@@ -537,6 +522,10 @@ namespace DrakeLang.Binding
             UpdatedVariables.Add(activeOld, newVar);
         }
 
+        #endregion Helpers
+
+        #region Utilities
+
         protected static bool HasNoSideEffects(BoundExpression? expression) => expression switch
         {
             BoundLiteralExpression or
@@ -556,6 +545,8 @@ namespace DrakeLang.Binding
             _ => false,
         };
 
-        #endregion Helpers
+        protected static Statements Wrap(BoundStatement statement) => ImmutableArray.Create(statement);
+
+        #endregion Utilities
     }
 }

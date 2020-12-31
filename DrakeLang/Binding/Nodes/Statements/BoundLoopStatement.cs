@@ -17,19 +17,20 @@
 //------------------------------------------------------------------------------
 
 using DrakeLang.Symbols;
+using System.Collections.Immutable;
 
 namespace DrakeLang.Binding
 {
     internal abstract class BoundLoopStatement : BoundStatement
     {
-        public BoundLoopStatement(BoundStatement body, LabelSymbol continueLabel, LabelSymbol breakLabel)
+        public BoundLoopStatement(ImmutableArray<BoundStatement> body, LabelSymbol continueLabel, LabelSymbol breakLabel)
         {
             Body = body;
             ContinueLabel = continueLabel;
             BreakLabel = breakLabel;
         }
 
-        public BoundStatement Body { get; }
+        public ImmutableArray<BoundStatement> Body { get; }
         public LabelSymbol ContinueLabel { get; }
         public LabelSymbol BreakLabel { get; }
     }

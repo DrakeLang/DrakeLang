@@ -21,6 +21,15 @@ using System.Collections.Generic;
 
 namespace DrakeLang
 {
+    internal enum LabelCategory
+    {
+        Continue,
+        Break,
+        Check,
+        Else,
+        End,
+    }
+
     internal sealed class LabelGenerator
     {
         private readonly Dictionary<LabelCategory, int> _labelCounters = new Dictionary<LabelCategory, int>();

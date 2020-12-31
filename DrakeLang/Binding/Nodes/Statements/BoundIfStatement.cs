@@ -17,16 +17,17 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace DrakeLang.Binding
 {
     internal sealed class BoundIfStatement : BoundStatement
     {
-        public BoundIfStatement(BoundExpression condition, BoundStatement thenStatement, BoundStatement? elseStatement)
+        public BoundIfStatement(BoundExpression condition, ImmutableArray<BoundStatement> thenBody, ImmutableArray<BoundStatement> elseBody)
         {
             Condition = condition;
-            ThenStatement = thenStatement;
-            ElseStatement = elseStatement;
+            ThenBody = thenBody;
+            ElseBody = elseBody;
         }
 
         #region Properties
@@ -34,18 +35,23 @@ namespace DrakeLang.Binding
         public override BoundNodeKind Kind => BoundNodeKind.IfStatement;
 
         public BoundExpression Condition { get; }
-        public BoundStatement ThenStatement { get; }
-        public BoundStatement? ElseStatement { get; }
+        public ImmutableArray<BoundStatement> ThenBody { get; }
+        public ImmutableArray<BoundStatement> ElseBody { get; }
 
         #endregion Properties
 
         public override IEnumerable<BoundNode> GetChildren()
         {
             yield return Condition;
-            yield return ThenStatement;
+            foreach (var statement in ThenBody)
+            {
+                yield return statement;
+            }
 
-            if (ElseStatement != null)
-                yield return ElseStatement;
+            foreach (var statement in ElseBody)
+            {
+                yield return statement;
+            }
         }
     }
 }

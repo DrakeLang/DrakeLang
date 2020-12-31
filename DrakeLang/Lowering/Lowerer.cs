@@ -21,6 +21,7 @@ using DrakeLang.Symbols;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Statements = System.Collections.Immutable.ImmutableArray<DrakeLang.Binding.BoundStatement>;
 
 namespace DrakeLang.Lowering
 {
@@ -35,15 +36,15 @@ namespace DrakeLang.Lowering
 
         #region Methods
 
-        public static ImmutableArray<BoundStatement> Lower(BoundStatement statement, LabelGenerator labelGenerator)
-            => Lower(ImmutableArray.Create(statement), labelGenerator);
+        public static ImmutableArray<BoundMethodDeclaration> Lower(ImmutableArray<BoundMethodDeclaration> methods, LabelGenerator labelGenerator)
+            => new Lowerer(labelGenerator).RewriteMethodDeclarations(methods);
 
-        public static ImmutableArray<BoundStatement> Lower(ImmutableArray<BoundStatement> statements, LabelGenerator labelGenerator)
+        public static Statements Lower(Statements statements, LabelGenerator labelGenerator)
             => new Lowerer(labelGenerator).Lower(statements);
 
         #endregion Methods
 
-        private ImmutableArray<BoundStatement> Lower(ImmutableArray<BoundStatement> statements)
+        private Statements Lower(Statements statements)
         {
             var result = statements;
 
@@ -54,15 +55,27 @@ namespace DrakeLang.Lowering
                 result = FlattenAndClean(result, out reRunLowering);
             } while (reRunLowering);
 
-            return result;
+            return result.SequenceEqual(statements) ? statements : result;
         }
+
+        #region RewriteMethodDeclaration
+
+        protected override BoundMethodDeclaration RewriteMethodDeclaration(BoundMethodDeclaration node)
+        {
+            var declaration = Lower(node.Declaration);
+            if (declaration == node.Declaration)
+                return node;
+
+            return new BoundMethodDeclaration(node.Method, declaration);
+        }
+
+        #endregion RewriteMethodDeclaration
 
         #region RewriteStatement
 
-        protected override BoundStatement RewriteIfStatement(BoundIfStatement node)
+        protected override Statements? RewriteIfStatement(BoundIfStatement node)
         {
-            BoundBlockStatement result;
-            if (node.ElseStatement is null)
+            if (node.ElseBody.IsEmpty)
             {
                 /**
                  * if (<condition>)
@@ -70,11 +83,9 @@ namespace DrakeLang.Lowering
                  *
                  * -------->
                  *
-                 * {
-                 *    gotoFalse <condition> end
-                 *    <then>
-                 *    end:
-                 * }
+                 * gotoFalse <condition> end
+                 * <then>
+                 * end:
                  *
                  */
 
@@ -83,10 +94,12 @@ namespace DrakeLang.Lowering
 
                 var conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfFalse: true);
 
-                result = new BoundBlockStatement(ImmutableArray.Create(
-                    conditionalGotoEnd,
-                    node.ThenStatement,
-                    endLabelStatement));
+                var result = ImmutableArray.CreateBuilder<BoundStatement>(2 + node.ThenBody.Length);
+                result.Add(conditionalGotoEnd);
+                result.AddRange(node.ThenBody);
+                result.Add(endLabelStatement);
+
+                return RewriteStatements(result.MoveToImmutable());
             }
             else
             {
@@ -99,14 +112,12 @@ namespace DrakeLang.Lowering
                  *
                  * -------->
                  *
-                 * {
-                 *    gotoFalse <condition> else
-                 *    <then>
-                 *    goto end
-                 *    else:
-                 *    <else>
-                 *    end:
-                 * }
+                 * gotoFalse <condition> else
+                 * <then>
+                 * goto end
+                 * else:
+                 * <else>
+                 * end:
                  *
                  */
 
@@ -119,19 +130,20 @@ namespace DrakeLang.Lowering
                 var conditionalGotoElse = new BoundConditionalGotoStatement(elseLabel, node.Condition, jumpIfFalse: true);
                 var gotoEnd = new BoundGotoStatement(endLabel);
 
-                result = new BoundBlockStatement(ImmutableArray.Create(
-                    conditionalGotoElse,
-                    node.ThenStatement,
-                    gotoEnd,
-                    elseLabelStatement,
-                    node.ElseStatement,
-                    endLabelStatement));
-            }
+                var result = ImmutableArray.CreateBuilder<BoundStatement>(4 + node.ThenBody.Length + node.ElseBody.Length);
 
-            return RewriteStatement(result);
+                result.Add(conditionalGotoElse);
+                result.AddRange(node.ThenBody);
+                result.Add(gotoEnd);
+                result.Add(elseLabelStatement);
+                result.AddRange(node.ElseBody);
+                result.Add(endLabelStatement);
+
+                return RewriteStatements(result.MoveToImmutable());
+            }
         }
 
-        protected override BoundStatement RewriteWhileStatement(BoundWhileStatement node)
+        protected override Statements? RewriteWhileStatement(BoundWhileStatement node)
         {
             /**
              *
@@ -154,17 +166,17 @@ namespace DrakeLang.Lowering
             var gotoCheck = new BoundGotoStatement(node.ContinueLabel);
             var conditionalGotoEnd = new BoundConditionalGotoStatement(node.BreakLabel, node.Condition, jumpIfFalse: true);
 
-            var result = new BoundBlockStatement(ImmutableArray.Create(
-                checkLabelStatement,
-                conditionalGotoEnd,
-                node.Body,
-                gotoCheck,
-                endLabelStatement));
+            var result = ImmutableArray.CreateBuilder<BoundStatement>(4 + node.Body.Length);
+            result.Add(checkLabelStatement);
+            result.Add(conditionalGotoEnd);
+            result.AddRange(node.Body);
+            result.Add(gotoCheck);
+            result.Add(endLabelStatement);
 
-            return RewriteStatement(result);
+            return RewriteStatements(result.MoveToImmutable());
         }
 
-        protected override BoundStatement RewriteForStatement(BoundForStatement node)
+        protected override Statements? RewriteForStatement(BoundForStatement node)
         {
             /**
              * for (<init>; <condition>; <update>)
@@ -172,27 +184,34 @@ namespace DrakeLang.Lowering
              *
              * ------->
              *
-             * {
-             *    <init>
-             *    while (<condition>)
-             *    {
-             *       <body>
-             *       continue:
-             *       <update>
-             *    }
-             * }
+             * <init>
+             * while (<condition>)
+             *    <body>
+             *    continue:
+             *    <update>
              *
              */
 
             // Create the inner while statement (condition, body, update).
             var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
-            var whileBlock = new BoundBlockStatement(ImmutableArray.Create(node.Body, continueLabelStatement, node.UpdateStatement ?? BoundNoOpStatement.Instance));
-            var whileStatement = new BoundWhileStatement(node.Condition ?? BoundLiteralExpression.True, whileBlock, _labelGenerator.GenerateLabel(LabelCategory.Continue), node.BreakLabel);
+
+            var whileBody = ImmutableArray.CreateBuilder<BoundStatement>(1 + node.Body.Length + node.UpdateStatement.Length);
+            whileBody.AddRange(node.Body);
+            whileBody.Add(continueLabelStatement);
+            whileBody.AddRange(node.UpdateStatement);
+
+            var whileStatement = new BoundWhileStatement(
+                node.Condition ?? BoundLiteralExpression.True,
+                whileBody.MoveToImmutable(),
+                _labelGenerator.GenerateLabel(LabelCategory.Continue),
+                node.BreakLabel);
 
             // Create the outer block statement (init, while).
-            var result = new BoundBlockStatement(ImmutableArray.Create(node.InitializationStatement ?? BoundNoOpStatement.Instance, whileStatement));
+            var result = ImmutableArray.CreateBuilder<BoundStatement>(1 + node.InitializationStatement.Length);
+            result.AddRange(node.InitializationStatement);
+            result.Add(whileStatement);
 
-            return RewriteStatement(result);
+            return RewriteStatements(result.MoveToImmutable());
         }
 
         #endregion RewriteStatement
@@ -203,86 +222,55 @@ namespace DrakeLang.Lowering
         /// Flattens into a single block statement, removing unused labels and similar statements.
         /// </summary>
         /// <param name="reRunLowering">True if the lowering has to be re-run due to changed state.</param>
-        private ImmutableArray<BoundStatement> FlattenAndClean(ImmutableArray<BoundStatement> statements, out bool reRunLowering)
+        private Statements FlattenAndClean(Statements statements, out bool reRunLowering)
         {
             reRunLowering = false;
 
-            var result = new List<BoundStatement>();
-
-            var statementStack = new Stack<BoundStatement>(statements.Reverse());
-
-            // Remove nested block statements.
-            while (statementStack.Count > 0)
-            {
-                var current = statementStack.Pop();
-                if (current is BoundBlockStatement block)
-                {
-                    foreach (var s in block.Statements.Reverse())
-                        statementStack.Push(s);
-                }
-                else
-                {
-                    result.Add(current);
-                }
-            }
+            var result = statements.ToList();
 
             // Remove unused variables
-            bool removedVariables;
-            do
+            for (int i = 0; i < result.Count; i++)
             {
-                removedVariables = false;
-
-                for (int i = 0; i < result.Count; i++)
+                if (result[i] is BoundVariableDeclarationStatement variableDeclaration)
                 {
-                    if (result[i] is BoundVariableDeclarationStatement variableDeclaration)
+                    var variable = GetActiveVariable(variableDeclaration.Variable);
+                    if (VariableUsage.TryGetValue(variable, out var variableUsage) && variableUsage.Count == 0)
                     {
-                        var variable = GetActiveVariable(variableDeclaration.Variable);
-                        if (VariableUsage.TryGetValue(variable, out var variableUsage) && variableUsage.Count == 0)
-                        {
-                            removedVariables = true;
-                            result[i] = RewriteStatement(new BoundExpressionStatement(variableDeclaration.Initializer));
-                        }
+                        reRunLowering = true;
+                        result[i] = new BoundExpressionStatement(variableDeclaration.Initializer);
                     }
-                    else if (result[i] is BoundExpressionStatement expressionStatement &&
-                       expressionStatement.Expression is BoundAssignmentExpression assignmentExpression)
+                }
+                else if (result[i] is BoundExpressionStatement expressionStatement &&
+                   expressionStatement.Expression is BoundAssignmentExpression assignmentExpression)
+                {
+                    var variable = GetActiveVariable(assignmentExpression.Variable);
+                    if (VariableUsage.TryGetValue(variable, out var variableUsage) && variableUsage.Count == 0)
                     {
-                        var variable = GetActiveVariable(assignmentExpression.Variable);
-                        if (VariableUsage.TryGetValue(variable, out var variableUsage) && variableUsage.Count == 0)
-                        {
-                            removedVariables = true;
-                            result[i] = RewriteStatement(new BoundExpressionStatement(assignmentExpression.Expression));
-                        }
+                        reRunLowering = true;
+                        result[i] = new BoundExpressionStatement(assignmentExpression.Expression);
                     }
                 }
             }
-            while (removedVariables);
 
             // Convert single-init variables to read-only -or- constants.
-            bool updatedVariables;
-            do
+            for (int i = 0; i < result.Count; i++)
             {
-                updatedVariables = false;
-
-                for (int i = 0; i < result.Count; i++)
+                if (result[i] is BoundVariableDeclarationStatement variableDeclaration)
                 {
-                    if (result[i] is BoundVariableDeclarationStatement variableDeclaration)
+                    var oldVariable = GetActiveVariable(variableDeclaration.Variable);
+                    if (!oldVariable.IsReadOnly && !ReassignedVariables.Contains(oldVariable))
                     {
-                        var oldVariable = GetActiveVariable(variableDeclaration.Variable);
-                        if (!oldVariable.IsReadOnly && !ReassignedVariables.Contains(oldVariable))
-                        {
-                            updatedVariables = true;
-                            reRunLowering = true;
+                        reRunLowering = true;
 
-                            var newVariable = new VariableSymbol(oldVariable.Name, isReadOnly: true, oldVariable.Type);
-                            UpdateVariable(oldVariable, newVariable);
+                        var newVariable = new VariableSymbol(oldVariable.Name, isReadOnly: true, oldVariable.Type);
+                        UpdateVariable(oldVariable, newVariable);
 
-                            result[i] = RewriteStatement(new BoundVariableDeclarationStatement(newVariable, variableDeclaration.Initializer));
-                        }
+                        result[i] = new BoundVariableDeclarationStatement(newVariable, variableDeclaration.Initializer);
                     }
                 }
-            } while (updatedVariables);
+            }
 
-            // Remove unused labels, no-op statements.
+            // Remove unused labels.
             var labels = new HashSet<LabelSymbol>();
             foreach (var s in result)
             {
@@ -297,8 +285,7 @@ namespace DrakeLang.Lowering
                         break;
                 }
             }
-            result.RemoveAll(s => s is BoundNoOpStatement ||
-                                  s is BoundLabelStatement labelStatement && !labels.Remove(labelStatement.Label));
+            result.RemoveAll(s => s is BoundLabelStatement labelStatement && !labels.Remove(labelStatement.Label));
 
             return result.ToImmutableArray();
         }

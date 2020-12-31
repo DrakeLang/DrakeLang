@@ -44,7 +44,7 @@ namespace DrakeLang.Binding
         private readonly Stack<NamespaceSymbol> _namespaceStack = new();
         private readonly HashSet<NamespaceSymbol> _includedNamespaces = new();
         private readonly Dictionary<MethodDeclarationSyntax, MethodSymbol> _methodSymbols = new();
-        private readonly Dictionary<MethodSymbol, BoundMethodDeclaration> _methodDeclarations = new();
+        private readonly Dictionary<MethodSymbol, BoundMethodDeclaration> _methodDeclarations = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<BoundNode, SyntaxNode> _boundNodeToSyntaxMap = new();
         private readonly List<BoundMethodDeclaration> _generatedMainMethods = new();
 
@@ -68,14 +68,23 @@ namespace DrakeLang.Binding
 
             foreach (var unit in units)
             {
-                binder._currentText = unit.Text;
-
-                binder.BindTopLevelStatements(unit.Statements);
+                binder.PushScope();
+                try
+                {
+                    binder._currentText = unit.Text;
+                    binder.BindTopLevelStatements(unit.Statements);
+                }
+                finally
+                {
+                    binder.PopScope();
+                }
             }
 
             binder.ValidateMainMethod();
 
             var methods = binder._methodDeclarations.Values.ToImmutableArray();
+            methods = Lowerer.Lower(methods, binder._labelGenerator);
+
             var diagnostics = binder.Diagnostics.ToImmutableArray();
 
             return new BindingResult(methods, diagnostics);
@@ -84,7 +93,6 @@ namespace DrakeLang.Binding
         private void BindTopLevelStatements(IEnumerable<StatementSyntax> statements)
         {
             var topLevelStatements = BindStatements(statements);
-            topLevelStatements = Lowerer.Lower(topLevelStatements, _labelGenerator);
 
             if (topLevelStatements.Any())
             {
@@ -106,16 +114,9 @@ namespace DrakeLang.Binding
                 DeclareLabel(statement);
             }
 
-            // Bind remaining statements.
-            var statementBuilder = ImmutableArray.CreateBuilder<BoundStatement>();
-            foreach (var statement in statements)
-            {
-                var boundStatement = BindStatement(statement);
-                if (boundStatement is not null)
-                    statementBuilder.Add(boundStatement);
-            }
-
-            return statementBuilder.ToImmutable();
+            // Bind statements.
+            return statements.SelectMany(s => BindStatement(s))
+                             .ToImmutableArray();
         }
 
         private void DeclareMethods(IEnumerable<StatementSyntax> statements)
@@ -237,14 +238,14 @@ namespace DrakeLang.Binding
             {
                 foreach (var generatedMethod in _generatedMainMethods)
                 {
-                    var syntax = _boundNodeToSyntaxMap[generatedMethod.Declaration.First()];
+                    var syntax = getFirstSyntaxToken(generatedMethod);
                     GetDiagnosticBuilder(syntax.Text).ReportMultipleSourceTextsWithTopLevelStatements(syntax.Span);
                 }
             }
             else if (mainMethods.Length > 1 && _generatedMainMethods.Any())
             {
                 var generatedMethod = _generatedMainMethods.Single();
-                var syntax = _boundNodeToSyntaxMap[generatedMethod.Declaration.First()];
+                var syntax = getFirstSyntaxToken(generatedMethod);
                 GetDiagnosticBuilder(syntax.Text).ReportTopLevelStatementCannotBeCombinedWithExplicitMainMethod(syntax.Span);
             }
             else if (mainMethods.Length > 1)
@@ -254,6 +255,18 @@ namespace DrakeLang.Binding
                     var declarationSyntax = _methodSymbols.Single(pair => pair.Value == method.Method).Key;
                     GetDiagnosticBuilder(declarationSyntax.Text).ReportMultipleMainMethods(declarationSyntax.Identifier.Span);
                 }
+            }
+
+            SyntaxToken getFirstSyntaxToken(BoundMethodDeclaration methodDeclaration)
+            {
+                var node = _boundNodeToSyntaxMap[methodDeclaration.Declaration.First()];
+
+                while (node is not SyntaxToken token)
+                {
+                    node = node.GetChildren().First();
+                }
+
+                return (SyntaxToken)node;
             }
         }
 
@@ -307,36 +320,54 @@ namespace DrakeLang.Binding
 
         #region BindStatement
 
-        private BoundStatement? BindStatement(StatementSyntax syntax)
+        private ImmutableArray<BoundStatement> BindStatement(StatementSyntax? syntax)
         {
+            if (syntax is null)
+                return ImmutableArray<BoundStatement>.Empty;
+
             _statementStacktrace.Push(syntax);
             try
             {
-                var statement = syntax.Kind switch
+                // Handle cases that result in ImmutableArray first.
+                ImmutableArray<BoundStatement>? statements = syntax.Kind switch
                 {
-                    SyntaxKind.MethodDeclaration => BindMethodDeclarationStatement((MethodDeclarationSyntax)syntax),
                     SyntaxKind.NamespaceDeclaration => BindNamespaceDeclarationStatement((NamespaceDeclarationSyntax)syntax),
 
                     SyntaxKind.BlockStatement => BindBlockStatement((BlockStatementSyntax)syntax),
-                    SyntaxKind.VariableDeclarationStatement => BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax),
-                    SyntaxKind.IfStatement => BindIfStatement((IfStatementSyntax)syntax),
-                    SyntaxKind.WhileStatement => BindLoopStatement((WhileStatementSyntax)syntax),
-                    SyntaxKind.ForStatement => BindLoopStatement((ForStatementSyntax)syntax),
-                    SyntaxKind.GoToStatement => BindGoToStatement((GoToStatementSyntax)syntax),
-                    SyntaxKind.ReturnStatement => BindReturnStatement((ReturnStatementSyntax)syntax),
-                    SyntaxKind.LabelStatement => BindLabelStatement((LabelStatementSyntax)syntax),
                     SyntaxKind.WithNamespaceStatement => BindWithNamespaceStatement((WithNamespaceStatementSyntax)syntax),
                     SyntaxKind.WithAliasStatement => BindWithAliasStatement((WithAliasStatementSyntax)syntax),
-                    SyntaxKind.ContinueStatement => BindContinueStatement((ContinueStatementSyntax)syntax),
-                    SyntaxKind.BreakStatement => BindBreakStatement((BreakStatementSyntax)syntax),
-                    SyntaxKind.ExpressionStatement => BindExpressionStatement((ExpressionStatementSyntax)syntax),
-
-                    _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
+                    _ => null,
                 };
-                if (statement is not null)
-                    _boundNodeToSyntaxMap.Add(statement, syntax);
 
-                return statement;
+                // If none matched on that, handle single-statement methods.
+                if (statements is null)
+                {
+                    var statement = syntax.Kind switch
+                    {
+                        SyntaxKind.MethodDeclaration => BindMethodDeclarationStatement((MethodDeclarationSyntax)syntax),
+
+                        SyntaxKind.VariableDeclarationStatement => BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax),
+                        SyntaxKind.IfStatement => BindIfStatement((IfStatementSyntax)syntax),
+                        SyntaxKind.WhileStatement => BindLoopStatement((WhileStatementSyntax)syntax),
+                        SyntaxKind.ForStatement => BindLoopStatement((ForStatementSyntax)syntax),
+                        SyntaxKind.GoToStatement => BindGoToStatement((GoToStatementSyntax)syntax),
+                        SyntaxKind.ReturnStatement => BindReturnStatement((ReturnStatementSyntax)syntax),
+                        SyntaxKind.LabelStatement => BindLabelStatement((LabelStatementSyntax)syntax),
+                        SyntaxKind.ContinueStatement => BindContinueStatement((ContinueStatementSyntax)syntax),
+                        SyntaxKind.BreakStatement => BindBreakStatement((BreakStatementSyntax)syntax),
+                        SyntaxKind.ExpressionStatement => BindExpressionStatement((ExpressionStatementSyntax)syntax),
+
+                        _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
+                    };
+                    statements = statement is not null ? ImmutableArray.Create(statement) : ImmutableArray<BoundStatement>.Empty;
+                }
+
+                foreach (var statement in statements.Value)
+                {
+                    _boundNodeToSyntaxMap[statement] = syntax;
+                }
+
+                return statements.Value;
             }
             finally
             {
@@ -344,13 +375,12 @@ namespace DrakeLang.Binding
             }
         }
 
-        private BoundBlockStatement BindBlockStatement(BlockStatementSyntax syntax)
+        private ImmutableArray<BoundStatement> BindBlockStatement(BlockStatementSyntax syntax)
         {
             PushScope();
             try
             {
-                var statements = BindStatements(syntax.Statements);
-                return new BoundBlockStatement(statements);
+                return BindStatements(syntax.Statements);
             }
             finally
             {
@@ -358,7 +388,7 @@ namespace DrakeLang.Binding
             }
         }
 
-        private BoundStatement BindNamespaceDeclarationStatement(NamespaceDeclarationSyntax syntax)
+        private ImmutableArray<BoundStatement> BindNamespaceDeclarationStatement(NamespaceDeclarationSyntax syntax)
         {
             if (!EnableAnalysisMode && CurrentMethod is not null)
                 DiagnosticsBuilder.ReportIllegalNamespaceDeclaration(syntax.NamespaceToken.Span);
@@ -367,8 +397,7 @@ namespace DrakeLang.Binding
             _namespaceStack.Push(namespaceSym);
             try
             {
-                var statements = BindStatements(syntax.Statements);
-                return new BoundBlockStatement(statements);
+                return BindStatements(syntax.Statements);
             }
             finally
             {
@@ -455,8 +484,8 @@ namespace DrakeLang.Binding
         private BoundStatement BindIfStatement(IfStatementSyntax syntax)
         {
             var condition = BindExpression(syntax.Condition.Expression, Types.Boolean);
-            var thenStatement = BindStatement(syntax.ThenStatement) ?? BoundNoOpStatement.Instance;
-            var elseStatement = syntax.ElseClause is null ? null : BindStatement(syntax.ElseClause.ElseStatement);
+            var thenStatement = BindStatement(syntax.ThenStatement);
+            var elseStatement = BindStatement(syntax.ElseClause?.ElseStatement);
 
             return new BoundIfStatement(condition, thenStatement, elseStatement);
         }
@@ -486,17 +515,17 @@ namespace DrakeLang.Binding
         private BoundStatement BindWhileStatement(WhileStatementSyntax syntax, LabelSymbol continueLabel, LabelSymbol breakLabel)
         {
             var condition = BindExpression(syntax.Condition.Expression, Types.Boolean);
-            var body = BindStatement(syntax.Body) ?? BoundNoOpStatement.Instance;
+            var body = BindStatement(syntax.Body);
 
             return new BoundWhileStatement(condition, body, continueLabel, breakLabel);
         }
 
         private BoundStatement BindForStatement(ForStatementSyntax syntax, LabelSymbol continueLabel, LabelSymbol breakLabel)
         {
-            var initStatement = syntax.InitializationStatement is null ? null : BindStatement(syntax.InitializationStatement);
+            var initStatement = BindStatement(syntax.InitializationStatement);
             var condition = syntax.Condition is null ? null : BindExpression(syntax.Condition, Types.Boolean);
-            var updateStatement = syntax.UpdateStatement is null ? null : BindStatement(syntax.UpdateStatement);
-            var body = BindStatement(syntax.Body) ?? BoundNoOpStatement.Instance;
+            var updateStatement = BindStatement(syntax.UpdateStatement);
+            var body = BindStatement(syntax.Body);
 
             return new BoundForStatement(initStatement, condition, updateStatement, body, continueLabel, breakLabel);
         }
@@ -548,15 +577,14 @@ namespace DrakeLang.Binding
             return new BoundLabelStatement(label);
         }
 
-        private BoundStatement BindWithNamespaceStatement(WithNamespaceStatementSyntax syntax)
+        private ImmutableArray<BoundStatement> BindWithNamespaceStatement(WithNamespaceStatementSyntax syntax)
         {
             var namespaceSym = new NamespaceSymbol(syntax.Names);
 
             bool wasIncluded = _includedNamespaces.Add(namespaceSym);
             try
             {
-                var statements = BindStatements(syntax.Statements);
-                return new BoundBlockStatement(statements);
+                return BindStatements(syntax.Statements);
             }
             finally
             {
@@ -565,20 +593,19 @@ namespace DrakeLang.Binding
             }
         }
 
-        private BoundStatement? BindWithAliasStatement(WithAliasStatementSyntax syntax)
+        private ImmutableArray<BoundStatement> BindWithAliasStatement(WithAliasStatementSyntax syntax)
         {
             if (syntax is WithMethodAliasStatementSyntax methodAliasSyntax)
             {
                 if (!TryFindMethod(methodAliasSyntax.NamespaceNames, methodAliasSyntax.Identifier, out var method))
-                    return null;
+                    return ImmutableArray<BoundStatement>.Empty;
 
                 PushScope();
                 try
                 {
                     _scope.TryDeclareMethodAlias(method, syntax.Alias.TokenText);
 
-                    var statements = BindStatements(syntax.Statements);
-                    return new BoundBlockStatement(statements);
+                    return BindStatements(syntax.Statements);
                 }
                 finally
                 {
@@ -1133,19 +1160,17 @@ namespace DrakeLang.Binding
                     if (expression.Type == Types.Void)
                     {
                         var expressionStatement = new BoundExpressionStatement(expression);
-                        return Lowerer.Lower(expressionStatement, _labelGenerator);
+                        return ImmutableArray.Create<BoundStatement>(expressionStatement);
                     }
                     else
                     {
                         var returnStatement = new BoundReturnStatement(expression);
-                        return Lowerer.Lower(returnStatement, _labelGenerator);
+                        return ImmutableArray.Create<BoundStatement>(returnStatement);
                     }
                 }
                 else
                 {
-                    var statements = BindStatements(syntax.Declaration.Statements);
-
-                    return Lowerer.Lower(statements, _labelGenerator);
+                    return BindStatements(syntax.Declaration.Statements);
                 }
             }
             finally

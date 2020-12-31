@@ -18,13 +18,14 @@
 
 using DrakeLang.Symbols;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace DrakeLang.Binding
 {
     internal sealed class BoundWhileStatement : BoundLoopStatement
     {
         public BoundWhileStatement(BoundExpression condition,
-                                   BoundStatement body,
+                                   ImmutableArray<BoundStatement> body,
                                    LabelSymbol continueLabel,
                                    LabelSymbol breakLabel)
             : base(body, continueLabel, breakLabel)
@@ -43,7 +44,10 @@ namespace DrakeLang.Binding
         public override IEnumerable<BoundNode> GetChildren()
         {
             yield return Condition;
-            yield return Body;
+            foreach (var statement in Body)
+            {
+                yield return statement;
+            }
         }
     }
 }
