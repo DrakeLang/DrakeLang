@@ -16,14 +16,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using DrakeLang.Symbols;
+using System.Collections.Immutable;
 
 namespace DrakeLang.Binding
 {
-
-    internal sealed class BoundMethodDeclaration : BoundDeclaration
+    internal sealed class BoundMethodDeclaration
     {
         public BoundMethodDeclaration(MethodSymbol method, ImmutableArray<BoundStatement> declaration)
         {
@@ -31,16 +29,7 @@ namespace DrakeLang.Binding
             Declaration = declaration;
         }
 
-        public override BoundNodeKind Kind => BoundNodeKind.MethodDeclaration;
         public MethodSymbol Method { get; }
         public ImmutableArray<BoundStatement> Declaration { get; }
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            foreach (var statement in Declaration)
-            {
-                yield return statement;
-            }
-        }
     }
 }

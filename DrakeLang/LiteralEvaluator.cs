@@ -16,13 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Binding;
+using DrakeLang.Symbols;
+using DrakeLang.Utils;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using DrakeLang.Binding;
-using DrakeLang.Symbols;
-using DrakeLang.Utils;
 using static DrakeLang.Symbols.SystemSymbols;
 
 namespace DrakeLang

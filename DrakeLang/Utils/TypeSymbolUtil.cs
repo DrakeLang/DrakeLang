@@ -15,11 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
+using DrakeLang.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using DrakeLang.Symbols;
 using static DrakeLang.Symbols.SystemSymbols;
 
 namespace DrakeLang.Utils

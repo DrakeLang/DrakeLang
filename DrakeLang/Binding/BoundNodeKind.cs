@@ -20,10 +20,6 @@ namespace DrakeLang.Binding
 {
     public enum BoundNodeKind
     {
-        // Declarations
-
-        MethodDeclaration,
-
         // Statements
 
         BlockStatement,

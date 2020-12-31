@@ -16,10 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Binding.CFA;
+using DrakeLang.Utils;
 using System;
 using System.Collections.Immutable;
 using System.IO;
-using DrakeLang.Binding.CFA;
 
 namespace DrakeLang.Binding
 {
@@ -38,9 +39,13 @@ namespace DrakeLang.Binding
 
         public void PrintProgram(TextWriter writer)
         {
+            if (writer is null)
+                throw new ArgumentNullException(nameof(writer));
+
             foreach (var method in Methods)
             {
-                method.WriteTo(writer);
+                writer.WriteMethod(method.Method, printParamNames: true);
+                BoundNode_WriteTo.WriteTo(method.Declaration, writer);
             }
         }
 

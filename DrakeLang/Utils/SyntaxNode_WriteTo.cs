@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
+using DrakeLang.Utils;
 using System;
 using System.IO;
 using System.Linq;
-using DrakeLang.Utils;
 
 namespace DrakeLang.Syntax
 {
@@ -39,10 +39,10 @@ namespace DrakeLang.Syntax
             writer.WriteClr(marker, ConsoleColor.DarkGray);
 
             writer.WriteSyntaxKind(node.Kind);
-            if (node is SyntaxToken token && token.Text is not null)
+            if (node is SyntaxToken token)
             {
                 writer.WriteClr(" ", ConsoleColor.Cyan);
-                writer.WriteClr(token.Text, ConsoleColor.Cyan);
+                writer.WriteClr(token.TokenText, ConsoleColor.Cyan);
             }
 
             writer.WriteLine();

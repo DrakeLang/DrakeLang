@@ -16,12 +16,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using DrakeLang.Symbols;
 
 namespace DrakeLang.Binding
 {
@@ -58,13 +58,51 @@ namespace DrakeLang.Binding
 
         #endregion Properties
 
+        #region RewriteMethodDeclaration
+
+        public ImmutableArray<BoundMethodDeclaration> RewriteMethodDeclarations(ImmutableArray<BoundMethodDeclaration> methods)
+        {
+            ImmutableArray<BoundMethodDeclaration>.Builder? builder = null;
+            for (int i = 0; i < methods.Length; i++)
+            {
+                var oldMethod = methods[i];
+                var newMethod = RewriteMethodDeclaration(oldMethod);
+
+                if (builder is null && (newMethod != oldMethod))
+                {
+                    // There's at least one different element, so we initialize the builder and copy all ignored lines over.
+                    builder = ImmutableArray.CreateBuilder<BoundMethodDeclaration>(methods.Length);
+                    for (int j = 0; j < i; j++)
+                    {
+                        builder.Add(methods[j]);
+                    }
+                }
+
+                if (builder is not null)
+                    builder.Add(newMethod);
+            }
+
+            return builder?.MoveToImmutable() ?? methods;
+        }
+
+        protected virtual BoundMethodDeclaration RewriteMethodDeclaration(BoundMethodDeclaration node)
+        {
+            var declaration = RewriteStatements(node.Declaration);
+            if (declaration == node.Declaration)
+                return node;
+
+            return new BoundMethodDeclaration(node.Method, declaration);
+        }
+
+        #endregion RewriteMethodDeclaration
+
         #region RewriteStatement
 
-        protected ImmutableArray<BoundStatement>? RewriteStatements(IReadOnlyList<BoundStatement> statements)
+        public ImmutableArray<BoundStatement> RewriteStatements(ImmutableArray<BoundStatement> statements)
         {
             // Rewrite statements.
             ImmutableArray<BoundStatement>.Builder? builder = null;
-            for (int i = 0; i < statements.Count; i++)
+            for (int i = 0; i < statements.Length; i++)
             {
                 var oldStatement = statements[i];
                 var newStatement = RewriteStatement(oldStatement);
@@ -72,7 +110,7 @@ namespace DrakeLang.Binding
                 if (builder is null && (newStatement != oldStatement))
                 {
                     // There's at least one different element, so we initialize the builder and copy all ignored lines over.
-                    builder = ImmutableArray.CreateBuilder<BoundStatement>(statements.Count);
+                    builder = ImmutableArray.CreateBuilder<BoundStatement>(statements.Length);
                     for (int j = 0; j < i; j++)
                     {
                         builder.Add(statements[j]);
@@ -83,7 +121,7 @@ namespace DrakeLang.Binding
                     builder.Add(newStatement);
             }
 
-            return builder?.MoveToImmutable();
+            return builder?.MoveToImmutable() ?? statements;
         }
 
         public virtual BoundStatement RewriteStatement(BoundStatement node)
@@ -95,7 +133,6 @@ namespace DrakeLang.Binding
                 {
                     BoundNodeKind.BlockStatement => RewriteBlockStatement((BoundBlockStatement)node),
                     BoundNodeKind.VariableDeclarationStatement => RewriteVariableDeclarationStatement((BoundVariableDeclarationStatement)node),
-                    BoundNodeKind.MethodDeclaration => RewriteMethodDeclarationStatement((BoundMethodDeclaration)node),
                     BoundNodeKind.IfStatement => RewriteIfStatement((BoundIfStatement)node),
                     BoundNodeKind.WhileStatement => RewriteWhileStatement((BoundWhileStatement)node),
                     BoundNodeKind.ForStatement => RewriteForStatement((BoundForStatement)node),
@@ -127,7 +164,7 @@ namespace DrakeLang.Binding
 
                 default:
                     var statements = RewriteStatements(node.Statements);
-                    return statements is null ? node : new BoundBlockStatement(statements.Value);
+                    return statements == node.Statements ? node : new BoundBlockStatement(statements);
             }
         }
 
@@ -151,15 +188,6 @@ namespace DrakeLang.Binding
             }
 
             return new BoundVariableDeclarationStatement(variable, initializer);
-        }
-
-        protected virtual BoundStatement RewriteMethodDeclarationStatement(BoundMethodDeclaration node)
-        {
-            var declaration = RewriteStatements(node.Declaration);
-            if (declaration is null)
-                return node;
-
-            return new BoundMethodDeclaration(node.Method, declaration.Value);
         }
 
         protected virtual BoundStatement RewriteIfStatement(BoundIfStatement node)

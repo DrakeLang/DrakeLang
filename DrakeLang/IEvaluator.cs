@@ -16,10 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using DrakeLang.Binding;
 using DrakeLang.Symbols;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace DrakeLang
 {

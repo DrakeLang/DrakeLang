@@ -26,7 +26,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace DrakeLangO
 {
@@ -55,52 +54,49 @@ namespace DrakeLangO
             }
             catch (Exception ex)
             {
-                ConsoleExt.WriteLine($"Unhandled exception. " + ex, ConsoleColor.DarkRed);
+                ConsoleExt.WriteError($"Unhandled exception.", ex);
                 Console.ResetColor();
             }
         }
 
         private static void Run(Options o)
         {
-            var sb = new StringBuilder();
-
-            if (!ReadSource(o.Source, sb))
-                return;
-
-            var code = sb.ToString();
-            Parse(code, o);
-        }
-
-        private static bool ReadSource(IEnumerable<string> source, StringBuilder sb)
-        {
-            foreach (var s in source)
+            if (string.IsNullOrEmpty(o.Project) || !File.Exists(o.Project))
             {
-                if (Directory.Exists(s))
-                {
-                    ReadSource(Directory.GetDirectories(s), sb);
-                    ReadSource(Directory.GetFiles(s), sb);
-                }
-                else if (File.Exists(s))
-                {
-                    var code = File.ReadAllText(s);
-                    sb.Append(code);
-                }
-                else
-                {
-                    ConsoleExt.WriteLine($"Source '{s}' does not exist.", ConsoleColor.Red);
-                    return false;
-                }
+                ConsoleExt.WriteError($"Path '{o.Project}' is not a valid project.");
+                return;
             }
 
-            return true;
+            var project = Path.GetFullPath(o.Project);
+            var source = ReadSource(project);
+            if (source is null)
+                return; // error has already been reported.
+
+            ParseAndEvaluate(source, o);
         }
 
-        /// <summary>
-        /// Parses the given code.
-        /// </summary>
-        private static void Parse(string code, Options options)
+        private static string[]? ReadSource(string project)
         {
-            var syntaxTree = SyntaxTree.Parse(code);
+            var sourceFiles = new List<string>();
+            var sourceDirectories = new Stack<string>();
+
+            var projectDir = Path.GetDirectoryName(project)!;
+            sourceDirectories.Push(projectDir);
+
+            while (sourceDirectories.Count > 0)
+            {
+                var currentDir = sourceDirectories.Pop();
+
+                Directory.GetFiles(currentDir).Where(f => Path.GetExtension(f) == Globals.SourceFileExtension).ForEach(file => sourceFiles.Add(file));
+                Directory.GetDirectories(currentDir).ForEach(dir => sourceDirectories.Push(dir));
+            }
+
+            return sourceFiles.ToArray();
+        }
+
+        private static void ParseAndEvaluate(string[] source, Options options)
+        {
+            var syntaxTree = SyntaxTree.FromFiles(source);
             var compilation = new Compilation(syntaxTree);
 
             var debugOutput = options.GetAggregatedDebugValues();
@@ -108,16 +104,11 @@ namespace DrakeLangO
             if (debugOutput.HasFlag(DebugOutput.ShowProgram)) compilation.BindingResult.PrintProgram(Console.Out);
             if (debugOutput.HasFlag(DebugOutput.PrintControlFlowGraph)) PrintControlFlowGraph(compilation);
 
-            if (!compilation.SyntaxTree.Diagnostics.IsEmpty)
-            {
-                HandleDiagonstics(syntaxTree.Text, compilation.SyntaxTree.Diagnostics);
-                return;
-            }
-
-            var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
+            var variables = new Dictionary<VariableSymbol, object>();
+            var result = compilation.Evaluate(variables);
             if (!result.Diagnostics.IsEmpty)
             {
-                HandleDiagonstics(syntaxTree.Text, result.Diagnostics);
+                HandleDiagonstics(result.Diagnostics);
                 return;
             }
 
@@ -173,31 +164,35 @@ namespace DrakeLangO
             }
         }
 
-        private static void HandleDiagonstics(SourceText text, ImmutableArray<Diagnostic> diagnostics)
+        private static void HandleDiagonstics(ImmutableArray<Diagnostic> diagnostics)
         {
-            foreach (Diagnostic diagnostic in diagnostics.OrderBy(d => d.Span).Distinct(new SpanComparer()))
+            foreach (var diagnostic in diagnostics.OrderBy(d => d.Span).Distinct(new SpanComparer()))
             {
-                int lineIndex = text.GetLineIndex(diagnostic.Span.Start);
-                TextLine line = text.Lines[lineIndex];
-                int lineNumer = lineIndex + 1;
-                int character = diagnostic.Span.Start - line.Start + 1;
+                var text = diagnostic.Text;
+                var span = diagnostic.Span;
 
                 Console.WriteLine();
-                ConsoleExt.WriteLine($"({lineNumer}, {character}): {diagnostic}", ConsoleColor.DarkRed);
+                ConsoleExt.WriteLine(diagnostic.ToString(), ConsoleExt.ErrorColor);
 
-                TextSpan prefixSpan = TextSpan.FromBounds(line.Start, diagnostic.Span.Start);
-                TextSpan suffixSpan = TextSpan.FromBounds(diagnostic.Span.End, line.End);
+                if (text is null)
+                    continue;
 
-                string prefix = text.ToString(prefixSpan);
-                string error = text.ToString(diagnostic.Span);
-                string suffix = text.ToString(suffixSpan);
+                int lineIndex = text.GetLineIndex(span.Start);
+                var line = text.Lines[lineIndex];
+
+                TextSpan prefixSpan = TextSpan.FromBounds(line.Start, span.Start);
+                TextSpan suffixSpan = TextSpan.FromBounds(span.End, line.End);
+
+                var prefixText = text.ToString(prefixSpan);
+                var offendingText = text.ToString(span);
+                var suffixText = text.ToString(suffixSpan);
 
                 Console.Write("    ");
-                Console.Write(prefix);
+                Console.Write(prefixText);
 
-                ConsoleExt.Write(error, ConsoleColor.DarkRed);
+                ConsoleExt.Write(offendingText, ConsoleExt.ErrorColor);
 
-                Console.Write(suffix);
+                Console.Write(suffixText);
                 Console.WriteLine();
             }
 

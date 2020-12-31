@@ -16,11 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Binding;
+using DrakeLang.Symbols;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using DrakeLang.Binding;
-using DrakeLang.Symbols;
 
 namespace DrakeLang.Lowering
 {
@@ -35,26 +35,22 @@ namespace DrakeLang.Lowering
 
         #region Methods
 
-        public static ImmutableArray<BoundStatement> Lower(IReadOnlyList<BoundStatement> statements, LabelGenerator labelGenerator)
-        {
-            return new Lowerer(labelGenerator).Lower(statements);
-        }
-
         public static ImmutableArray<BoundStatement> Lower(BoundStatement statement, LabelGenerator labelGenerator)
-        {
-            return new Lowerer(labelGenerator).Lower(new[] { statement });
-        }
+            => Lower(ImmutableArray.Create(statement), labelGenerator);
+
+        public static ImmutableArray<BoundStatement> Lower(ImmutableArray<BoundStatement> statements, LabelGenerator labelGenerator)
+            => new Lowerer(labelGenerator).Lower(statements);
 
         #endregion Methods
 
-        private ImmutableArray<BoundStatement> Lower(IReadOnlyList<BoundStatement> statements)
+        private ImmutableArray<BoundStatement> Lower(ImmutableArray<BoundStatement> statements)
         {
-            var result = statements.ToImmutableArray();
+            var result = statements;
 
             bool reRunLowering;
             do
             {
-                result = RewriteStatements(result) ?? result;
+                result = RewriteStatements(result);
                 result = FlattenAndClean(result, out reRunLowering);
             } while (reRunLowering);
 
@@ -62,19 +58,6 @@ namespace DrakeLang.Lowering
         }
 
         #region RewriteStatement
-
-        protected override BoundStatement RewriteMethodDeclarationStatement(BoundMethodDeclaration node)
-        {
-            var declaration = Lower(node.Declaration);
-
-            var methods = declaration.OfType<BoundMethodDeclaration>();
-            var generalStatements = declaration.Except(methods).ToImmutableArray();
-
-            var method = new BoundMethodDeclaration(node.Method, generalStatements);
-            methods = methods.Append(method);
-
-            return new BoundBlockStatement(methods.ToImmutableArray<BoundStatement>());
-        }
 
         protected override BoundStatement RewriteIfStatement(BoundIfStatement node)
         {

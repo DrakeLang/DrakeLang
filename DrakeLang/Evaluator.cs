@@ -16,15 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Binding;
+using DrakeLang.Symbols;
+using DrakeLang.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using DrakeLang.Binding;
-using DrakeLang.Symbols;
-using DrakeLang.Utils;
 using static DrakeLang.Symbols.SystemSymbols;
 
 namespace DrakeLang
@@ -37,12 +37,8 @@ namespace DrakeLang
 
         public void Evaluate(ImmutableArray<BoundMethodDeclaration> methods, Dictionary<VariableSymbol, object> variables)
         {
-            var entryMethod = methods.FirstOrDefault(m => m.Method.Name == Binder.GeneratedMainMethodName)
-                ?? methods.FirstOrDefault(m => m.Method.Name == Binder.MainMethodName);
-            if (entryMethod is null)
-                throw new Exception($"No method with the name '{Binder.MainMethodName}' was found.");
-
-            var evaluator = new InternalEvaluator(entryMethod.Declaration, variables, methods.ToDictionary(md => md.Method));
+            var entryMethod = methods.Single(m => m.Method.Name == Binder.MainMethodName);
+            var evaluator = new InternalEvaluator(entryMethod, variables, methods.ToDictionary(md => md.Method));
 
             evaluator.Evaluate();
         }
@@ -56,11 +52,11 @@ namespace DrakeLang
             private readonly Dictionary<LabelSymbol, int> _labelToIndex = new Dictionary<LabelSymbol, int>();
             private readonly Dictionary<MethodSymbol, BoundMethodDeclaration> _methods;
 
-            public InternalEvaluator(ImmutableArray<BoundStatement> statements,
+            public InternalEvaluator(BoundMethodDeclaration methodDeclaration,
                                      Dictionary<VariableSymbol, object> variables,
                                      Dictionary<MethodSymbol, BoundMethodDeclaration> methods)
             {
-                _statements = statements;
+                _statements = methodDeclaration.Declaration;
                 _variables = variables;
                 _methods = methods;
 
@@ -76,13 +72,9 @@ namespace DrakeLang
                 }.ToImmutableDictionary();
 
                 // Create label-index mapping for goto statements.
-                for (int i = 0; i < statements.Length; i++)
-                {
-                    if (statements[i] is BoundLabelStatement l)
-                    {
-                        _labelToIndex.Add(l.Label, i + 1);
-                    }
-                }
+                _statements.WithIndex()
+                    .OfType<BoundLabelStatement>()
+                    .ForEach(pair => _labelToIndex.Add(pair.Item.Label, pair.Index + 1));
             }
 
             public object Evaluate()
@@ -284,7 +276,7 @@ namespace DrakeLang
                         stackFrame[node.Method.Parameters[i]] = args[i];
                     }
 
-                    return new InternalEvaluator(method.Declaration, stackFrame, _methods).Evaluate();
+                    return new InternalEvaluator(method, stackFrame, _methods).Evaluate();
                 }
 
                 throw new Exception($"Method '{node.Method}' not handled.");

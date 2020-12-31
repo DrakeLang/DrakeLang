@@ -16,16 +16,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Text;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using DrakeLang.Text;
 
 namespace DrakeLang.Syntax
 {
     public abstract class SyntaxNode
     {
         public abstract SyntaxKind Kind { get; }
+
+        public virtual SourceText Text => GetChildren().First().Text;
 
         public virtual TextSpan Span
         {

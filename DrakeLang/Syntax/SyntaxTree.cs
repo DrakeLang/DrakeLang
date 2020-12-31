@@ -16,29 +16,39 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Text;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
-using DrakeLang.Text;
+using System.Linq;
 
 namespace DrakeLang.Syntax
 {
     public class SyntaxTree
     {
-        private SyntaxTree(SourceText text)
+        private SyntaxTree(ImmutableArray<SourceText> source)
         {
-            Parser parser = new Parser(text);
+            var diagnosticsBuilder = ImmutableArray.CreateBuilder<Diagnostic>();
+            var compilationBuilder = ImmutableArray.CreateBuilder<CompilationUnitSyntax>();
 
-            Text = text;
-            Root = parser.ParseCompilationUnit();
-            Diagnostics = parser.GetDiagnostics();
+            source.ForEach(text =>
+            {
+                var parser = new Parser(text);
+
+                var compilation = parser.ParseCompilationUnit();
+
+                diagnosticsBuilder.AddRange(parser.Diagnostics);
+                compilationBuilder.Add(compilation);
+            });
+
+            Diagnostics = diagnosticsBuilder.ToImmutable();
+            CompilationUnits = compilationBuilder.ToImmutable();
         }
 
         #region Properties
 
-        public SourceText Text { get; }
         public ImmutableArray<Diagnostic> Diagnostics { get; }
-        public CompilationUnitSyntax Root { get; }
+        public ImmutableArray<CompilationUnitSyntax> CompilationUnits { get; }
 
         #endregion Properties
 
@@ -46,27 +56,38 @@ namespace DrakeLang.Syntax
 
         public void PrintTree(TextWriter writer)
         {
-            Root.WriteTo(writer);
+            CompilationUnits.ForEach(compilation => compilation.WriteTo(writer));
         }
 
         #endregion Methods
 
         #region Statics
 
-        public static SyntaxTree Parse(string text)
+        public static SyntaxTree FromString(string text)
         {
-            var sourceText = SourceText.From(text);
+            var sourceText = SourceText.FromString(text);
             return Parse(sourceText);
         }
 
-        public static SyntaxTree Parse(SourceText text)
+        public static SyntaxTree FromFile(string sourceFile) => FromFiles(new[] { sourceFile });
+
+        public static SyntaxTree FromFiles(params string[] sourceFiles) => FromFiles(sourceFiles.AsEnumerable());
+
+        public static SyntaxTree FromFiles(IEnumerable<string> sourceFiles)
         {
-            return new SyntaxTree(text);
+            var sourceText = sourceFiles.Select(s => SourceText.FromFile(s));
+            return Parse(sourceText);
         }
+
+        public static SyntaxTree Parse(params SourceText[] source) => Parse(source.ToImmutableArray());
+
+        public static SyntaxTree Parse(IEnumerable<SourceText> source) => new SyntaxTree(source.ToImmutableArray());
+
+        public static SyntaxTree Parse(ImmutableArray<SourceText> source) => new SyntaxTree(source);
 
         public static IEnumerable<SyntaxToken> ParseTokens(string text)
         {
-            var sourceText = SourceText.From(text);
+            var sourceText = SourceText.FromString(text);
             return ParseTokens(sourceText);
         }
 

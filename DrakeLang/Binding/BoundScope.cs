@@ -16,11 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using DrakeLang.Symbols;
 
 namespace DrakeLang.Binding
 {
@@ -181,14 +181,8 @@ namespace DrakeLang.Binding
         /// <summary>
         /// Attempts to locate a variable with the given name in this scope, or one of its parents.
         /// </summary>
-        public bool TryLookupLabel(string? name, [NotNullWhen(true)] out LabelSymbol? label)
+        public bool TryLookupLabel(string name, [NotNullWhen(true)] out LabelSymbol? label)
         {
-            if (name is null)
-            {
-                label = null;
-                return false;
-            }
-
             if (_labels != null && _labels.TryGetValue(name, out label))
                 return true;
 
@@ -232,14 +226,8 @@ namespace DrakeLang.Binding
         /// <summary>
         /// Attempts to locate a variable with the given name in this scope, or one of its parents.
         /// </summary>
-        public bool TryLookupMethod(string? name, [NotNullWhen(true)] out MethodSymbol? method)
+        public bool TryLookupMethod(string name, [NotNullWhen(true)] out MethodSymbol? method)
         {
-            if (name is null)
-            {
-                method = null;
-                return false;
-            }
-
             if (_methods is not null && _methods.TryGetValue(name, out method))
                 return true;
 
@@ -255,11 +243,8 @@ namespace DrakeLang.Binding
             return Parent.TryLookupMethod(name, out method);
         }
 
-        public bool TryDeclareMethodAlias(MethodSymbol method, string? alias)
+        public bool TryDeclareMethodAlias(MethodSymbol method, string alias)
         {
-            if (alias is null)
-                return false;
-
             if (_methodAliases is null)
             {
                 _methodAliases = new()

@@ -16,11 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using DrakeLang.Syntax;
 
 namespace DrakeLang.Symbols
 {
@@ -78,7 +78,7 @@ namespace DrakeLang.Symbols
 
         #region Utilities
 
-        private static IEnumerable<string> ToEnumerable(SeparatedSyntaxList<SyntaxToken> names) => names.Select(name => name.Text ?? "");
+        private static IEnumerable<string> ToEnumerable(SeparatedSyntaxList<SyntaxToken> names) => names.Select(name => name.TokenText);
 
         #endregion Utilities
     }

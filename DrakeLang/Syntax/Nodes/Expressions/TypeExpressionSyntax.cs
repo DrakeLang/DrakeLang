@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
@@ -30,12 +31,16 @@ namespace DrakeLang.Syntax
 
         internal TypeExpressionSyntax(ImmutableArray<SyntaxToken> typeIdentifiers)
         {
+            if (typeIdentifiers.Length == 0)
+                throw new ArgumentException("A type expression has to consist of at least one token.", nameof(typeIdentifiers));
+
             TypeIdentifiers = typeIdentifiers;
         }
 
         public override SyntaxKind Kind => SyntaxKind.TypeExpression;
         public ImmutableArray<SyntaxToken> TypeIdentifiers { get; }
         public bool IsArray => TypeIdentifiers.Length > 1;
+
         public int GetArraySize() => TypeIdentifiers.Length / 2;
 
         public override IEnumerable<SyntaxNode> GetChildren()

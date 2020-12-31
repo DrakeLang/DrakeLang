@@ -29,7 +29,7 @@ namespace DrakeLang.Tests.Text
         [InlineData(".\r\n\r\n", 3)]
         public void SourceText_IncludesLastLine(string text, int expectedLineCount)
         {
-            SourceText sourceText = SourceText.From(text);
+            SourceText sourceText = SourceText.FromString(text);
             Assert.Equal(expectedLineCount, sourceText.Lines.Length);
         }
     }

@@ -16,16 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-#pragma warning disable CA1724 // don't have type named Compilation due to conflict with 'System.Web.Compilation'
-
+using DrakeLang.Binding;
+using DrakeLang.Symbols;
+using DrakeLang.Syntax;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
-using DrakeLang.Binding;
-using DrakeLang.Lowering;
-using DrakeLang.Symbols;
-using DrakeLang.Syntax;
 
 namespace DrakeLang
 {
@@ -46,7 +43,7 @@ namespace DrakeLang
             {
                 if (_bindingResult is null)
                 {
-                    var result = Binder.Bind(SyntaxTree.Root);
+                    var result = Binder.Bind(SyntaxTree.CompilationUnits);
                     result = new BindingResult(result.Methods, result.Diagnostics);
 
                     Interlocked.CompareExchange(ref _bindingResult, result, null);

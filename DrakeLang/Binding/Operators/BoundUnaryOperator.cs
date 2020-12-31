@@ -16,9 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Immutable;
 using DrakeLang.Symbols;
 using DrakeLang.Syntax;
+using System.Collections.Immutable;
 using static DrakeLang.Symbols.SystemSymbols;
 
 namespace DrakeLang.Binding

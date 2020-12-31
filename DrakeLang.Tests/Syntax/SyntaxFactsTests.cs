@@ -16,9 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Syntax;
 using System;
 using System.Collections.Generic;
-using DrakeLang.Syntax;
 using Xunit;
 
 namespace DrakeLang.Tests.Syntax
@@ -37,7 +37,7 @@ namespace DrakeLang.Tests.Syntax
             SyntaxToken token = Assert.Single(tokens);
 
             Assert.Equal(kind, token.Kind);
-            Assert.Equal(text, token.Text);
+            Assert.Equal(text, token.TokenText);
         }
 
         public static IEnumerable<object[]> GetSyntaxKindData()

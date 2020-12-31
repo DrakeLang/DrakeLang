@@ -16,8 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
 using DrakeLang.Symbols;
+using System.Collections.Generic;
 
 namespace DrakeLang.Binding
 {

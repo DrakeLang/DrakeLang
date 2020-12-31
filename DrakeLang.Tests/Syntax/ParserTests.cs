@@ -16,8 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Generic;
 using DrakeLang.Syntax;
+using System.Collections.Generic;
 using Xunit;
 
 namespace DrakeLang.Tests.Syntax
@@ -110,7 +110,7 @@ namespace DrakeLang.Tests.Syntax
         [Fact]
         public void Parser_Allows_Top_Level_Program()
         {
-            var syntaxTree = SyntaxTree.Parse(@"
+            var syntaxTree = SyntaxTree.FromString(@"
 var a = 5;
 var b = a * a;
 ");
@@ -120,14 +120,15 @@ var b = a * a;
         [Fact]
         public void Parser_Supports_ExpressionBodies()
         {
-            var syntaxTree = SyntaxTree.Parse(@"def main() => a + a;");
+            var syntaxTree = SyntaxTree.FromString(@"def main() => a + a;");
             Assert.Empty(syntaxTree.Diagnostics);
         }
 
         private static ExpressionSyntax ParseExpression(string text)
         {
-            var syntaxTree = SyntaxTree.Parse(text);
-            var statement = Assert.Single(syntaxTree.Root.Statements);
+            var syntaxTree = SyntaxTree.FromString(text);
+            var compilationUnits = Assert.Single(syntaxTree.CompilationUnits);
+            var statement = Assert.Single(compilationUnits.Statements);
 
             return Assert.IsType<ExpressionStatementSyntax>(statement).Expression;
         }

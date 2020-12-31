@@ -60,7 +60,6 @@ namespace DrakeLang.Symbols
             return ReturnType + " " + FullName + "(" + string.Join(", ", paramExpression) + ")";
         }
 
-
         #region Operators
 
         public override bool Equals(object? obj)

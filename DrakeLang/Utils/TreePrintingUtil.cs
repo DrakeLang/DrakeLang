@@ -15,12 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
-using System;
-using System.IO;
-using System.Text.RegularExpressions;
 using DrakeLang.Binding;
 using DrakeLang.Symbols;
 using DrakeLang.Syntax;
+using System;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace DrakeLang.Utils
 {

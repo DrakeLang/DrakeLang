@@ -192,9 +192,6 @@ namespace DrakeLang.Binding.CFA
                         nextBlock();
                         break;
 
-                    case BoundNodeKind.MethodDeclaration:
-                        break;
-
                     default:
                         throw new Exception($"Unexpected statement kind '{statement.Kind}'.");
                 }

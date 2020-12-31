@@ -16,6 +16,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Binding.CFA;
+using DrakeLang.Lowering;
+using DrakeLang.Symbols;
+using DrakeLang.Syntax;
+using DrakeLang.Text;
+using DrakeLang.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -23,12 +29,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
-using DrakeLang.Binding.CFA;
-using DrakeLang.Lowering;
-using DrakeLang.Symbols;
-using DrakeLang.Syntax;
-using DrakeLang.Text;
-using DrakeLang.Utils;
 using static DrakeLang.Symbols.SystemSymbols;
 
 namespace DrakeLang.Binding
@@ -36,7 +36,6 @@ namespace DrakeLang.Binding
     internal sealed class Binder
     {
         private const string GeneratedMethodSeparator = "$$";
-        public const string GeneratedMainMethodName = "<Main>";
         public const string MainMethodName = "Main";
 
         private readonly LabelGenerator _labelGenerator = new();
@@ -45,6 +44,9 @@ namespace DrakeLang.Binding
         private readonly Stack<NamespaceSymbol> _namespaceStack = new();
         private readonly HashSet<NamespaceSymbol> _includedNamespaces = new();
         private readonly Dictionary<MethodDeclarationSyntax, MethodSymbol> _methodSymbols = new();
+        private readonly Dictionary<MethodSymbol, BoundMethodDeclaration> _methodDeclarations = new();
+        private readonly Dictionary<BoundNode, SyntaxNode> _boundNodeToSyntaxMap = new();
+        private readonly List<BoundMethodDeclaration> _generatedMainMethods = new();
 
         private BoundScope _scope;
 
@@ -56,43 +58,48 @@ namespace DrakeLang.Binding
             _scope = new BoundScope(rootScope, capturesVariables: false);
         }
 
-        public static BindingResult Bind(CompilationUnitSyntax syntax)
+        public static BindingResult Bind(ImmutableArray<CompilationUnitSyntax> units)
         {
+            var statements = units.SelectMany(u => u.Statements);
+
             var binder = new Binder();
 
-            var statements = binder.BindTopLevelStatements(syntax.Statements);
-            var diagnostics = binder.Diagnostics.ToImmutableArray();
+            binder.DeclareMethods(statements);
 
-            return new BindingResult(statements, diagnostics);
-        }
-
-        private ImmutableArray<BoundMethodDeclaration> BindTopLevelStatements(IEnumerable<StatementSyntax> statements)
-        {
-            var boundStatements = BindStatements(statements);
-            var loweredStatements = Lowerer.Lower(boundStatements, _labelGenerator);
-
-            var methods = loweredStatements.OfType<BoundMethodDeclaration>();
-            var topLevelStatements = loweredStatements.Except(methods).ToImmutableArray();
-
-            if (topLevelStatements.Length > 0)
+            foreach (var unit in units)
             {
-                // Implicitly create main method.
+                binder._currentText = unit.Text;
 
-                var mainMethodSymbol = new MethodSymbol(GeneratedMainMethodName, ImmutableArray<ParameterSymbol>.Empty, Types.Void);
-                _scope.TryDeclareMethod(mainMethodSymbol);
-
-                var mainMethod = new BoundMethodDeclaration(mainMethodSymbol, topLevelStatements);
-
-                methods = methods.Prepend(mainMethod);
+                binder.BindTopLevelStatements(unit.Statements);
             }
 
-            return methods.ToImmutableArray();
+            binder.ValidateMainMethod();
+
+            var methods = binder._methodDeclarations.Values.ToImmutableArray();
+            var diagnostics = binder.Diagnostics.ToImmutableArray();
+
+            return new BindingResult(methods, diagnostics);
+        }
+
+        private void BindTopLevelStatements(IEnumerable<StatementSyntax> statements)
+        {
+            var topLevelStatements = BindStatements(statements);
+            topLevelStatements = Lowerer.Lower(topLevelStatements, _labelGenerator);
+
+            if (topLevelStatements.Any())
+            {
+                // Implicitly create main method.
+                var generatedMainMethodSymbol = new MethodSymbol(MainMethodName, ImmutableArray<ParameterSymbol>.Empty, Types.Void);
+                var generatedMainMethod = new BoundMethodDeclaration(generatedMainMethodSymbol, topLevelStatements);
+
+                _scope.TryDeclareMethod(generatedMainMethodSymbol);
+                _generatedMainMethods.Add(generatedMainMethod);
+                _methodDeclarations.Add(generatedMainMethodSymbol, generatedMainMethod);
+            }
         }
 
         private ImmutableArray<BoundStatement> BindStatements(IEnumerable<StatementSyntax> statements)
         {
-            DeclareMethods(statements);
-
             // Declare labels.
             foreach (var statement in statements.OfType<LabelStatementSyntax>())
             {
@@ -104,7 +111,8 @@ namespace DrakeLang.Binding
             foreach (var statement in statements)
             {
                 var boundStatement = BindStatement(statement);
-                statementBuilder.Add(boundStatement);
+                if (boundStatement is not null)
+                    statementBuilder.Add(boundStatement);
             }
 
             return statementBuilder.ToImmutable();
@@ -134,10 +142,11 @@ namespace DrakeLang.Binding
             foreach (var declaration in enumerateDeclarations(statements))
             {
                 TryDeclareMethod(declaration, declareImplicitReturnTypesAsError: true);
-                Diagnostics.ReportCannotInferReturnType(declaration.Identifier.Span, declaration.Identifier.Text);
+
+                GetDiagnosticBuilder(declaration.Text).ReportCannotInferReturnType(declaration.Identifier.Span, declaration.Identifier.TokenText);
             }
 
-            IEnumerable<MethodDeclarationSyntax> enumerateDeclarations(IEnumerable<StatementSyntax> statements)
+            IEnumerable<MethodDeclarationSyntax> enumerateDeclarations(IEnumerable<StatementSyntax> statements, bool isMethodBody = false)
             {
                 foreach (var statement in statements)
                 {
@@ -148,8 +157,7 @@ namespace DrakeLang.Binding
                             if (!_methodSymbols.ContainsKey(methodDeclaration))
                                 yield return methodDeclaration;
 
-                            var localMethods = methodDeclaration.Declaration.Statements.OfType<MethodDeclarationSyntax>();
-                            foreach (var declaration in enumerateDeclarations(localMethods))
+                            foreach (var declaration in enumerateDeclarations(methodDeclaration.Declaration.Statements, isMethodBody: true))
                             {
                                 yield return declaration;
                             }
@@ -157,13 +165,13 @@ namespace DrakeLang.Binding
 
                         case NamespaceDeclarationSyntax namespaceDeclaration:
                             if (namespaceDeclaration is SimpleNamespaceDeclarationStatementSyntax && CurrentNamespace is not null)
-                                Diagnostics.ReportIllegalSimpleNamespaceDeclaration(namespaceDeclaration.NamespaceToken.Span);
+                                GetDiagnosticBuilder(namespaceDeclaration.Text).ReportIllegalSimpleNamespaceDeclaration(namespaceDeclaration.NamespaceToken.Span);
 
                             var namespaceSym = new NamespaceSymbol(CurrentNamespace, namespaceDeclaration.Names);
                             _namespaceStack.Push(namespaceSym);
                             try
                             {
-                                foreach (var declaration in enumerateDeclarations(namespaceDeclaration.Statements))
+                                foreach (var declaration in enumerateDeclarations(namespaceDeclaration.Statements, isMethodBody))
                                 {
                                     yield return declaration;
                                 }
@@ -179,7 +187,7 @@ namespace DrakeLang.Binding
                             bool wasIncluded = _includedNamespaces.Add(namespaceSym);
                             try
                             {
-                                foreach (var declaration in enumerateDeclarations(withNamespaceStatement.Statements))
+                                foreach (var declaration in enumerateDeclarations(withNamespaceStatement.Statements, isMethodBody))
                                 {
                                     yield return declaration;
                                 }
@@ -191,9 +199,28 @@ namespace DrakeLang.Binding
                             }
                             break;
 
+                        case WithMethodAliasStatementSyntax withMethodAliasStatement:
+
+                            PushScope();
+                            try
+                            {
+                                if (TryFindMethod(withMethodAliasStatement.NamespaceNames, withMethodAliasStatement.Identifier, out var method))
+                                    _scope.TryDeclareMethodAlias(method, withMethodAliasStatement.Alias.TokenText);
+
+                                foreach (var declaration in enumerateDeclarations(withMethodAliasStatement.Statements, isMethodBody))
+                                {
+                                    yield return declaration;
+                                }
+                            }
+                            finally
+                            {
+                                PopScope();
+                            }
+                            break;
+
                         default:
-                            if (CurrentNamespace is not null && CurrentMethod is null)
-                                Diagnostics.ReportIllegalStatementPlacement(statement.Span);
+                            if (!isMethodBody && CurrentNamespace is not null)
+                                GetDiagnosticBuilder(statement.Text).ReportIllegalStatementPlacement(statement.Span);
                             break;
                     }
                     _statementStacktrace.Pop();
@@ -201,11 +228,38 @@ namespace DrakeLang.Binding
             }
         }
 
+        private void ValidateMainMethod()
+        {
+            var mainMethods = _methodDeclarations.Values.Where(m => m.Method.Name == MainMethodName).ToArray();
+            if (mainMethods.Length == 0)
+                Diagnostics.ReportNoMainMethodFound();
+            else if (_generatedMainMethods.Count > 1)
+            {
+                foreach (var generatedMethod in _generatedMainMethods)
+                {
+                    var syntax = _boundNodeToSyntaxMap[generatedMethod.Declaration.First()];
+                    GetDiagnosticBuilder(syntax.Text).ReportMultipleSourceTextsWithTopLevelStatements(syntax.Span);
+                }
+            }
+            else if (mainMethods.Length > 1 && _generatedMainMethods.Any())
+            {
+                var generatedMethod = _generatedMainMethods.Single();
+                var syntax = _boundNodeToSyntaxMap[generatedMethod.Declaration.First()];
+                GetDiagnosticBuilder(syntax.Text).ReportTopLevelStatementCannotBeCombinedWithExplicitMainMethod(syntax.Span);
+            }
+            else if (mainMethods.Length > 1)
+            {
+                foreach (var method in mainMethods)
+                {
+                    var declarationSyntax = _methodSymbols.Single(pair => pair.Value == method.Method).Key;
+                    GetDiagnosticBuilder(declarationSyntax.Text).ReportMultipleMainMethods(declarationSyntax.Identifier.Span);
+                }
+            }
+        }
+
         #endregion Constructors
 
         #region Properties
-
-        public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
 
         /// <summary>
         /// The return value of the current method. Null if method is implicit.
@@ -221,14 +275,44 @@ namespace DrakeLang.Binding
 
         #endregion Properties
 
+        #region Diagnostics
+
+        public DiagnosticBag Diagnostics { get; } = new DiagnosticBag();
+        private readonly Dictionary<SourceText, DiagnosticsBuilder> _diagnosticsBuilders = new();
+        private SourceText? _currentText;
+
+        private DiagnosticsBuilder DiagnosticsBuilder
+        {
+            get
+            {
+                if (_currentText is null)
+                    throw new InvalidOperationException($"Current Text is not set.");
+
+                return GetDiagnosticBuilder(_currentText);
+            }
+        }
+
+        private DiagnosticsBuilder GetDiagnosticBuilder(SourceText text)
+        {
+            if (!_diagnosticsBuilders.TryGetValue(text, out var current))
+            {
+                current = new(text, Diagnostics);
+                _diagnosticsBuilders.Add(text, current);
+            }
+
+            return current;
+        }
+
+        #endregion Diagnostics
+
         #region BindStatement
 
-        private BoundStatement BindStatement(StatementSyntax syntax)
+        private BoundStatement? BindStatement(StatementSyntax syntax)
         {
             _statementStacktrace.Push(syntax);
             try
             {
-                return syntax.Kind switch
+                var statement = syntax.Kind switch
                 {
                     SyntaxKind.MethodDeclaration => BindMethodDeclarationStatement((MethodDeclarationSyntax)syntax),
                     SyntaxKind.NamespaceDeclaration => BindNamespaceDeclarationStatement((NamespaceDeclarationSyntax)syntax),
@@ -249,6 +333,10 @@ namespace DrakeLang.Binding
 
                     _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
                 };
+                if (statement is not null)
+                    _boundNodeToSyntaxMap.Add(statement, syntax);
+
+                return statement;
             }
             finally
             {
@@ -273,7 +361,7 @@ namespace DrakeLang.Binding
         private BoundStatement BindNamespaceDeclarationStatement(NamespaceDeclarationSyntax syntax)
         {
             if (!EnableAnalysisMode && CurrentMethod is not null)
-                Diagnostics.ReportIllegalNamespaceDeclaration(syntax.NamespaceToken.Span);
+                DiagnosticsBuilder.ReportIllegalNamespaceDeclaration(syntax.NamespaceToken.Span);
 
             var namespaceSym = new NamespaceSymbol(CurrentNamespace, syntax.Names);
             _namespaceStack.Push(namespaceSym);
@@ -290,8 +378,7 @@ namespace DrakeLang.Binding
 
         private BoundStatement BindVariableDeclarationStatement(VariableDeclarationStatementSyntax syntax)
         {
-            string name = syntax.Identifier.Text ?? "?";
-            bool declare = syntax.Identifier.Text != null;
+            string name = syntax.Identifier.TokenText;
             var isReadOnly = syntax.VarOrSetKeyword?.Kind is SyntaxKind.SetKeyword;
 
             var initializer = BindExpression(syntax.Initializer);
@@ -299,14 +386,14 @@ namespace DrakeLang.Binding
             // Only allow explicit type in combination with 'set'
             if (syntax.ExplicitType is not null && syntax.VarOrSetKeyword is not null and { Kind: not SyntaxKind.SetKeyword })
             {
-                Diagnostics.ReportIllegalExplicitType(syntax.ExplicitType.Span);
+                DiagnosticsBuilder.ReportIllegalExplicitType(syntax.ExplicitType.Span);
             }
 
             // Don't allow void assignment
             if (initializer.Type == Types.Void && syntax.ExplicitType is null)
             {
                 var span = TextSpan.FromBounds(syntax.Identifier.Span.Start, syntax.Initializer.Span.End);
-                Diagnostics.ReportCannotAssignVoid(span);
+                DiagnosticsBuilder.ReportCannotAssignVoid(span);
             }
 
             TypeSymbol? type;
@@ -328,16 +415,16 @@ namespace DrakeLang.Binding
                 variable = new VariableSymbol(name, isReadOnly, type);
             }
 
-            if (declare && !_scope.TryDeclareVariable(variable))
-                Diagnostics.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
+            if (!_scope.TryDeclareVariable(variable))
+                DiagnosticsBuilder.ReportVariableAlreadyDeclared(syntax.Identifier.Span, name);
 
             return new BoundVariableDeclarationStatement(variable, initializer);
         }
 
-        private BoundStatement BindMethodDeclarationStatement(MethodDeclarationSyntax syntax)
+        private BoundStatement? BindMethodDeclarationStatement(MethodDeclarationSyntax syntax)
         {
             if (!_methodSymbols.TryGetValue(syntax, out var method))
-                return BoundNoOpStatement.Instance;
+                return null;
 
             PushMethodScope(method);
             try
@@ -348,10 +435,16 @@ namespace DrakeLang.Binding
                 }
 
                 var boundDeclaration = BindBody(syntax);
-                if (method.ReturnType != Types.Void && !new ControlFlowGraph(boundDeclaration).AllPathsReturn())
-                    Diagnostics.ReportMethodNotAllPathsReturnValue(syntax.Identifier.Span);
+                if (method.ReturnType != Types.Void && method.ReturnType != Types.Error
+                    && !new ControlFlowGraph(boundDeclaration).AllPathsReturn())
+                {
+                    DiagnosticsBuilder.ReportMethodNotAllPathsReturnValue(syntax.Identifier.Span);
+                }
 
-                return new BoundMethodDeclaration(method, boundDeclaration);
+                var boundMethodDeclaration = new BoundMethodDeclaration(method, boundDeclaration);
+                _methodDeclarations[method] = boundMethodDeclaration;
+
+                return null;
             }
             finally
             {
@@ -362,7 +455,7 @@ namespace DrakeLang.Binding
         private BoundStatement BindIfStatement(IfStatementSyntax syntax)
         {
             var condition = BindExpression(syntax.Condition.Expression, Types.Boolean);
-            var thenStatement = BindStatement(syntax.ThenStatement);
+            var thenStatement = BindStatement(syntax.ThenStatement) ?? BoundNoOpStatement.Instance;
             var elseStatement = syntax.ElseClause is null ? null : BindStatement(syntax.ElseClause.ElseStatement);
 
             return new BoundIfStatement(condition, thenStatement, elseStatement);
@@ -393,7 +486,7 @@ namespace DrakeLang.Binding
         private BoundStatement BindWhileStatement(WhileStatementSyntax syntax, LabelSymbol continueLabel, LabelSymbol breakLabel)
         {
             var condition = BindExpression(syntax.Condition.Expression, Types.Boolean);
-            var body = BindStatement(syntax.Body);
+            var body = BindStatement(syntax.Body) ?? BoundNoOpStatement.Instance;
 
             return new BoundWhileStatement(condition, body, continueLabel, breakLabel);
         }
@@ -403,15 +496,15 @@ namespace DrakeLang.Binding
             var initStatement = syntax.InitializationStatement is null ? null : BindStatement(syntax.InitializationStatement);
             var condition = syntax.Condition is null ? null : BindExpression(syntax.Condition, Types.Boolean);
             var updateStatement = syntax.UpdateStatement is null ? null : BindStatement(syntax.UpdateStatement);
-            var body = BindStatement(syntax.Body);
+            var body = BindStatement(syntax.Body) ?? BoundNoOpStatement.Instance;
 
             return new BoundForStatement(initStatement, condition, updateStatement, body, continueLabel, breakLabel);
         }
 
-        private BoundStatement BindGoToStatement(GoToStatementSyntax syntax)
+        private BoundStatement? BindGoToStatement(GoToStatementSyntax syntax)
         {
             if (!TryFindLabel(syntax.Label, out var label))
-                return BoundNoOpStatement.Instance;
+                return null;
 
             return new BoundGotoStatement(label);
         }
@@ -430,7 +523,7 @@ namespace DrakeLang.Binding
             if (CurrentMethod is null || CurrentMethod.ReturnType == Types.Void)
             {
                 if (syntax.Expression is not null)
-                    Diagnostics.ReportInvalidReturnInVoidMethod(syntax.Expression.Span);
+                    DiagnosticsBuilder.ReportInvalidReturnInVoidMethod(syntax.Expression.Span);
 
                 return new BoundReturnStatement();
             }
@@ -438,8 +531,8 @@ namespace DrakeLang.Binding
             {
                 if (syntax.Expression is null)
                 {
-                    Diagnostics.ReportMissingReturnExpression(syntax.Span);
-                    return BoundNoOpStatement.Instance;
+                    DiagnosticsBuilder.ReportMissingReturnExpression(syntax.Span);
+                    return new BoundReturnStatement();
                 }
 
                 var expression = BindExpression(syntax.Expression, CurrentMethod.ReturnType);
@@ -447,10 +540,10 @@ namespace DrakeLang.Binding
             }
         }
 
-        private BoundStatement BindLabelStatement(LabelStatementSyntax syntax)
+        private BoundStatement? BindLabelStatement(LabelStatementSyntax syntax)
         {
-            if (!_scope.TryLookupLabel(syntax.Identifier.Text, out var label))
-                return BoundNoOpStatement.Instance;
+            if (!_scope.TryLookupLabel(syntax.Identifier.TokenText, out var label))
+                return null;
 
             return new BoundLabelStatement(label);
         }
@@ -472,17 +565,17 @@ namespace DrakeLang.Binding
             }
         }
 
-        private BoundStatement BindWithAliasStatement(WithAliasStatementSyntax syntax)
+        private BoundStatement? BindWithAliasStatement(WithAliasStatementSyntax syntax)
         {
             if (syntax is WithMethodAliasStatementSyntax methodAliasSyntax)
             {
                 if (!TryFindMethod(methodAliasSyntax.NamespaceNames, methodAliasSyntax.Identifier, out var method))
-                    return BoundNoOpStatement.Instance;
+                    return null;
 
                 PushScope();
                 try
                 {
-                    _scope.TryDeclareMethodAlias(method, syntax.Alias.Text);
+                    _scope.TryDeclareMethodAlias(method, syntax.Alias.TokenText);
 
                     var statements = BindStatements(syntax.Statements);
                     return new BoundBlockStatement(statements);
@@ -495,23 +588,23 @@ namespace DrakeLang.Binding
             else throw new Exception($"Unsupported case '{syntax.GetType()}'.");
         }
 
-        private BoundStatement BindContinueStatement(ContinueStatementSyntax syntax)
+        private BoundStatement? BindContinueStatement(ContinueStatementSyntax syntax)
         {
             if (!_scope.TryGetContinueLabel(out var continueLabel))
             {
-                Diagnostics.ReportUnexpectedBreakOrContinue(syntax.Span);
-                return BoundNoOpStatement.Instance;
+                DiagnosticsBuilder.ReportUnexpectedBreakOrContinue(syntax.Span);
+                return null;
             }
 
             return new BoundGotoStatement(continueLabel);
         }
 
-        private BoundStatement BindBreakStatement(BreakStatementSyntax syntax)
+        private BoundStatement? BindBreakStatement(BreakStatementSyntax syntax)
         {
             if (!_scope.TryGetBreakLabel(out var breakLabel))
             {
-                Diagnostics.ReportUnexpectedBreakOrContinue(syntax.Span);
-                return BoundNoOpStatement.Instance;
+                DiagnosticsBuilder.ReportUnexpectedBreakOrContinue(syntax.Span);
+                return null;
             }
 
             return new BoundGotoStatement(breakLabel);
@@ -583,7 +676,7 @@ namespace DrakeLang.Binding
             var boundOp = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, syntax.UnaryType, boundOperand.Type);
             if (boundOp is null)
             {
-                Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundOperand.Type);
+                DiagnosticsBuilder.ReportUndefinedUnaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.TokenText, boundOperand.Type);
                 return BoundErrorExpression.Instance;
             }
 
@@ -591,12 +684,12 @@ namespace DrakeLang.Binding
             {
                 if (boundOperand is not BoundVariableExpression variableExpression)
                 {
-                    Diagnostics.ReportIncrementOperandMustBeVariable(syntax.Span);
+                    DiagnosticsBuilder.ReportIncrementOperandMustBeVariable(syntax.Span);
                     return BoundErrorExpression.Instance;
                 }
                 else if (variableExpression.Variable.IsReadOnly)
                 {
-                    Diagnostics.ReportCannotAssignReadOnly(syntax.Span, variableExpression.Variable.Name);
+                    DiagnosticsBuilder.ReportCannotAssignReadOnly(syntax.Span, variableExpression.Variable.Name);
                     return BoundErrorExpression.Instance;
                 }
             }
@@ -611,7 +704,7 @@ namespace DrakeLang.Binding
                 // Piped argument.
                 if (syntax.Right is not CallExpressionSyntax callExpression)
                 {
-                    Diagnostics.ReportCanOnlyPipeToMethods(syntax.OperatorToken.Span);
+                    DiagnosticsBuilder.ReportCanOnlyPipeToMethods(syntax.OperatorToken.Span);
                     return BoundErrorExpression.Instance;
                 }
 
@@ -627,7 +720,7 @@ namespace DrakeLang.Binding
             var boundOp = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, boundRight.Type);
             if (boundOp is null)
             {
-                Diagnostics.ReportUndefinedBinaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.Text, boundLeft.Type, boundRight.Type);
+                DiagnosticsBuilder.ReportUndefinedBinaryOperator(syntax.OperatorToken.Span, syntax.OperatorToken.TokenText, boundLeft.Type, boundRight.Type);
                 return BoundErrorExpression.Instance;
             }
 
@@ -659,7 +752,7 @@ namespace DrakeLang.Binding
                 return BoundErrorExpression.Instance;
 
             if (variable.IsReadOnly)
-                Diagnostics.ReportCannotAssignReadOnly(syntax.EqualsToken.Span, variable.Name);
+                DiagnosticsBuilder.ReportCannotAssignReadOnly(syntax.EqualsToken.Span, variable.Name);
 
             var boundExpression = BindExpression(syntax.Expression);
             if (boundExpression.Type.IsError())
@@ -683,7 +776,7 @@ namespace DrakeLang.Binding
                 var boundOp = BoundBinaryOperator.Bind(operatorKind, variable.Type, boundExpression.Type);
                 if (boundOp is null)
                 {
-                    Diagnostics.ReportUndefinedBinaryOperator(syntax.EqualsToken.Span, syntax.EqualsToken.Text, variable.Type, boundExpression.Type);
+                    DiagnosticsBuilder.ReportUndefinedBinaryOperator(syntax.EqualsToken.Span, syntax.EqualsToken.TokenText, variable.Type, boundExpression.Type);
                     return BoundErrorExpression.Instance;
                 }
 
@@ -698,7 +791,7 @@ namespace DrakeLang.Binding
 
         private BoundExpression BindCallExpression(CallExpressionSyntax syntax, ExpressionSyntax? pipedParameter = null)
         {
-            if (syntax.Identifier.Text is null)
+            if (string.IsNullOrEmpty(syntax.Identifier.TokenText))
                 return BoundErrorExpression.Instance;
 
             // Locate method.
@@ -727,7 +820,7 @@ namespace DrakeLang.Binding
                 }
                 else
                 {
-                    Diagnostics.ReportUnexpectedPipedArgument(argument.Span);
+                    DiagnosticsBuilder.ReportUnexpectedPipedArgument(argument.Span);
                 }
             }
 
@@ -736,13 +829,13 @@ namespace DrakeLang.Binding
             {
                 var boundArgument = BindExpression(pipedParameter);
                 boundArguments.Add(boundArgument);
-                pipedParameter = null;
+                //pipedParameter = null;
             }
 
             // Validate argument count.
             if (boundArguments.Count != method.Parameters.Length)
             {
-                Diagnostics.ReportWrongArgumentCount(syntax.Span, method.Name, method.Parameters.Length, parameterCount);
+                DiagnosticsBuilder.ReportWrongArgumentCount(syntax.Span, method.Name, method.Parameters.Length, parameterCount);
                 return BoundErrorExpression.Instance;
             }
 
@@ -759,7 +852,7 @@ namespace DrakeLang.Binding
 
                 if (boundArguments[i] is BoundErrorExpression)
                 {
-                    Diagnostics.ReportWrongArgumentType(syntax.Span, method.Name, parameter.Name, parameter.Type, argument.Type);
+                    DiagnosticsBuilder.ReportWrongArgumentType(syntax.Span, method.Name, parameter.Name, parameter.Type, argument.Type);
                     return BoundErrorExpression.Instance;
                 }
             }
@@ -780,7 +873,7 @@ namespace DrakeLang.Binding
             var conversion = Conversion.Classify(expression.Type, type);
             if (!conversion.Exists)
             {
-                Diagnostics.ReportNoExplicitConversion(syntax.Span, expression.Type, type);
+                DiagnosticsBuilder.ReportNoExplicitConversion(syntax.Span, expression.Type, type);
                 return BoundErrorExpression.Instance;
             }
 
@@ -794,13 +887,13 @@ namespace DrakeLang.Binding
             var indexer = operand.Type.FindGetIndexers().FirstOrDefault();
             if (indexer is null)
             {
-                Diagnostics.ReportTypeDoesNotHaveIndexer(syntax.Span, operand.Type.Name);
+                DiagnosticsBuilder.ReportTypeDoesNotHaveIndexer(syntax.Span, operand.Type.Name);
                 return BoundErrorExpression.Instance;
             }
 
             if (syntax.Parameters.Count != indexer.Parameters.Length)
             {
-                Diagnostics.ReportWrongArgumentCount(syntax.Span, operand.Type + "[]", indexer.Parameters.Length, syntax.Parameters.Count);
+                DiagnosticsBuilder.ReportWrongArgumentCount(syntax.Span, operand.Type + "[]", indexer.Parameters.Length, syntax.Parameters.Count);
                 return BoundErrorExpression.Instance;
             }
 
@@ -863,7 +956,7 @@ namespace DrakeLang.Binding
                         span = TextSpan.FromBounds(startNode.Span.Start, syntax.CloseBracketToken.Span.End);
                     }
 
-                    Diagnostics.ReportSizeMustBeConstantWithInitializer(span);
+                    DiagnosticsBuilder.ReportSizeMustBeConstantWithInitializer(span);
                     itemType ??= Types.Error;
                 }
 
@@ -871,7 +964,7 @@ namespace DrakeLang.Binding
                 {
                     if (!size.Equals(initializer.Count))
                     {
-                        Diagnostics.ReportArraySizeMismatch(initializer.Span);
+                        DiagnosticsBuilder.ReportArraySizeMismatch(initializer.Span);
                     }
 
                     foreach (var expression in initializer)
@@ -940,15 +1033,14 @@ namespace DrakeLang.Binding
 
         private enum MethodDeclarationResult { Success, CannotInferReturnType, Error }
 
+        private static readonly MethodSymbol _mockMethod = new("mock", ImmutableArray<ParameterSymbol>.Empty, Types.Error);
+
         private MethodDeclarationResult TryDeclareMethod(MethodDeclarationSyntax syntax, bool declareImplicitReturnTypesAsError = false)
         {
             if (_methodSymbols.ContainsKey(syntax))
                 return MethodDeclarationResult.Success;
 
-            if (syntax.Identifier.Text is null)
-                return MethodDeclarationResult.Error;
-
-            string name = getOrGenerateMethodName(syntax.Identifier.Text);
+            string name = getOrGenerateMethodName(syntax.Identifier.TokenText);
             var parameters = BindParameters(syntax.Parameters);
 
             var hasImplicitReturnType = syntax.TypeOrDefKeyword.Kind == SyntaxKind.DefKeyword;
@@ -965,7 +1057,7 @@ namespace DrakeLang.Binding
             }
             else
             {
-                PushScope();
+                PushMethodScope(_mockMethod);
                 EnableAnalysisMode = true;
                 try
                 {
@@ -989,13 +1081,13 @@ namespace DrakeLang.Binding
                 finally
                 {
                     EnableAnalysisMode = false;
-                    PopScope();
+                    PopMethodScope();
                 }
             }
 
             if (!_scope.TryDeclareMethod(method))
             {
-                Diagnostics.ReportMethodAlreadyDeclared(syntax.Identifier.Span, name);
+                DiagnosticsBuilder.ReportMethodAlreadyDeclared(syntax.Identifier.Span, name);
                 return MethodDeclarationResult.Error;
             }
 
@@ -1007,7 +1099,7 @@ namespace DrakeLang.Binding
                 return string.Join(GeneratedMethodSeparator,
                     _statementStacktrace
                         .OfType<MethodDeclarationSyntax>()
-                        .Select(dec => dec.Identifier.Text)
+                        .Select(dec => dec.Identifier.TokenText)
                         .Reverse());
             }
 
@@ -1070,15 +1162,11 @@ namespace DrakeLang.Binding
 
         private void DeclareLabel(LabelStatementSyntax syntax)
         {
-            string name = syntax.Identifier.Text ?? "?";
-            bool declare = syntax.Identifier.Text != null;
-
-            if (!declare)
-                return;
+            string name = syntax.Identifier.TokenText;
 
             var label = new LabelSymbol(name);
             if (!_scope.TryDeclareLabel(label))
-                Diagnostics.ReportLabelAlreadyDeclared(syntax.Identifier.Span, name);
+                DiagnosticsBuilder.ReportLabelAlreadyDeclared(syntax.Identifier.Span, name);
         }
 
         private ImmutableArray<ParameterSymbol> BindParameters(SeparatedSyntaxList<ParameterSyntax> parameters)
@@ -1090,7 +1178,7 @@ namespace DrakeLang.Binding
             {
                 var parameter = BindParameter(parameters[i]);
                 if (!parameterNames.Add(parameter.Name))
-                    Diagnostics.ReportDuplicateParameterName(parameters[i].Identifier.Span, parameter.Name);
+                    DiagnosticsBuilder.ReportDuplicateParameterName(parameters[i].Identifier.Span, parameter.Name);
 
                 builder.Add(parameter);
             }
@@ -1100,7 +1188,7 @@ namespace DrakeLang.Binding
 
         private static ParameterSymbol BindParameter(ParameterSyntax parameter)
         {
-            var name = parameter.Identifier.Text ?? "?";
+            var name = parameter.Identifier.TokenText;
             var type = ResolveType(parameter.TypeToken) ?? Types.Error;
 
             return new ParameterSymbol(name, type);
@@ -1118,12 +1206,12 @@ namespace DrakeLang.Binding
             }
             else if (conversion == Conversion.Explicit)
             {
-                Diagnostics.ReportCannotImplicitlyConvert(span, expression.Type, resultType);
+                DiagnosticsBuilder.ReportCannotImplicitlyConvert(span, expression.Type, resultType);
                 return BoundErrorExpression.Instance;
             }
             else
             {
-                Diagnostics.ReportCannotConvert(span, expression.Type, resultType);
+                DiagnosticsBuilder.ReportCannotConvert(span, expression.Type, resultType);
                 return BoundErrorExpression.Instance;
             }
         }
@@ -1132,7 +1220,7 @@ namespace DrakeLang.Binding
 
         private bool TryFindVariable(SyntaxToken identifierToken, [NotNullWhen(true)] out VariableSymbol? variable)
         {
-            string? name = identifierToken.Text;
+            string name = identifierToken.TokenText;
             if (string.IsNullOrEmpty(name))
             {
                 variable = null;
@@ -1141,7 +1229,7 @@ namespace DrakeLang.Binding
 
             if (!_scope.TryLookupVariable(name, out variable))
             {
-                Diagnostics.ReportUndefinedSymbol(identifierToken.Span, name);
+                DiagnosticsBuilder.ReportUndefinedSymbol(identifierToken.Span, name);
 
                 _scope.TryDeclareVariable(new VariableSymbol(name, isReadOnly: false, Types.Error));
                 return false;
@@ -1152,7 +1240,7 @@ namespace DrakeLang.Binding
 
         private bool TryFindLabel(SyntaxToken identifierToken, [NotNullWhen(true)] out LabelSymbol? label)
         {
-            string? name = identifierToken.Text;
+            string name = identifierToken.TokenText;
             if (string.IsNullOrEmpty(name))
             {
                 label = null;
@@ -1161,7 +1249,7 @@ namespace DrakeLang.Binding
 
             if (!_scope.TryLookupLabel(name, out label))
             {
-                Diagnostics.ReportUndefinedSymbol(identifierToken.Span, name);
+                DiagnosticsBuilder.ReportUndefinedSymbol(identifierToken.Span, name);
 
                 _scope.TryDeclareLabel(new LabelSymbol(name));
                 return false;
@@ -1172,7 +1260,7 @@ namespace DrakeLang.Binding
 
         private bool TryFindMethod(NamespaceSymbol? namespaceSym, SyntaxToken identifierToken, [NotNullWhen(true)] out MethodSymbol? method)
         {
-            var methodName = identifierToken.Text;
+            var methodName = identifierToken.TokenText;
             if (methodName is null)
             {
                 method = null;
@@ -1187,7 +1275,7 @@ namespace DrakeLang.Binding
                     if (!TryGetChildren<MethodDeclarationSyntax>(parentStatement, out var localDeclarations))
                         continue;
 
-                    var localDeclaration = localDeclarations.FirstOrDefault(dec => dec.Identifier.Text == methodName);
+                    var localDeclaration = localDeclarations.FirstOrDefault(dec => dec.Identifier.TokenText == methodName);
                     if (localDeclaration is not null && _methodSymbols.TryGetValue(localDeclaration, out method))
                     {
                         return true;
@@ -1212,7 +1300,7 @@ namespace DrakeLang.Binding
             if (resolvedMethods.Count > 1)
             {
                 if (!EnableAnalysisMode)
-                    Diagnostics.ReportAmbigousSymbolReference(identifierToken.Span, resolvedMethods);
+                    DiagnosticsBuilder.ReportAmbigousSymbolReference(identifierToken.Span, resolvedMethods);
 
                 method = null;
                 return false;
@@ -1231,7 +1319,7 @@ namespace DrakeLang.Binding
             if (EnableAnalysisMode)
                 return false;
 
-            Diagnostics.ReportUndefinedSymbol(identifierToken.Span, methodName);
+            DiagnosticsBuilder.ReportUndefinedSymbol(identifierToken.Span, methodName);
             _scope.TryDeclareMethod(new MethodSymbol(namespaceSym, methodName, ImmutableArray<ParameterSymbol>.Empty, Types.Error));
 
             return false;
@@ -1298,7 +1386,7 @@ namespace DrakeLang.Binding
             if (_rootScope is null)
             {
                 var rootScope = new BoundScope();
-                foreach (var method in SystemSymbols.Methods.GetAll())
+                foreach (var method in Methods.GetAll())
                     rootScope.TryDeclareMethod(method);
 
                 Interlocked.CompareExchange(ref _rootScope, rootScope, null);

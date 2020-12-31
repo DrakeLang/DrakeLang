@@ -16,32 +16,35 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using DrakeLang.Symbols;
 using DrakeLang.Syntax;
 using DrakeLang.Text;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace DrakeLang
 {
-    internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
+    internal sealed class DiagnosticsBuilder : IEnumerable<Diagnostic>
     {
-        private readonly HashSet<Diagnostic> _diagnostics = new HashSet<Diagnostic>();
-
-        public DiagnosticBag()
+        public DiagnosticsBuilder(SourceText text)
         {
+            Text = text;
+            Diagnostics = new();
         }
+
+        public DiagnosticsBuilder(SourceText text, DiagnosticBag diagnostics)
+        {
+            Diagnostics = diagnostics;
+            Text = text;
+        }
+
+        public DiagnosticBag Diagnostics { get; }
+        public SourceText Text { get; }
 
         #region Methods
 
-        public void AddRange(IEnumerable<Diagnostic> diagnostics)
-        {
-            foreach (var diagnostic in diagnostics)
-            {
-                _diagnostics.Add(diagnostic);
-            }
-        }
+        public void AddRange(IEnumerable<Diagnostic> diagnostics) => Diagnostics.AddRange(diagnostics);
 
         #endregion Methods
 
@@ -286,24 +289,38 @@ namespace DrakeLang
             Report(span, message);
         }
 
+        public void ReportMultipleSourceTextsWithTopLevelStatements(TextSpan span)
+        {
+            string message = "Top-level statements may only exist in a single source file.";
+            Report(span, message);
+        }
+
+        public void ReportTopLevelStatementCannotBeCombinedWithExplicitMainMethod(TextSpan span)
+        {
+            string message = "Top-level statements may not be defined in a project that already contain an explicit main method declaration.";
+            Report(span, message);
+        }
+
+        public void ReportMultipleMainMethods(TextSpan span)
+        {
+            string message = "A project may only contain a single main method.";
+            Report(span, message);
+        }
+
         #endregion Report
+
+        #region Helpers
+
+        private void Report(TextSpan span, string message) => Diagnostics.Report(Text, span, message);
+
+        #endregion Helpers
 
         #region IEnumerable
 
-        public IEnumerator<Diagnostic> GetEnumerator() => _diagnostics.GetEnumerator();
+        public IEnumerator<Diagnostic> GetEnumerator() => Diagnostics.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         #endregion IEnumerable
-
-        #region Helpers
-
-        private void Report(TextSpan span, string message)
-        {
-            Diagnostic diagnostic = new Diagnostic(span, message);
-            _diagnostics.Add(diagnostic);
-        }
-
-        #endregion Helpers
     }
 }

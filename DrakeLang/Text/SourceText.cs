@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Immutable;
+using System.IO;
 
 namespace DrakeLang.Text
 {
@@ -24,18 +25,35 @@ namespace DrakeLang.Text
     {
         private readonly string _text;
 
-        private SourceText(string text)
+        private SourceText(string text) : this(null, text)
+        { }
+
+        private SourceText(string? sourceFile, string text)
         {
+            SourceFile = sourceFile;
             _text = text;
             Lines = ParseLines(this, text);
         }
 
-        public static SourceText From(string text)
+        public static SourceText FromString(string text)
         {
             return new SourceText(text);
         }
 
+        public static SourceText FromFile(string source)
+        {
+            var fullSourcePath = Path.GetFullPath(source);
+            var sourceText = File.ReadAllText(fullSourcePath);
+
+            return new SourceText(source, sourceText);
+        }
+
         #region Properties
+
+        /// <summary>
+        /// Gets the absolute path of the source file this text was created from.
+        /// </summary>
+        public string? SourceFile { get; }
 
         public ImmutableArray<TextLine> Lines { get; }
 

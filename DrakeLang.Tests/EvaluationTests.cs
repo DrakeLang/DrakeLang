@@ -16,13 +16,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
 using DrakeLang.Symbols;
 using DrakeLang.Syntax;
 using DrakeLang.Text;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 using static DrakeLang.Symbols.SystemSymbols;
 
@@ -538,7 +537,7 @@ namespace DrakeLang.Tests
                         }
                     }
 
-                    namespace B {} 
+                    namespace B {}
                     var result = GetValB();",
                     "a");
                 yield return (@"
@@ -559,22 +558,22 @@ namespace DrakeLang.Tests
                 yield return ("def getValue() => \"a\"; with call = getValue; var result = call();", "a");
                 yield return (@"
                     namespace A;
-                    
+
                     def getValue() => ""a"";
 
                     namespace B { }
-                    
+
                     with call = A.getValue;
-                    var result = call();", 
+                    var result = call();",
                     "a");
 
                 yield return (@"
                     namespace A;
-                    
+
                     def getValue() => ""a"";
 
                     namespace B { }
-                    
+
                     with A;
                     with call = getValue;
                     var result = call();",
@@ -590,7 +589,7 @@ namespace DrakeLang.Tests
 
         private static void AssertValue(string text, object expectedValue)
         {
-            var syntaxTree = SyntaxTree.Parse(text);
+            var syntaxTree = SyntaxTree.FromString(text);
             var compilation = new Compilation(syntaxTree);
             var variables = new Dictionary<VariableSymbol, object>();
             var result = compilation.Evaluate(variables);
@@ -606,7 +605,7 @@ namespace DrakeLang.Tests
         private static void AssertDiagnostics(string text, string diagnosticText)
         {
             AnnotatedText annotatedText = AnnotatedText.Parse(text);
-            SyntaxTree syntaxTree = SyntaxTree.Parse(annotatedText.Text);
+            SyntaxTree syntaxTree = SyntaxTree.FromString(annotatedText.Text);
             Compilation compilation = new Compilation(syntaxTree);
             EvaluationResult result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
 
@@ -615,7 +614,11 @@ namespace DrakeLang.Tests
             if (annotatedText.Spans.Length != expectedDiagnostics.Length)
                 throw new Exception($"ERROR: Must mark as many spans as there are expected diagnostics.");
 
-            var diagnostics = result.Diagnostics.OrderBy(d => d.Span).ToImmutableArray();
+            var diagnostics = result.Diagnostics
+                .Where(d => d.Message != $"No entry point method (a method with the identifier 'Main') exists in the project.")
+                .OrderBy(d => d.Span)
+                .ToArray();
+
             Assert.Equal(expectedDiagnostics.Length, diagnostics.Length);
 
             for (int i = 0; i < expectedDiagnostics.Length; i++)

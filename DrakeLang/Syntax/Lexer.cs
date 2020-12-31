@@ -16,15 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using System.Collections.Immutable;
-using System.Text;
 using DrakeLang.Text;
+using System.Text;
 
 namespace DrakeLang.Syntax
 {
     internal sealed class Lexer
     {
-        private readonly DiagnosticBag _diagnostics = new DiagnosticBag();
         private readonly SourceText _text;
 
         private int _position;
@@ -35,9 +33,12 @@ namespace DrakeLang.Syntax
         public Lexer(SourceText text)
         {
             _text = text;
+            Diagnostics = new(text);
         }
 
         #region Private properties
+
+        public DiagnosticsBuilder Diagnostics { get; }
 
         private char Current => Peek(0);
 
@@ -98,7 +99,7 @@ namespace DrakeLang.Syntax
                             ReadWhitespace();
                         else
                         {
-                            _diagnostics.ReportBadCharacter(_position, Current);
+                            Diagnostics.ReportBadCharacter(_position, Current);
                             Next();
                         }
                         break;
@@ -112,10 +113,8 @@ namespace DrakeLang.Syntax
                 text = _text.ToString(_start, length);
             }
 
-            return new SyntaxToken(_kind, _start, text, _value);
+            return new SyntaxToken(_text, _kind, _start, text, _value);
         }
-
-        public ImmutableArray<Diagnostic> GetDiagnostics() => _diagnostics.ToImmutableArray();
 
         #endregion Methods
 
@@ -372,7 +371,7 @@ namespace DrakeLang.Syntax
             if (Current is '\'')
             {
                 var span = new TextSpan(_start, 1);
-                _diagnostics.ReportEmptyCharacterLiteral(span);
+                Diagnostics.ReportEmptyCharacterLiteral(span);
 
                 _value = default(char);
             }
@@ -384,7 +383,7 @@ namespace DrakeLang.Syntax
                 if (Current is not '\'')
                 {
                     var span = new TextSpan(_start, 1);
-                    _diagnostics.ReportUnterminatedCharacterLiteral(span);
+                    Diagnostics.ReportUnterminatedCharacterLiteral(span);
                 }
             }
 
@@ -409,7 +408,7 @@ namespace DrakeLang.Syntax
                     case '\r':
                     case '\n':
                         TextSpan span = new TextSpan(_start, 1);
-                        _diagnostics.ReportUnterminatedString(span);
+                        Diagnostics.ReportUnterminatedString(span);
                         done = true;
                         break;
 

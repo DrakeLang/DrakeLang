@@ -16,27 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using DrakeLang.Symbols;
-using System.Collections.Generic;
-
-namespace DrakeLang.Binding
+namespace DrakeLangO
 {
-    internal sealed class BoundExplicitCastExpression : BoundExpression
+    internal static class Globals
     {
-        public BoundExplicitCastExpression(TypeSymbol type, BoundExpression expression)
-        {
-            Type = type;
-            Expression = expression;
-        }
-
-        public override TypeSymbol Type { get; }
-        public BoundExpression Expression { get; }
-
-        public override BoundNodeKind Kind => BoundNodeKind.ExplicitCastExpression;
-
-        public override IEnumerable<BoundNode> GetChildren()
-        {
-            yield return Expression;
-        }
+        public const string ProjectExtension = ".drakeproj";
+        public const string SourceFileExtension = ".drake";
     }
 }

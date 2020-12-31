@@ -16,10 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Text;
 using System;
 using System.Collections.Immutable;
-using System.Globalization;
-using DrakeLang.Text;
 using static DrakeLang.Symbols.SystemSymbols;
 
 namespace DrakeLang.Syntax
@@ -34,13 +33,15 @@ namespace DrakeLang.Syntax
             SyntaxKind.MultiLineCommentToken,
         }.ToImmutableHashSet();
 
-        private readonly DiagnosticBag _diagnostics = new DiagnosticBag();
-
+        private readonly SourceText _text;
         private readonly ImmutableArray<SyntaxToken> _tokens;
         private int _position;
 
         public Parser(SourceText text)
         {
+            _text = text;
+            Diagnostics = new(text);
+
             var tokens = ImmutableArray.CreateBuilder<SyntaxToken>();
 
             var lexer = new Lexer(text);
@@ -54,8 +55,14 @@ namespace DrakeLang.Syntax
             } while (token.Kind != SyntaxKind.EndOfFileToken);
 
             _tokens = tokens.ToImmutable();
-            _diagnostics.AddRange(lexer.GetDiagnostics());
+            Diagnostics.AddRange(lexer.Diagnostics);
         }
+
+        #region Properties
+
+        public DiagnosticsBuilder Diagnostics { get; }
+
+        #endregion Properties
 
         #region Private properties
 
@@ -73,8 +80,6 @@ namespace DrakeLang.Syntax
 
             return new CompilationUnitSyntax(statements, endOfFileToken);
         }
-
-        public ImmutableArray<Diagnostic> GetDiagnostics() => _diagnostics.ToImmutableArray();
 
         #endregion Methods
 
@@ -187,7 +192,7 @@ namespace DrakeLang.Syntax
             var statement = ParseStatement();
 
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
-                _diagnostics.ReportCannotDeclareConditional(statement.Span);
+                Diagnostics.ReportCannotDeclareConditional(statement.Span);
 
             var elseClause = ParseElseClause();
 
@@ -203,7 +208,7 @@ namespace DrakeLang.Syntax
             var statement = ParseStatement();
 
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
-                _diagnostics.ReportCannotDeclareConditional(statement.Span);
+                Diagnostics.ReportCannotDeclareConditional(statement.Span);
 
             return new ElseClauseSyntax(keyword, statement);
         }
@@ -215,7 +220,7 @@ namespace DrakeLang.Syntax
             var statement = ParseStatement();
 
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
-                _diagnostics.ReportCannotDeclareConditional(statement.Span);
+                Diagnostics.ReportCannotDeclareConditional(statement.Span);
 
             return new WhileStatementSyntax(keyword, condition, statement);
         }
@@ -238,7 +243,7 @@ namespace DrakeLang.Syntax
 
             var statement = ParseStatement();
             if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
-                _diagnostics.ReportCannotDeclareConditional(statement.Span);
+                Diagnostics.ReportCannotDeclareConditional(statement.Span);
 
             return new ForStatementSyntax(
                 keyword,
@@ -556,7 +561,7 @@ namespace DrakeLang.Syntax
         {
             if (!Current.Kind.IsExplicitTypeKeyword())
             {
-                _diagnostics.ReportExplicitTypeExpected(Current.Span, Current.Kind);
+                Diagnostics.ReportExplicitTypeExpected(Current.Span, Current.Kind);
             }
 
             var typeToken = NextToken();
@@ -592,8 +597,8 @@ namespace DrakeLang.Syntax
         private LiteralExpressionSyntax ParseIntegerLiteral()
         {
             var integerToken = MatchToken(SyntaxKind.IntegerToken);
-            if (!int.TryParse(integerToken.Text, out int value))
-                _diagnostics.ReportInvalidValue(integerToken.Span, integerToken.Text, Types.Int);
+            if (!int.TryParse(integerToken.TokenText, out int value))
+                Diagnostics.ReportInvalidValue(integerToken.Span, integerToken.TokenText, Types.Int);
 
             return new LiteralExpressionSyntax(integerToken, value);
         }
@@ -603,9 +608,9 @@ namespace DrakeLang.Syntax
             var floatToken = MatchToken(SyntaxKind.FloatToken);
 
             // Remove eventual 'f' character.
-            string? floatString = floatToken.Text?.Replace("f", "", ignoreCase: false, CultureInfo.InvariantCulture);
+            string floatString = floatToken.TokenText.Replace("f", "", StringComparison.InvariantCulture);
             if (!double.TryParse(floatString, out double value))
-                _diagnostics.ReportInvalidValue(floatToken.Span, floatToken.Text, Types.Float);
+                Diagnostics.ReportInvalidValue(floatToken.Span, floatToken.TokenText, Types.Float);
 
             return new LiteralExpressionSyntax(floatToken, value);
         }
@@ -737,8 +742,8 @@ namespace DrakeLang.Syntax
             if (Current.Kind == kind)
                 return NextToken();
 
-            _diagnostics.ReportUnexpectedToken(Current.Span, Current.Kind, kind);
-            return new SyntaxToken(kind, Current.Position, null, null);
+            Diagnostics.ReportUnexpectedToken(Current.Span, Current.Kind, kind);
+            return new SyntaxToken(_text, kind, Current.Position, "", null);
         }
 
         private SeparatedSyntaxList<T> ParseSyntaxList<T>(Func<T> valueParser,

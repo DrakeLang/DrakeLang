@@ -16,10 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using DrakeLang.Syntax;
 using Xunit;
 
 namespace DrakeLang.Tests.Syntax
@@ -59,7 +59,7 @@ namespace DrakeLang.Tests.Syntax
                 Assert.Equal(kind, _enumerator.Current.Kind);
 
                 SyntaxToken token = Assert.IsType<SyntaxToken>(_enumerator.Current);
-                Assert.Equal(text, token.Text);
+                Assert.Equal(text, token.TokenText);
             }
             catch when (MarkFailed())
             {

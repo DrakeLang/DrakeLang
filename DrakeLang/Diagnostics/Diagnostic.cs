@@ -20,25 +20,29 @@ using DrakeLang.Text;
 
 namespace DrakeLang
 {
-    public sealed record Diagnostic
+    public sealed record Diagnostic(SourceText? Text, TextSpan Span, string Message)
     {
-        public Diagnostic(TextSpan span, string message)
+        public Diagnostic(string Message) : this(null, default, Message)
         {
-            Span = span;
-            Message = message;
         }
 
-        #region Properties
+        /// <summary>
+        /// Returns a string representation of this diagnostic.
+        /// </summary>
+        public override string ToString()
+        {
+            if (Text is null)
+                return Message;
 
-        public TextSpan Span { get; }
-        public string Message { get; }
+            int lineIndex = Text.GetLineIndex(Span.Start);
+            var line = Text.Lines[lineIndex];
+            int lineNumer = lineIndex + 1;
+            int character = Span.Start - line.Start + 1;
 
-        #endregion Properties
-
-        #region Methods
-
-        public override string ToString() => Message;
-
-        #endregion Methods
+            if (Text.SourceFile is null)
+                return $"{Text.SourceFile} ({lineNumer}, {character}): {Message}";
+            else
+                return $"({lineNumer}, {character}): {Message}";
+        }
     }
 }

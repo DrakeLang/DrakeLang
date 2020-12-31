@@ -16,39 +16,43 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Text;
 using System.Collections.Generic;
 using System.Linq;
-using DrakeLang.Text;
 
 namespace DrakeLang.Syntax
 {
     public sealed class SyntaxToken : SyntaxNode
     {
-        internal SyntaxToken(SyntaxKind kind, int position, string? text, object? value)
+        internal SyntaxToken(SourceText text, SyntaxKind kind, int position, string tokenText, object? value)
         {
+            Text = text;
             Kind = kind;
             Position = position;
-            Text = text;
+            TokenText = tokenText;
             Value = value;
         }
 
         #region Properties
 
+        public override SourceText Text { get; }
         public override SyntaxKind Kind { get; }
 
         public int Position { get; }
-        public string? Text { get; }
+
+        /// <summary>
+        /// The text of this token.
+        /// </summary>
+        public string TokenText { get; }
+
         public object? Value { get; }
-        public override TextSpan Span => new TextSpan(Position, Text?.Length ?? 0);
+        public override TextSpan Span => new TextSpan(Position, TokenText.Length);
 
         #endregion Properties
 
         #region Methods
 
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            return Enumerable.Empty<SyntaxNode>();
-        }
+        public override IEnumerable<SyntaxNode> GetChildren() => Enumerable.Empty<SyntaxNode>();
 
         #endregion Methods
     }

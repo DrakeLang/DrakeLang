@@ -20,8 +20,11 @@ using System;
 
 namespace DrakeLangO
 {
-    public static class ConsoleExt
+    internal static class ConsoleExt
     {
+        public const ConsoleColor ErrorColor = ConsoleColor.DarkRed;
+        public const ConsoleColor ExceptionColor = ConsoleColor.DarkGray;
+
         public static void Write(string value, ConsoleColor foreground)
         {
             ConsoleColor oldColor = Console.ForegroundColor;
@@ -36,6 +39,14 @@ namespace DrakeLangO
         {
             Write(value, foreground);
             Console.WriteLine();
+        }
+
+        public static void WriteError(string error) => WriteLine(error, ErrorColor);
+
+        public static void WriteError(string error, Exception ex)
+        {
+            WriteLine(error, ErrorColor);
+            WriteLine(ex.ToString(), ExceptionColor);
         }
     }
 }

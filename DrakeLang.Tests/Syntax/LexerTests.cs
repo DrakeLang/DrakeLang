@@ -16,10 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using DrakeLang.Syntax;
 using Xunit;
 
 namespace DrakeLang.Tests.Syntax
@@ -52,7 +52,7 @@ namespace DrakeLang.Tests.Syntax
             SyntaxToken token = Assert.Single(tokens);
 
             Assert.Equal(kind, token.Kind);
-            Assert.Equal(text, token.Text);
+            Assert.Equal(text, token.TokenText);
         }
 
         [Theory]
@@ -67,10 +67,10 @@ namespace DrakeLang.Tests.Syntax
             Assert.Equal(2, tokens.Length);
 
             Assert.Equal(t1kind, tokens[0].Kind);
-            Assert.Equal(t1text, tokens[0].Text);
+            Assert.Equal(t1text, tokens[0].TokenText);
 
             Assert.Equal(t2kind, tokens[1].Kind);
-            Assert.Equal(t2text, tokens[1].Text);
+            Assert.Equal(t2text, tokens[1].TokenText);
         }
 
         [Theory]
@@ -86,13 +86,13 @@ namespace DrakeLang.Tests.Syntax
             Assert.Equal(3, tokens.Length);
 
             Assert.Equal(t1kind, tokens[0].Kind);
-            Assert.Equal(t1text, tokens[0].Text);
+            Assert.Equal(t1text, tokens[0].TokenText);
 
             Assert.Equal(separatorKind, tokens[1].Kind);
-            Assert.Equal(separatorText, tokens[1].Text);
+            Assert.Equal(separatorText, tokens[1].TokenText);
 
             Assert.Equal(t2kind, tokens[2].Kind);
-            Assert.Equal(t2text, tokens[2].Text);
+            Assert.Equal(t2text, tokens[2].TokenText);
         }
 
         public static IEnumerable<object[]> GetTokensData()

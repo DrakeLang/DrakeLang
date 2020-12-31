@@ -15,11 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
+using DrakeLang.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using DrakeLang.Utils;
 
 namespace DrakeLang.Binding
 {
@@ -27,13 +27,16 @@ namespace DrakeLang.Binding
     {
         #region WriteTo
 
-        public static void WriteTo(this BoundNode node, TextWriter writer)
+        public static void WriteTo(IEnumerable<BoundNode> nodes, TextWriter writer)
         {
-            if (node is null) throw new ArgumentNullException(nameof(node));
-            if (writer is null) throw new ArgumentNullException(nameof(writer));
-
-            node.WriteTo(new WriteContext(writer));
+            var lastNode = nodes.Last();
+            nodes.ForEach(node => node.WriteTo(new WriteContext(writer)
+            {
+                IsLast = node == lastNode,
+            }));
         }
+
+        public static void WriteTo(this BoundNode node, TextWriter writer) => node.WriteTo(new WriteContext(writer));
 
         private static void WriteTo(this BoundNode node, WriteContext context)
         {
@@ -54,10 +57,6 @@ namespace DrakeLang.Binding
             {
                 case BoundNodeKind.VariableDeclarationStatement:
                     WriteVariableDeclarationStatement((BoundVariableDeclarationStatement)node, context);
-                    break;
-
-                case BoundNodeKind.MethodDeclaration:
-                    WriteMethodDeclarationStatement((BoundMethodDeclaration)node, context);
                     break;
 
                 case BoundNodeKind.LabelStatement:
@@ -134,17 +133,6 @@ namespace DrakeLang.Binding
             context.Writer.WriteLine();
 
             PrintChildren(node, context);
-        }
-
-        private static void WriteMethodDeclarationStatement(BoundMethodDeclaration node, WriteContext context)
-        {
-            context.Writer.WriteSyntaxKind(node.Kind);
-            context.Writer.Write(" ");
-            context.Writer.WriteMethod(node.Method, printParamNames: true);
-
-            context.Writer.WriteLine();
-
-            PrintChildren(node.Declaration, context);
         }
 
         private static void WriteLabelStatement(BoundLabelStatement node, WriteContext context)
@@ -295,8 +283,6 @@ namespace DrakeLang.Binding
 
             PrintChildren(node, context);
         }
-
-
 
         private static void WriteArrayInitializationExpression(BoundArrayInitializationExpression node, WriteContext context)
         {

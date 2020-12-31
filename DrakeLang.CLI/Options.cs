@@ -43,8 +43,8 @@ namespace DrakeLangO
         [Option('d', "debug", Separator = '|', HelpText = nameof(Resources.DebugHelpText), ResourceType = typeof(Resources))]
         public IEnumerable<DebugOutput> Debug { get; set; } = Enumerable.Empty<DebugOutput>();
 
-        [Option('s', "source", HelpText = "The path to the source to compile", Required = true, Min = 1, Separator = ',')]
-        public IEnumerable<string> Source { get; set; } = Enumerable.Empty<string>();
+        [Option('p', "project", HelpText = "The path to the project to compile.", Required = true)]
+        public string? Project { get; set; }
 
         public DebugOutput GetAggregatedDebugValues() => Debug.Aggregate(DebugOutput.None, (d1, d2) => d1 | d2);
     }
