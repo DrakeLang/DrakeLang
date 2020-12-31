@@ -366,29 +366,30 @@ namespace DrakeLang.Syntax
         private void ReadChar()
         {
             // Skip quote start.
-            _position++;
+            _kind = SyntaxKind.CharToken;
+            Next();
 
             if (Current is '\'')
             {
-                var span = new TextSpan(_start, 1);
+                var span = new TextSpan(_start, 2);
                 Diagnostics.ReportEmptyCharacterLiteral(span);
 
                 _value = default(char);
+                Next();
+            }
+            else if (Current is '\n' or '\r' || LookAhead is not '\'')
+            {
+                var span = new TextSpan(_start, 1);
+                Diagnostics.ReportUnterminatedCharacterLiteral(span);
+                _value = default(char);
+
+                // don't consume any more characters.
             }
             else
             {
                 _value = Current;
-                _position++;
-
-                if (Current is not '\'')
-                {
-                    var span = new TextSpan(_start, 1);
-                    Diagnostics.ReportUnterminatedCharacterLiteral(span);
-                }
+                _position += 2;
             }
-
-            _position++;
-            _kind = SyntaxKind.CharToken;
         }
 
         private void ReadString()

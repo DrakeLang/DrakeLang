@@ -21,7 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace DrakeLangO
+namespace Drake
 {
     [Flags]
     public enum DebugOutput

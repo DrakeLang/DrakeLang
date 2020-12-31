@@ -18,7 +18,7 @@
 
 using System;
 
-namespace DrakeLangO
+namespace Drake
 {
     internal static class ConsoleExt
     {

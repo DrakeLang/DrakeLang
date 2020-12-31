@@ -50,9 +50,19 @@ namespace DrakeLang
 
         #region Report
 
-        public void ReportInvalidValue(TextSpan span, string? text, TypeSymbol type)
+        public void ReportAmbigousSymbolReference(TextSpan span, IEnumerable<MemberSymbol> symbols)
         {
-            string message = $"The number '{text}' is not a valid value for type '{type}'.";
+            var symbolStrs = symbols.Select(s => s.FullName)
+                                    .OrderBy(name => name)
+                                    .Select(name => '\'' + name + '\'');
+
+            string message = $"Reference is ambiguous between the following symbols: {string.Join(", ", symbolStrs)}.";
+            Report(span, message);
+        }
+
+        public void ReportArraySizeMismatch(TextSpan span)
+        {
+            string message = "Size of array initializer must be the same as explicitly specified size.";
             Report(span, message);
         }
 
@@ -63,129 +73,9 @@ namespace DrakeLang
             Report(span, message);
         }
 
-        public void ReportEmptyCharacterLiteral(TextSpan span)
+        public void ReportCannotAssignReadOnly(TextSpan span, string? name)
         {
-            string message = "Empty character literal.";
-            Report(span, message);
-        }
-
-        public void ReportUnterminatedCharacterLiteral(TextSpan span)
-        {
-            string message = "Unterminated character literal.";
-            Report(span, message);
-        }
-
-        public void ReportUnterminatedString(TextSpan span)
-        {
-            string message = "Unterminated string literal.";
-            Report(span, message);
-        }
-
-        public void ReportUnexpectedToken(TextSpan span, SyntaxKind actualKind, SyntaxKind expectedKind)
-        {
-            string message = $"Unexpected token <{actualKind}>, expected <{expectedKind}>.";
-            Report(span, message);
-        }
-
-        public void ReportExplicitTypeExpected(TextSpan span, SyntaxKind actualKind)
-        {
-            string message = $"Unexpected token <{actualKind}>, expected explicit type.";
-            Report(span, message);
-        }
-
-        public void ReportUnexpectedBreakOrContinue(TextSpan span)
-        {
-            string message = "No enclosing loop out of which to break or continue.";
-            Report(span, message);
-        }
-
-        public void ReportUndefinedUnaryOperator(TextSpan span, string? operatorText, TypeSymbol type)
-        {
-            string message = $"Unary operator '{operatorText}' is not defined for type '{type}'.";
-            Report(span, message);
-        }
-
-        public void ReportUndefinedBinaryOperator(TextSpan span, string? operatorText, TypeSymbol leftType, TypeSymbol rightType)
-        {
-            string message = $"Binary operator '{operatorText}' is not defined for types '{leftType}' and '{rightType}'.";
-            Report(span, message);
-        }
-
-        public void ReportUndefinedSymbol(TextSpan span, string? name)
-        {
-            string message = $"Symbol '{name}' does not exist.";
-            Report(span, message);
-        }
-
-        public void ReportWrongArgumentCount(TextSpan span, string name, int expected, int actual)
-        {
-            string message = $"Method or indexer '{name}' requires {expected} arguments, but recieved {actual}.";
-            Report(span, message);
-        }
-
-        public void ReportUnexpectedPipedArgument(TextSpan span)
-        {
-            string message = $"Unexpected piped argument. Method call was either not provided a piped argument, or multiple piped arguments were attempted used.";
-            Report(span, message);
-        }
-
-        public void ReportWrongArgumentType(TextSpan span, string methodName, string parameterName, TypeSymbol expected, TypeSymbol actual)
-        {
-            string message = $"Parameter '{parameterName}' in method '{methodName}' requires value of type '{expected}', but recieved value of type '{actual}'.";
-            Report(span, message);
-        }
-
-        public void ReportVariableAlreadyDeclared(TextSpan span, string? name)
-        {
-            string message = $"A variable with the name '{name}' is already declared.";
-            Report(span, message);
-        }
-
-        public void ReportLabelAlreadyDeclared(TextSpan span, string? name)
-        {
-            string message = $"A label with the name '{name}' is already declared.";
-            Report(span, message);
-        }
-
-        public void ReportDuplicateParameterName(TextSpan span, string name)
-        {
-            string message = $"Duplicate parameter name '{name}'.";
-            Report(span, message);
-        }
-
-        public void ReportMethodAlreadyDeclared(TextSpan span, string? name)
-        {
-            string message = $"A method with the name '{name}' is already declared in this scope.";
-            Report(span, message);
-        }
-
-        public void ReportAliasAlreadyDeclared(TextSpan span, string? name)
-        {
-            string message = $"An alias with the name '{name}' has already been declared in this scope.";
-            Report(span, message);
-        }
-
-        internal void ReportCannotInferReturnType(TextSpan span, string? name)
-        {
-            string message = $"Implicit return type of method '{name}' cannot be infered.";
-            Report(span, message);
-        }
-
-        public void ReportCannotImplicitlyConvert(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
-        {
-            string message = $"Cannot implicitly convert type '{fromType}' to '{toType}'. An explicit convertion exists (are you missing a cast?)";
-            Report(span, message);
-        }
-
-        public void ReportNoExplicitConversion(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
-        {
-            string message = $"No explicit convertion exists for type '{fromType}' to '{toType}'.";
-            Report(span, message);
-        }
-
-        public void ReportCannotConvert(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
-        {
-            string message = $"Cannot convert type '{fromType}' to '{toType}'.";
+            string message = $"Variable '{name}' is read-only and cannot be modified.";
             Report(span, message);
         }
 
@@ -195,21 +85,9 @@ namespace DrakeLang
             Report(span, message);
         }
 
-        public void ReportIncrementOperandMustBeVariable(TextSpan span)
+        public void ReportCannotConvert(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
         {
-            string message = "The operand of an increment or decrement operation must be variable.";
-            Report(span, message);
-        }
-
-        public void ReportIllegalExplicitType(TextSpan span)
-        {
-            string message = $"Explicit types cannot be used in this context (it can only be used in combination with the 'set' keyword).";
-            Report(span, message);
-        }
-
-        public void ReportCannotAssignReadOnly(TextSpan span, string? name)
-        {
-            string message = $"Variable '{name}' is read-only and cannot be modified.";
+            string message = $"Cannot convert type '{fromType}' to '{toType}'.";
             Report(span, message);
         }
 
@@ -219,33 +97,39 @@ namespace DrakeLang
             Report(span, message);
         }
 
+        public void ReportCannotImplicitlyConvert(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
+        {
+            string message = $"Cannot implicitly convert type '{fromType}' to '{toType}'. An explicit convertion exists (are you missing a cast?).";
+            Report(span, message);
+        }
+
         public void ReportCanOnlyPipeToMethods(TextSpan span)
         {
             string message = $"Expressions can only be piped into methods.";
             Report(span, message);
         }
 
-        public void ReportMethodNotAllPathsReturnValue(TextSpan span)
+        public void ReportDuplicateParameterName(TextSpan span, string name)
         {
-            string message = $"Not all paths return a value.";
+            string message = $"Duplicate parameter name '{name}'.";
             Report(span, message);
         }
 
-        public void ReportInvalidReturnInVoidMethod(TextSpan span)
+        public void ReportEmptyCharacterLiteral(TextSpan span)
         {
-            string message = $"Cannot return an expression from a method returning void.";
+            string message = "Empty character literal.";
             Report(span, message);
         }
 
-        public void ReportMissingReturnExpression(TextSpan span)
+        public void ReportExplicitTypeExpected(TextSpan span, SyntaxKind actualKind)
         {
-            string message = $"Expected to return expression in non-void returning method.";
+            string message = $"Unexpected token <{actualKind}>, expected explicit type.";
             Report(span, message);
         }
 
-        public void ReportIllegalStatementPlacement(TextSpan span)
+        public void ReportIllegalExplicitType(TextSpan span)
         {
-            string message = $"Unexpected statement. Namespaces and type declarations cannot directly contain statements.";
+            string message = $"Explicit types cannot be used in this context (it can only be used in combination with the 'set' keyword).";
             Report(span, message);
         }
 
@@ -261,31 +145,57 @@ namespace DrakeLang
             Report(span, message);
         }
 
-        public void ReportAmbigousSymbolReference(TextSpan span, IEnumerable<MemberSymbol> symbols)
+        public void ReportIllegalStatementPlacement(TextSpan span)
         {
-            var symbolStrs = symbols.Select(s => s.FullName)
-                                    .OrderBy(name => name)
-                                    .Select(name => '\'' + name + '\'');
-
-            string message = $"Reference is ambiguous between the following symbols: {string.Join(", ", symbolStrs)}.";
+            string message = $"Unexpected statement. Namespaces and type declarations cannot directly contain statements.";
             Report(span, message);
         }
 
-        public void ReportTypeDoesNotHaveIndexer(TextSpan span, string name)
+        public void ReportIncrementOperandMustBeVariable(TextSpan span)
         {
-            string message = $"Type '{name}' does not expose an indexer.";
+            string message = "The operand of an increment or decrement operation must be variable.";
             Report(span, message);
         }
 
-        public void ReportSizeMustBeConstantWithInitializer(TextSpan span)
+        public void ReportInvalidNumberValue(TextSpan span, string? text, TypeSymbol type)
         {
-            string message = "Array size must be a constant value when using an array initializer.";
+            string message = $"The number '{text}' is not a valid value for type '{type}'.";
             Report(span, message);
         }
 
-        public void ReportArraySizeMismatch(TextSpan span)
+        public void ReportInvalidReturnInVoidMethod(TextSpan span)
         {
-            string message = "Size of array initializer must be the same as explicitly specified size.";
+            string message = $"Cannot return an expression from a method returning void.";
+            Report(span, message);
+        }
+
+        public void ReportLabelAlreadyDeclared(TextSpan span, string? name)
+        {
+            string message = $"A label with the name '{name}' is already declared.";
+            Report(span, message);
+        }
+
+        public void ReportMethodAlreadyDeclared(TextSpan span, string? name)
+        {
+            string message = $"A method with the name '{name}' is already declared in this scope.";
+            Report(span, message);
+        }
+
+        public void ReportMethodNotAllPathsReturnValue(TextSpan span)
+        {
+            string message = $"Not all paths return a value.";
+            Report(span, message);
+        }
+
+        public void ReportMissingReturnExpression(TextSpan span)
+        {
+            string message = $"Expected to return expression in non-void returning method.";
+            Report(span, message);
+        }
+
+        public void ReportMultipleMainMethods(TextSpan span)
+        {
+            string message = "A project may only contain a single main method.";
             Report(span, message);
         }
 
@@ -295,15 +205,99 @@ namespace DrakeLang
             Report(span, message);
         }
 
+        public void ReportNoExplicitConversion(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
+        {
+            string message = $"No explicit convertion exists for type '{fromType}' to '{toType}'.";
+            Report(span, message);
+        }
+
+        public void ReportSizeMustBeConstantWithInitializer(TextSpan span)
+        {
+            string message = "Array size must be a constant value when using an array initializer.";
+            Report(span, message);
+        }
+
         public void ReportTopLevelStatementCannotBeCombinedWithExplicitMainMethod(TextSpan span)
         {
             string message = "Top-level statements may not be defined in a project that already contain an explicit main method declaration.";
             Report(span, message);
         }
 
-        public void ReportMultipleMainMethods(TextSpan span)
+        public void ReportTypeDoesNotHaveIndexer(TextSpan span, string name)
         {
-            string message = "A project may only contain a single main method.";
+            string message = $"Type '{name}' does not expose an indexer.";
+            Report(span, message);
+        }
+
+        public void ReportUndefinedBinaryOperator(TextSpan span, string? operatorText, TypeSymbol leftType, TypeSymbol rightType)
+        {
+            string message = $"Binary operator '{operatorText}' is not defined for types '{leftType}' and '{rightType}'.";
+            Report(span, message);
+        }
+
+        public void ReportUndefinedSymbol(TextSpan span, string? name)
+        {
+            string message = $"Symbol '{name}' does not exist in this context.";
+            Report(span, message);
+        }
+
+        public void ReportUndefinedUnaryOperator(TextSpan span, string? operatorText, TypeSymbol type)
+        {
+            string message = $"Unary operator '{operatorText}' is not defined for type '{type}'.";
+            Report(span, message);
+        }
+
+        public void ReportUnexpectedBreakOrContinue(TextSpan span)
+        {
+            string message = "No enclosing loop out of which to break or continue.";
+            Report(span, message);
+        }
+
+        public void ReportUnexpectedPipedArgument(TextSpan span)
+        {
+            string message = $"Unexpected piped argument. Method call was either not provided a piped argument, or multiple piped arguments were attempted used.";
+            Report(span, message);
+        }
+
+        public void ReportUnexpectedToken(TextSpan span, SyntaxKind actualKind, SyntaxKind expectedKind)
+        {
+            string message = $"Unexpected token <{actualKind}>, expected <{expectedKind}>.";
+            Report(span, message);
+        }
+
+        public void ReportUnterminatedCharacterLiteral(TextSpan span)
+        {
+            string message = "Unterminated character literal.";
+            Report(span, message);
+        }
+
+        public void ReportUnterminatedString(TextSpan span)
+        {
+            string message = "Unterminated string literal.";
+            Report(span, message);
+        }
+
+        public void ReportVariableAlreadyDeclared(TextSpan span, string? name)
+        {
+            string message = $"A variable with the name '{name}' is already declared.";
+            Report(span, message);
+        }
+
+        public void ReportWrongArgumentCount(TextSpan span, string name, int expected, int actual)
+        {
+            string message = $"Method or indexer '{name}' requires {expected} arguments, but recieved {actual}.";
+            Report(span, message);
+        }
+
+        public void ReportWrongArgumentType(TextSpan span, string methodName, string parameterName, TypeSymbol expected, TypeSymbol actual)
+        {
+            string message = $"Parameter '{parameterName}' in method '{methodName}' requires value of type '{expected}', but recieved value of type '{actual}'.";
+            Report(span, message);
+        }
+
+        public void ReportCannotInferReturnType(TextSpan span, string? name)
+        {
+            string message = $"Implicit return type of method '{name}' cannot be infered.";
             Report(span, message);
         }
 

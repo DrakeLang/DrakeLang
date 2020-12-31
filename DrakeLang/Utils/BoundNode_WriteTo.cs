@@ -29,7 +29,7 @@ namespace DrakeLang.Binding
 
         public static void WriteTo(IEnumerable<BoundNode> nodes, TextWriter writer)
         {
-            var lastNode = nodes.Last();
+            var lastNode = nodes.LastOrDefault();
             nodes.ForEach(node => node.WriteTo(new WriteContext(writer)
             {
                 IsLast = node == lastNode,

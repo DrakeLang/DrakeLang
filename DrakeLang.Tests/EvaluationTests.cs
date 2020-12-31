@@ -18,7 +18,6 @@
 
 using DrakeLang.Symbols;
 using DrakeLang.Syntax;
-using DrakeLang.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,76 +38,51 @@ namespace DrakeLang.Tests
         #region Reports
 
         [Fact]
-        public void Evaluator_VariableDeclaration_Reports_Redeclaration()
+        public void Evaluator_NoMainMethod_Reports_NoEntryPoint()
         {
             string text = @"
-                {
-                    var x = 10;
-                    var y = 100;
-                    {
-                        var x = 10;
-                    }
-                    var [x] = 5;
-                }
+                []def A() { var x = 10; }
             ";
 
             string diagnostics = @"
-                A variable with the name 'x' is already declared.
+                No entry point method (a method with the identifier 'Main') exists in the project.
+            ";
+
+            AssertDiagnostics(text, diagnostics, ignoreNoMain: false);
+        }
+
+        [Fact]
+        public void Evaluator_Call_Reports_Ambiguous()
+        {
+            var text = @"
+                with A;
+                with B;
+
+                [GetVal]();
+
+                namespace A;
+                def GetVal() => 0;
+
+                namespace B;
+                def GetVal() => 0;
+            ";
+
+            string diagnostics = @"
+                Reference is ambiguous between the following symbols: 'A.GetVal', 'B.GetVal'.
             ";
 
             AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
-        public void Evaluator_Assigned_Reports_Undefined()
+        public void Evaluator_ArrayInit_Reports_SizeMismatch()
         {
-            string text = @"
-                [x] = 10;
+            var text = @"
+                var a = \[5\] => [1, 2, 3];
             ";
 
             string diagnostics = @"
-                Symbol 'x' does not exist.
-            ";
-
-            AssertDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
-        public void Evaluator_Assigned_Reports_CannotConvert()
-        {
-            string text = @"
-                {
-                    var x = 10;
-                    x = [true];
-                }
-            ";
-
-            string diagnostics = @"
-                Cannot convert type 'bool' to 'int'.
-            ";
-
-            AssertDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
-        public void Evaluator_Unary_Reports_UndefinedOperator()
-        {
-            string text = @"[+]true;";
-
-            string diagnostics = @"
-                Unary operator '+' is not defined for type 'bool'.
-            ";
-
-            AssertDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
-        public void Evaluator_Binary_Reports_UndefinedOperator()
-        {
-            string text = @"10 [*] true;";
-
-            string diagnostics = @"
-                Binary operator '*' is not defined for types 'int' and 'bool'.
+                Size of array initializer must be the same as explicitly specified size.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -137,43 +111,118 @@ namespace DrakeLang.Tests
         }
 
         [Fact]
-        public void Evaluator_Implicit_Recursive_Method_Return_Type_Reports_Unable_To_Infer()
+        public void Evaluator_AssignVoid_Reports()
         {
-            var text = @"
-                def Main() { }
-                def [A](bool b) => B(b);
-                def [B](bool b)
-                {
-                    if (b)
-                        return A(b);
-                    else
-                        return A(!b);
-                }
-            ";
-
+            var text = "var [a = Sys.Console.WriteLine(0)];";
             string diagnostics = @"
-                Implicit return type of method 'A' cannot be infered.
-                Implicit return type of method 'B' cannot be infered.
+                Cannot assign void to an implicitly-typed variable.
             ";
 
             AssertDiagnostics(text, diagnostics);
         }
 
         [Fact]
-        public void Evaluator_Statement_Reports_Illegal_Statement_Placement()
+        public void Evaluator_Assigned_Reports_CannotConvert()
         {
-            var text = @"
-                namespace A;
-
-                [var a = 0;]
-                [var b = a;]
-                [a = b;]
+            string text = @"
+                {
+                    var x = 10;
+                    x = [true];
+                }
             ";
 
             string diagnostics = @"
-                Unexpected statement. Namespaces and type declarations cannot directly contain statements.
-                Unexpected statement. Namespaces and type declarations cannot directly contain statements.
-                Unexpected statement. Namespaces and type declarations cannot directly contain statements.
+                Cannot convert type 'bool' to 'int'.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Declare_Reports_CannotFollowCondition()
+        {
+            string text = @"
+                {
+                    if (true)
+                        [var a = 0;]
+                    if (true)
+                    { }
+                    else [var b = 0;]
+
+                    while (false)
+                        [var c = 0;]
+                    for ( ; ; )
+                        [var d = 0;]
+                }
+            ";
+
+            string diagnostics = @"
+                Variable declarations cannot be placed right after a condition.
+                Variable declarations cannot be placed right after a condition.
+                Variable declarations cannot be placed right after a condition.
+                Variable declarations cannot be placed right after a condition.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Assigned_Reports_CannotImplicitlyConvert()
+        {
+            string text = @"
+                {
+                    var x = 10f;
+                    x = [5];
+                }
+            ";
+
+            string diagnostics = @"
+                Cannot implicitly convert type 'int' to 'float'. An explicit convertion exists (are you missing a cast?).
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Piped_Reports_OnlySupportedForMethods()
+        {
+            string text = @"
+                {
+                    var a = \[1, 2, 3\];
+                    4 [|>] a\[\];
+                }
+            ";
+
+            string diagnostics = @"
+                Expressions can only be piped into methods.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_MethodDeclared_Reports_DuplicateParameterName()
+        {
+            string text = @"
+                def MyMethod(int a, int [a]) { }
+            ";
+
+            string diagnostics = @"
+                Duplicate parameter name 'a'.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_CharLiteral_Reports_Empty()
+        {
+            string text = @"
+                char x = [''];
+            ";
+
+            string diagnostics = @"
+                Empty character literal.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -214,23 +263,413 @@ namespace DrakeLang.Tests
         }
 
         [Fact]
-        public void Evaluator_Method_Call_Reports_Ambiguous_Reference()
+        public void Evaluator_Statement_Reports_Illegal_Statement_Placement()
         {
             var text = @"
-                with A;
-                with B;
-
-                [GetVal]();
-
                 namespace A;
-                def GetVal() => 0;
 
-                namespace B;
-                def GetVal() => 0;
+                [var a = 0;]
+                [var b = a;]
+                [a = b;]
             ";
 
             string diagnostics = @"
-                Reference is ambiguous between the following symbols: 'A.GetVal', 'B.GetVal'.
+                Unexpected statement. Namespaces and type declarations cannot directly contain statements.
+                Unexpected statement. Namespaces and type declarations cannot directly contain statements.
+                Unexpected statement. Namespaces and type declarations cannot directly contain statements.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Primitive_Reports_InvalidNumberValue()
+        {
+            string text = @"
+                int x = [1000000000000000000];
+            ";
+
+            string diagnostics = @"
+                The number '1000000000000000000' is not a valid value for type 'int'.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_LableDeclared_Reports_Duplicate()
+        {
+            string text = @"
+                label:
+                [label]:
+            ";
+
+            string diagnostics = @"
+                A label with the name 'label' is already declared.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_MethodDeclared_Reports_Duplicate()
+        {
+            string text = @"
+                def MyMethod() { }
+                def [MyMethod]() { }
+            ";
+
+            string diagnostics = @"
+                A method with the name 'MyMethod' is already declared in this scope.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_MethodDeclaration_Reports_NotAllPathsReturn()
+        {
+            string text = @"
+                def [MyMethodA](bool a) { if (a) return 10; }
+                def [MyMethodB]() { if (true) 2; else return 10; }
+                def [MyMethodC]() { while(false) { return 44; } }
+                def MyMethodD() { while(true) { } return 44; }
+            ";
+
+            string diagnostics = @"
+                Not all paths return a value.
+                Not all paths return a value.
+                Not all paths return a value.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_MethodDeclaration_Reports_IllegalEmptyReturn()
+        {
+            string text = @"
+                int MyMethod() { [return;] }
+            ";
+
+            string diagnostics = @"
+                Expected to return expression in non-void returning method.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Project_Reports_MultipleMains()
+        {
+            string text = @"
+                def [Main]() { }
+
+                namespace Namespace;
+
+                def [Main]() { }
+            ";
+
+            string diagnostics = @"
+                A project may only contain a single main method.
+                A project may only contain a single main method.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Cast_Reports_NoExplicitConversion()
+        {
+            string text = @"
+                var a = [(int)""myVal""];
+            ";
+
+            string diagnostics = @"
+                No explicit convertion exists for type 'string' to 'int'.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_ArrayInit_Reports_RequiresConstantSize()
+        {
+            string text = @"
+                var size = 3;
+                var a = \[[size]\] => 1, 2, 3;
+            ";
+
+            string diagnostics = @"
+                Array size must be a constant value when using an array initializer.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_TopLevelStatement_Reports_IncompatibleWithExplicitMain()
+        {
+            string text = @"
+                [Sys].Console.WriteLine(0);
+
+                def Main() { }
+            ";
+
+            string diagnostics = @"
+                Top-level statements may not be defined in a project that already contain an explicit main method declaration.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Expression_Reports_NoIndexer()
+        {
+            string text = @"
+                var a = [4\[4\]];
+            ";
+
+            string diagnostics = @"
+                Type 'int' does not expose an indexer.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_BinaryOperator_Reports_Undefined()
+        {
+            string text = @"
+                var a = ""a"" [*] 3;
+                var b = 4;
+                b [+=] 4f;
+            ";
+
+            string diagnostics = @"
+                Binary operator '*' is not defined for types 'string' and 'int'.
+                Binary operator '+' is not defined for types 'int' and 'float'.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Assigned_Reports_Undefined()
+        {
+            string text = @"
+                [x] = 10;
+            ";
+
+            string diagnostics = @"
+                Symbol 'x' does not exist in this context.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Call_Reports_Undefined()
+        {
+            string text = @"
+                [method]();
+            ";
+
+            string diagnostics = @"
+                Symbol 'method' does not exist in this context.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Goto_Reports_Undefined()
+        {
+            string text = @"
+                goto [lbl];
+            ";
+
+            string diagnostics = @"
+                Symbol 'lbl' does not exist in this context.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_UnaryOperator_Reports_Undefined()
+        {
+            string text = @"
+                [+]true;
+                string a = [-]""a"";
+            ";
+
+            string diagnostics = @"
+                Unary operator '+' is not defined for type 'bool'.
+                Unary operator '-' is not defined for type 'string'.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_BreakAndContinue_Reports_IllegalPlacement()
+        {
+            string text = @"
+                def Method()
+                {
+                    [continue;]
+                    [break;]
+                }
+            ";
+
+            string diagnostics = @"
+                No enclosing loop out of which to break or continue.
+                No enclosing loop out of which to break or continue.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Call_Reports_UnexpectedPipedArgument()
+        {
+            string text = @"
+                def MyMethod(int a, int b) { }
+
+                MyMethod([_], 1);
+                10 |> MyMethod(_, [_]);
+                MyMethod([_], [_]);
+            ";
+
+            string diagnostics = @"
+                Unexpected piped argument. Method call was either not provided a piped argument, or multiple piped arguments were attempted used.
+                Unexpected piped argument. Method call was either not provided a piped argument, or multiple piped arguments were attempted used.
+                Unexpected piped argument. Method call was either not provided a piped argument, or multiple piped arguments were attempted used.
+                Unexpected piped argument. Method call was either not provided a piped argument, or multiple piped arguments were attempted used.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_CharLiteral_Reports_Unterminated()
+        {
+            string text = @"
+                char x = ['];
+                char y = ['] ;
+                char z = [']
+;
+            ";
+
+            string diagnostics = @"
+                Unterminated character literal.
+                Unterminated character literal.
+                Unterminated character literal.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_StringLiteral_Reports_Unterminated()
+        {
+            string text = @"
+                string x = [""]a string
+                ;
+            ";
+
+            string diagnostics = @"
+                Unterminated string literal.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_VariableDeclaration_Reports_Redeclaration()
+        {
+            string text = @"
+                {
+                    var x = 10;
+                    var y = 100;
+                    {
+                        var x = 10;
+                    }
+                    var [x] = 5;
+                }
+            ";
+
+            string diagnostics = @"
+                A variable with the name 'x' is already declared.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Call_Reports_WrongArgumentCount()
+        {
+            string text = @"
+                [Sys.Console.WriteLine(0, 1, 2)];
+            ";
+
+            string diagnostics = @"
+                Method or indexer 'WriteLine' requires 1 arguments, but recieved 3.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Indexer_Reports_WrongArgumentCount()
+        {
+            string text = @"
+                var a = \[1, 2, 3\];
+                [a\[1, 2, 3\]];
+            ";
+
+            string diagnostics = @"
+                Method or indexer '[]' requires 1 arguments, but recieved 3.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Implicit_Recursive_Method_Return_Type_Reports_Unable_To_Infer()
+        {
+            var text = @"
+                def Main() { }
+                def [A](bool b) => B(b);
+                def [B](bool b)
+                {
+                    if (b)
+                        return A(b);
+                    else
+                        return A(!b);
+                }
+            ";
+
+            string diagnostics = @"
+                Implicit return type of method 'A' cannot be infered.
+                Implicit return type of method 'B' cannot be infered.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
+        public void Evaluator_Call_Reports_CannotConvertParameter()
+        {
+            string text = @"
+                def MyMethod(int a) { }
+
+                [MyMethod(2f)];
+            ";
+
+            string diagnostics = @"
+                Parameter 'a' in method 'MyMethod' requires value of type 'int', but recieved value of type 'float'.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -602,12 +1041,12 @@ namespace DrakeLang.Tests
             Assert.Equal(expectedValue, variables[resultVariable!]);
         }
 
-        private static void AssertDiagnostics(string text, string diagnosticText)
+        private static void AssertDiagnostics(string text, string diagnosticText, bool ignoreNoMain = true)
         {
-            AnnotatedText annotatedText = AnnotatedText.Parse(text);
-            SyntaxTree syntaxTree = SyntaxTree.FromString(annotatedText.Text);
-            Compilation compilation = new Compilation(syntaxTree);
-            EvaluationResult result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
+            var annotatedText = AnnotatedText.Parse(text);
+            var syntaxTree = SyntaxTree.FromString(annotatedText.Text);
+            var compilation = new Compilation(syntaxTree);
+            var result = compilation.Evaluate(new Dictionary<VariableSymbol, object>());
 
             string[] expectedDiagnostics = AnnotatedText.UnintentLines(diagnosticText);
 
@@ -615,7 +1054,7 @@ namespace DrakeLang.Tests
                 throw new Exception($"ERROR: Must mark as many spans as there are expected diagnostics.");
 
             var diagnostics = result.Diagnostics
-                .Where(d => d.Message != $"No entry point method (a method with the identifier 'Main') exists in the project.")
+                .Where(d => !ignoreNoMain || d.Message != $"No entry point method (a method with the identifier 'Main') exists in the project.")
                 .OrderBy(d => d.Span)
                 .ToArray();
 
@@ -626,8 +1065,8 @@ namespace DrakeLang.Tests
                 string expectedMessage = expectedDiagnostics[i];
                 string actualMessage = diagnostics[i].Message;
 
-                TextSpan expectedSpan = annotatedText.Spans[i];
-                TextSpan actualSpan = diagnostics[i].Span;
+                var expectedSpan = annotatedText.Spans[i];
+                var actualSpan = diagnostics[i].Span;
 
                 Assert.Equal(expectedMessage, actualMessage);
                 Assert.Equal(expectedSpan, actualSpan);

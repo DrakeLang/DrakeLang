@@ -135,7 +135,7 @@ namespace DrakeLang.Tests.Syntax
                 (SyntaxKind.StringToken, "\"a\""),
                 (SyntaxKind.StringToken, "\"JOIN THE ASCENDENCY!\""),
                 (SyntaxKind.CharToken, "'a'"),
-                (SyntaxKind.CharToken, "'\n'"),
+                (SyntaxKind.CharToken, "'\0'"),
                 (SyntaxKind.LineCommentToken, "//"),
                 (SyntaxKind.LineCommentToken, "// "),
                 (SyntaxKind.LineCommentToken, "// comment"),

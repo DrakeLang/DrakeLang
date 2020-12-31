@@ -49,13 +49,15 @@ namespace DrakeLang.Tests
         {
             text = Unindent(text);
 
-            StringBuilder textBuilder = new StringBuilder();
-            ImmutableArray<TextSpan>.Builder spanBuilder = ImmutableArray.CreateBuilder<TextSpan>();
-            Stack<int> startStack = new Stack<int>();
+            var textBuilder = new StringBuilder();
+            var spanBuilder = ImmutableArray.CreateBuilder<TextSpan>();
+            var startStack = new Stack<int>();
 
             int position = 0;
-            foreach (char c in text)
+            for (int i = 0; i < text.Length; i++)
             {
+                var c = text[i];
+
                 if (c == '[')
                 {
                     startStack.Push(position);
@@ -71,8 +73,11 @@ namespace DrakeLang.Tests
                 }
                 else
                 {
+                    if (c == '\\')
+                        i++;
+
                     position++;
-                    textBuilder.Append(c);
+                    textBuilder.Append(text[i]);
                 }
             }
 

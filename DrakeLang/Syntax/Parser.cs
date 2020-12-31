@@ -598,7 +598,7 @@ namespace DrakeLang.Syntax
         {
             var integerToken = MatchToken(SyntaxKind.IntegerToken);
             if (!int.TryParse(integerToken.TokenText, out int value))
-                Diagnostics.ReportInvalidValue(integerToken.Span, integerToken.TokenText, Types.Int);
+                Diagnostics.ReportInvalidNumberValue(integerToken.Span, integerToken.TokenText, Types.Int);
 
             return new LiteralExpressionSyntax(integerToken, value);
         }
@@ -610,7 +610,7 @@ namespace DrakeLang.Syntax
             // Remove eventual 'f' character.
             string floatString = floatToken.TokenText.Replace("f", "", StringComparison.InvariantCulture);
             if (!double.TryParse(floatString, out double value))
-                Diagnostics.ReportInvalidValue(floatToken.Span, floatToken.TokenText, Types.Float);
+                Diagnostics.ReportInvalidNumberValue(floatToken.Span, floatToken.TokenText, Types.Float);
 
             return new LiteralExpressionSyntax(floatToken, value);
         }

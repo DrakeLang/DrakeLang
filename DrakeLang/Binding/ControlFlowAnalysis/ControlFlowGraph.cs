@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
+using DrakeLang.Lowering;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -34,7 +35,8 @@ namespace DrakeLang.Binding.CFA
 
         public ControlFlowGraph(ImmutableArray<BoundStatement> statements)
         {
-            (_blocks, _branches) = BuildGraph(statements);
+            var loweredStatements = Lowerer.Lower(statements, new LabelGenerator());
+            (_blocks, _branches) = BuildGraph(loweredStatements);
         }
 
         #region Methods

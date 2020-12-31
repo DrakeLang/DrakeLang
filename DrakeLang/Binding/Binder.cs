@@ -134,7 +134,7 @@ namespace DrakeLang.Binding
                 {
                     _currentText = declaration.Text;
                     var result = TryDeclareMethod(declaration);
-                    if (result is not MethodDeclarationResult.CannotInferReturnType)
+                    if (result is MethodDeclarationResult.Success)
                     {
                         runDeclaredMethods = true;
                     }
@@ -806,7 +806,7 @@ namespace DrakeLang.Binding
                 var boundOp = BoundBinaryOperator.Bind(operatorKind, variable.Type, boundExpression.Type);
                 if (boundOp is null)
                 {
-                    DiagnosticsBuilder.ReportUndefinedBinaryOperator(syntax.EqualsToken.Span, syntax.EqualsToken.TokenText, variable.Type, boundExpression.Type);
+                    DiagnosticsBuilder.ReportUndefinedBinaryOperator(syntax.EqualsToken.Span, syntax.EqualsToken.TokenText[0..1], variable.Type, boundExpression.Type);
                     return BoundErrorExpression.Instance;
                 }
 
@@ -831,9 +831,9 @@ namespace DrakeLang.Binding
             if (method.ReturnType.IsError())
                 return BoundErrorExpression.Instance;
 
-            var parameterCount = syntax.Arguments.Count + (pipedParameter is null ? 0 : 1);
-
             // Bind arguments.
+
+            bool unexpectedPipedArg = false;
             var boundArguments = ImmutableArray.CreateBuilder<BoundExpression>();
             foreach (var argument in syntax.Arguments)
             {
@@ -851,6 +851,9 @@ namespace DrakeLang.Binding
                 else
                 {
                     DiagnosticsBuilder.ReportUnexpectedPipedArgument(argument.Span);
+                    unexpectedPipedArg = true;
+
+                    boundArguments.Add(BoundErrorExpression.Instance);
                 }
             }
 
@@ -863,14 +866,14 @@ namespace DrakeLang.Binding
             }
 
             // Validate argument count.
-            if (boundArguments.Count != method.Parameters.Length)
+            if (!unexpectedPipedArg && boundArguments.Count != method.Parameters.Length)
             {
-                DiagnosticsBuilder.ReportWrongArgumentCount(syntax.Span, method.Name, method.Parameters.Length, parameterCount);
+                DiagnosticsBuilder.ReportWrongArgumentCount(syntax.Span, method.Name, method.Parameters.Length, boundArguments.Count);
                 return BoundErrorExpression.Instance;
             }
 
             // Validate argument types.
-            for (int i = 0; i < method.Parameters.Length; i++)
+            for (int i = 0; i < boundArguments.Count; i++)
             {
                 var argument = boundArguments[i];
                 var parameter = method.Parameters[i];
@@ -878,12 +881,10 @@ namespace DrakeLang.Binding
                 if (argument.Type.IsError())
                     continue;
 
-                boundArguments[i] = BindConvertion(syntax.Span, argument, parameter.Type);
-
-                if (boundArguments[i] is BoundErrorExpression)
+                if (!Conversion.Classify(argument.Type, parameter.Type).IsImplicit)
                 {
                     DiagnosticsBuilder.ReportWrongArgumentType(syntax.Span, method.Name, parameter.Name, parameter.Type, argument.Type);
-                    return BoundErrorExpression.Instance;
+                    boundArguments[i] = BoundErrorExpression.Instance;
                 }
             }
 
@@ -923,7 +924,10 @@ namespace DrakeLang.Binding
 
             if (syntax.Parameters.Count != indexer.Parameters.Length)
             {
-                DiagnosticsBuilder.ReportWrongArgumentCount(syntax.Span, operand.Type + "[]", indexer.Parameters.Length, syntax.Parameters.Count);
+                DiagnosticsBuilder.ReportWrongArgumentCount(syntax.Span,
+                                                            "[]",
+                                                            indexer.Parameters.Length,
+                                                            syntax.Parameters.Count);
                 return BoundErrorExpression.Instance;
             }
 
@@ -977,15 +981,7 @@ namespace DrakeLang.Binding
                 }
                 else
                 {
-                    TextSpan span;
-                    if (syntax.SizeExpression is not null)
-                        span = syntax.SizeExpression.Span;
-                    else
-                    {
-                        SyntaxNode startNode = (SyntaxNode?)syntax.TypeToken ?? syntax.OpenBracketToken;
-                        span = TextSpan.FromBounds(startNode.Span.Start, syntax.CloseBracketToken.Span.End);
-                    }
-
+                    var span = syntax.SizeExpression!.Span;
                     DiagnosticsBuilder.ReportSizeMustBeConstantWithInitializer(span);
                     itemType ??= Types.Error;
                 }
@@ -1061,7 +1057,7 @@ namespace DrakeLang.Binding
 
         #region DeclareMethod
 
-        private enum MethodDeclarationResult { Success, CannotInferReturnType, Error }
+        private enum MethodDeclarationResult { Success, CannotInferReturnType }
 
         private static readonly MethodSymbol _mockMethod = new("mock", ImmutableArray<ParameterSymbol>.Empty, Types.Error);
 
@@ -1100,6 +1096,9 @@ namespace DrakeLang.Binding
                     // Bind a primitive body for analyzis to infer the return type.
                     var boundDeclaration = BindBody(syntax);
 
+                    // To easily find any return-statements, we lower this primitive body.
+                    boundDeclaration = Lowerer.Lower(boundDeclaration, _labelGenerator);
+
                     var returnStatements = boundDeclaration.OfType<BoundReturnStatement>();
                     var returnType = ResolveImplicitType(this, returnStatements);
 
@@ -1118,7 +1117,6 @@ namespace DrakeLang.Binding
             if (!_scope.TryDeclareMethod(method))
             {
                 DiagnosticsBuilder.ReportMethodAlreadyDeclared(syntax.Identifier.Span, name);
-                return MethodDeclarationResult.Error;
             }
 
             _methodSymbols.Add(syntax, method);
@@ -1135,7 +1133,7 @@ namespace DrakeLang.Binding
 
             static TypeSymbol? ResolveImplicitType(Binder @this, IEnumerable<BoundReturnStatement> returnStatements)
             {
-                if (returnStatements.All(r => r.Expression is null))
+                if (!returnStatements.Any() || returnStatements.All(r => r.Expression is null))
                     return Types.Void;
 
                 if (returnStatements.All(r => r.Expression is not null && r.Expression.Type == Types.Error))
@@ -1228,7 +1226,7 @@ namespace DrakeLang.Binding
         private BoundExpression BindConvertion(TextSpan span, BoundExpression expression, TypeSymbol resultType)
         {
             var conversion = Conversion.Classify(expression.Type, resultType);
-            if (conversion.IsIdentity || conversion.IsImplicit)
+            if (conversion.IsImplicit)
             {
                 return expression;
             }
