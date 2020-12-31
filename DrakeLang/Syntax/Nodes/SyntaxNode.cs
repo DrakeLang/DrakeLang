@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 
 using DrakeLang.Text;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,9 +26,16 @@ namespace DrakeLang.Syntax
 {
     public abstract class SyntaxNode
     {
+        private readonly Lazy<SourceText> _text;
+
+        internal SyntaxNode()
+        {
+            _text = new(() => GetChildren().First().Text);
+        }
+
         public abstract SyntaxKind Kind { get; }
 
-        public virtual SourceText Text => GetChildren().First().Text;
+        public virtual SourceText Text => _text.Value;
 
         public virtual TextSpan Span
         {
