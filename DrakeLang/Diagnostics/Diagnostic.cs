@@ -39,7 +39,7 @@ namespace DrakeLang
             int lineNumer = lineIndex + 1;
             int character = Span.Start - line.Start + 1;
 
-            if (Text.SourceFile is null)
+            if (Text.SourceFile is not null)
                 return $"{Text.SourceFile} ({lineNumer}, {character}): {Message}";
             else
                 return $"({lineNumer}, {character}): {Message}";
