@@ -44,7 +44,7 @@ namespace System.Linq
             int index = 0;
             foreach (var item in source)
             {
-                yield return new(item, index);
+                yield return new(item, index++);
             }
         }
 
