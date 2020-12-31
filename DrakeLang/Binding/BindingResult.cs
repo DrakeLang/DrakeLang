@@ -45,6 +45,7 @@ namespace DrakeLang.Binding
             foreach (var method in Methods)
             {
                 writer.WriteMethod(method.Method, printParamNames: true);
+                writer.WriteLine();
                 BoundNode_WriteTo.WriteTo(method.Declaration, writer);
             }
         }
