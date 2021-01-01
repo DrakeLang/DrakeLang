@@ -30,6 +30,8 @@ namespace DrakeLang.Tests
     {
         #region Evaluates
 
+        #region Bool
+
         [Theory]
         [InlineData("var result = true;", true)]
         [InlineData("var result = false;", false)]
@@ -68,6 +70,10 @@ namespace DrakeLang.Tests
         [InlineData("var result = false; result |= false;", false)]
         [InlineData("var result = false; result |= true;", true)]
         public void Evaluator_Computes_BooleanStatements(string text, bool expectedValue) => AssertValue(text, expectedValue);
+
+        #endregion Bool
+
+        #region Int
 
         [Theory]
         [InlineData("var result = 1;", 1)]
@@ -116,6 +122,10 @@ namespace DrakeLang.Tests
         [InlineData("var a = 10; var result = a /= 2;", 5)]
         public void Evaluator_Computes_IntStatements(string text, object expectedValue) => AssertValue(text, expectedValue);
 
+        #endregion Int
+
+        #region Float
+
         [Theory]
         [InlineData("var result = 1f;", 1d)]
         [InlineData("var result = +1f;", 1d)]
@@ -154,6 +164,10 @@ namespace DrakeLang.Tests
         [InlineData("var a = 10f; var result = a /= 2f;", 5d)]
         public void Evaluator_Computes_FloatStatements(string text, object expectedValue) => AssertValue(text, expectedValue);
 
+        #endregion Float
+
+        #region String
+
         [Theory]
         [InlineData("var result = \"abc\";", "abc")]
         [InlineData("var result = \"abc\"; result += \"def\";", "abcdef")]
@@ -161,6 +175,8 @@ namespace DrakeLang.Tests
         [InlineData("var a = \"abc\"; var result = a[1];", 'b')]
         [InlineData("var result = \"abc\"[2];", 'c')]
         public void Evaluator_Computes_StringStatements(string text, object expectedValue) => AssertValue(text, expectedValue);
+
+        #endregion String
 
         #region Arrays
 
@@ -220,6 +236,8 @@ namespace DrakeLang.Tests
 
         #endregion Arrays
 
+        #region If
+
         [Theory]
         [InlineData("var a = 0; if (a == 0) a = 10; var result = a;", 10)]
         [InlineData("var a = 4; if (a == 0) a = 10; var result = a;", 4)]
@@ -227,10 +245,16 @@ namespace DrakeLang.Tests
         [InlineData("var a = 4; if (a == 0) a = 10; else a = 32; var result = a;", 32)]
         public void Evaluator_Computes_IfStatements(string text, int expectedValue) => AssertValue(text, expectedValue);
 
+        #endregion If
+
+        #region Loop
+
         [Theory]
         [InlineData("var a = 0; while (a < 10) a = a + 1; var result = a;", 10)]
         [InlineData("var result = 0; for (var i = 0; i <= 10; ++i) result = result + i;", 55)]
         public void Evaluator_Computes_LoopStatements(string text, int expectedValue) => AssertValue(text, expectedValue);
+
+        #endregion Loop
 
         #region typeof
 
@@ -257,9 +281,15 @@ namespace DrakeLang.Tests
 
         #endregion typeof
 
+        #region nameof
+
         [Theory]
         [InlineData("var a = 0; var result = nameof(a);", "a")]
         public void Evaluator_Computes_nameofStatements(string text, string expectedValue) => AssertValue(text, expectedValue);
+
+        #endregion nameof
+
+        #region Comment
 
         [Theory]
         [InlineData("var a = 3; var result = nameof(a); // gets the name of result\n", "a")]
@@ -270,11 +300,19 @@ namespace DrakeLang.Tests
         [InlineData("var result = /*\n inline comment\n */\n\n\n 5;", 5)]
         public void Evaluator_Computes_StatementsWithComments(string text, object expectedValue) => AssertValue(text, expectedValue);
 
+        #endregion Comment
+
+        #region Method declaration
+
         [Theory]
         [InlineData("string Ret() => \"a\"; var result = Ret();", "a")]
         [InlineData("def Ret() => \"a\"; var result = Ret();", "a")]
         [InlineData("def Ret(bool b) { if (b) return \"a\"; else return \"b\"; } var result = Ret(true);", "a")]
         public void Evaluator_Computes_MethodDeclarations(string text, string expectedValue) => AssertValue(text, expectedValue);
+
+        #endregion Method declaration
+
+        #region Piped calls
 
         [Theory]
         [InlineData("string Ret(string s) => s; var result = \"a\" |> Ret();", "a")]
@@ -283,6 +321,8 @@ namespace DrakeLang.Tests
         [InlineData("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\", _);", "ba")]
         [InlineData("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(_, \"b\");", "ab")]
         public void Evaluator_Computes_PipeCallStatements(string text, string expectedValue) => AssertValue(text, expectedValue);
+
+        #endregion Piped calls
 
         #region Namespace
 
@@ -465,13 +505,21 @@ namespace DrakeLang.Tests
 
         #endregion WithNamespace
 
+        #region Implicit upcast
+
         [Theory]
         [InlineData("object result = false;", false)]
         public void Evaluator_Computes_ImplicitUpcastStatements(string text, bool expectedValue) => AssertValue(text, expectedValue);
 
+        #endregion Implicit upcast
+
+        #region Compile time constant
+
         [Theory]
         [InlineData("set length = 2; var result = [length] => 5, 5;", new[] { 5, 5 })]
         public void Evaluator_Computes_CompileTimeConstants(string text, object expectedValue) => AssertValue(text, expectedValue);
+
+        #endregion Compile time constant
 
         #endregion Evaluates
 
