@@ -265,17 +265,6 @@ namespace DrakeLang.Binding
         protected virtual Statements? RewriteExpressionStatement(BoundExpressionStatement node)
         {
             var expression = RewriteExpression(node.Expression);
-
-            // Remove expression statements with no side effects.
-            if (HasNoSideEffects(expression))
-            {
-                // Removed expressions may affect variable usage.
-                foreach (var varUsage in VariableUsage.Values)
-                    varUsage.Remove(expression);
-
-                return Statements.Empty;
-            }
-
             if (expression == node.Expression)
                 return null;
 

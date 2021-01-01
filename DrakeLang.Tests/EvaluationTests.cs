@@ -28,12 +28,452 @@ namespace DrakeLang.Tests
 {
     public class EvaluationTests
     {
+        #region Evaluates
+
         [Theory]
-        [MemberData(nameof(GetStatementsData))]
-        public void Evaluator_Computes_CorrectValues(string text, object expectedValue)
+        [InlineData("var result = true;", true)]
+        [InlineData("var result = false;", false)]
+        [InlineData("var result = !true;", false)]
+        [InlineData("var result = !false;", true)]
+        [InlineData("var result = true || true;", true)]
+        [InlineData("var result = true || false;", true)]
+        [InlineData("var result = false || true;", true)]
+        [InlineData("var result = false || false;", false)]
+        [InlineData("var result = true && true;", true)]
+        [InlineData("var result = true && false;", false)]
+        [InlineData("var result = false && true;", false)]
+        [InlineData("var result = false && false;", false)]
+        [InlineData("var result = false == false;", true)]
+        [InlineData("var result = true == false;", false)]
+        [InlineData("var result = false != false;", false)]
+        [InlineData("var result = true != false;", true)]
+        [InlineData("var result = false | false;", false)]
+        [InlineData("var result = false | true;", true)]
+        [InlineData("var result = true | false;", true)]
+        [InlineData("var result = true | true;", true)]
+        [InlineData("var result = false & false;", false)]
+        [InlineData("var result = false & true;", false)]
+        [InlineData("var result = true & false;", false)]
+        [InlineData("var result = true & true;", true)]
+        [InlineData("var result = false ^ false;", false)]
+        [InlineData("var result = false ^ true;", true)]
+        [InlineData("var result = true ^ false;", true)]
+        [InlineData("var result = true ^ true;", false)]
+        [InlineData("var result = true; result &= false;", false)]
+        [InlineData("var result = true; result &= true;", true)]
+        [InlineData("var result = false; result &= false;", false)]
+        [InlineData("var result = false; result &= true;", false)]
+        [InlineData("var result = true; result |= false;", true)]
+        [InlineData("var result = true; result |= true;", true)]
+        [InlineData("var result = false; result |= false;", false)]
+        [InlineData("var result = false; result |= true;", true)]
+        public void Evaluator_Computes_BooleanStatements(string text, bool expectedValue) => AssertValue(text, expectedValue);
+
+        [Theory]
+        [InlineData("var result = 1;", 1)]
+        [InlineData("var result = +1;", 1)]
+        [InlineData("var result = -1;", -1)]
+        [InlineData("var result = ~1;", ~1)]
+        [InlineData("var result = 14 + 12;", 26)]
+        [InlineData("var result = 12 - 3;", 9)]
+        [InlineData("var result = 4 * 2;", 8)]
+        [InlineData("var result = 9 / 3;", 3)]
+        [InlineData("var result = (10);", 10)]
+        [InlineData("var result = 12 == 3;", false)]
+        [InlineData("var result = 3 == 3;", true)]
+        [InlineData("var result = 12 != 3;", true)]
+        [InlineData("var result = 3 != 3;", false)]
+        [InlineData("var result = 3 < 4;", true)]
+        [InlineData("var result = 5 < 4;", false)]
+        [InlineData("var result = 4 <= 4;", true)]
+        [InlineData("var result = 4 <= 5;", true)]
+        [InlineData("var result = 5 <= 4;", false)]
+        [InlineData("var result = 4 > 3;", true)]
+        [InlineData("var result = 4 > 5;", false)]
+        [InlineData("var result = 4 >= 4;", true)]
+        [InlineData("var result = 5 >= 4;", true)]
+        [InlineData("var result = 4 >= 5;", false)]
+        [InlineData("var result = 1 | 2;", 3)]
+        [InlineData("var result = 1 | 0;", 1)]
+        [InlineData("var result = 1 & 2;", 0)]
+        [InlineData("var result = 1 & 1;", 1)]
+        [InlineData("var result = 1 & 0;", 0)]
+        [InlineData("var result = 1 ^ 0;", 1)]
+        [InlineData("var result = 0 ^ 1;", 1)]
+        [InlineData("var result = 1 ^ 3;", 2)]
+        [InlineData("var a = 0; var result = (a = 10) * a;", 100)]
+        [InlineData("var a = 11; var result = ++a;", 12)]
+        [InlineData("var a = 11; var result = --a;", 10)]
+        [InlineData("var a = 11; var result = a++;", 11)]
+        [InlineData("var a = 11; var result = a--;", 11)]
+        [InlineData("var a = 11; ++a; var result = a;", 12)]
+        [InlineData("var a = 11; --a; var result = a;", 10)]
+        [InlineData("var a = 11; a++; var result = a;", 12)]
+        [InlineData("var a = 11; a--; var result = a;", 10)]
+        [InlineData("var a = 11; var result = a += -1;", 10)]
+        [InlineData("var a = 11; var result = a -= 1;", 10)]
+        [InlineData("var a = 10; var result = a *= 2;", 20)]
+        [InlineData("var a = 10; var result = a /= 2;", 5)]
+        public void Evaluator_Computes_IntStatements(string text, object expectedValue) => AssertValue(text, expectedValue);
+
+        [Theory]
+        [InlineData("var result = 1f;", 1d)]
+        [InlineData("var result = +1f;", 1d)]
+        [InlineData("var result = -1f;", -1d)]
+        [InlineData("var result = 14f + 12f;", 26d)]
+        [InlineData("var result = 12f - 3f;", 9d)]
+        [InlineData("var result = 4f * 2f;", 8d)]
+        [InlineData("var result = 9f / 3f;", 3d)]
+        [InlineData("var result = (10f);", 10d)]
+        [InlineData("var result = 12f == 3f;", false)]
+        [InlineData("var result = 3f == 3f;", true)]
+        [InlineData("var result = 12f != 3f;", true)]
+        [InlineData("var result = 3f != 3f;", false)]
+        [InlineData("var result = 3f < 4f;", true)]
+        [InlineData("var result = 5f < 4f;", false)]
+        [InlineData("var result = 4f <= 4f;", true)]
+        [InlineData("var result = 4f <= 5f;", true)]
+        [InlineData("var result = 5f <= 4f;", false)]
+        [InlineData("var result = 4f > 3f;", true)]
+        [InlineData("var result = 4f > 5f;", false)]
+        [InlineData("var result = 4f >= 4f;", true)]
+        [InlineData("var result = 5f >= 4f;", true)]
+        [InlineData("var result = 4f >= 5f;", false)]
+        [InlineData("var a = 0f; var result = (a = 10f) * a;", 100d)]
+        [InlineData("var a = 11f; var result = ++a;", 12d)]
+        [InlineData("var a = 11f; var result = --a;", 10d)]
+        [InlineData("var a = 11f; var result = a++;", 11d)]
+        [InlineData("var a = 11f; var result = a--;", 11d)]
+        [InlineData("var a = 11f; ++a; var result = a;", 12d)]
+        [InlineData("var a = 11f; --a; var result = a;", 10d)]
+        [InlineData("var a = 11f; a++; var result = a;", 12d)]
+        [InlineData("var a = 11f; a--; var result = a;", 10d)]
+        [InlineData("var a = 11f; var result = a += -1f;", 10d)]
+        [InlineData("var a = 11f; var result = a -= 1f;", 10d)]
+        [InlineData("var a = 10f; var result = a *= 2f;", 20d)]
+        [InlineData("var a = 10f; var result = a /= 2f;", 5d)]
+        public void Evaluator_Computes_FloatStatements(string text, object expectedValue) => AssertValue(text, expectedValue);
+
+        [Theory]
+        [InlineData("var result = \"abc\";", "abc")]
+        [InlineData("var result = \"abc\"; result += \"def\";", "abcdef")]
+        [InlineData("var result = \"abc\"; result += 'd';", "abcd")]
+        [InlineData("var a = \"abc\"; var result = a[1];", 'b')]
+        [InlineData("var result = \"abc\"[2];", 'c')]
+        public void Evaluator_Computes_StringStatements(string text, object expectedValue) => AssertValue(text, expectedValue);
+
+        #region Arrays
+
+        [Theory]
+        [MemberData(nameof(GetArrayStatementsData))]
+        public void Evaluator_Computes_ArrayStatements(string text, object expectedValue) => AssertValue(text, expectedValue);
+
+        public static IEnumerable<object[]> GetArrayStatementsData()
         {
-            AssertValue(text, expectedValue);
+            foreach (var (statement, result) in GetStatements())
+            {
+                yield return new object[] { statement, result };
+            }
+
+            static IEnumerable<(string statement, object result)> GetStatements()
+            {
+                yield return ("var result = int[2] { 1, 2 };", new[] { 1, 2 });
+                yield return ("var result = int[2] => 1, 2;", new[] { 1, 2 });
+                yield return ("var result = int[2] => 3;", new[] { 3, 3 });
+                yield return ("var result = string[2] => \"a\", \"b\";", new[] { "a", "b" });
+                yield return ("var result = string[2] => \"c\";", new[] { "c", "c" });
+                yield return ("var result = object[2] => 1, \"b\";", new object[] { 1, "b" });
+                yield return ("var result = object[2] => \"c\";", new[] { "c", "c" });
+                yield return ("var result = [] {};", Array.Empty<object>());
+
+                yield return ("int[] result = int[2] { 1, 2 };", new[] { 1, 2 });
+                yield return ("var result = int[2] { 1, 2 + 10 };", new[] { 1, 12 });
+                yield return ("var a = 5; int[] result = int[2] { 1, a };", new[] { 1, 5 });
+                yield return ("var a = 5; int[] result = int[a] => a;", new[] { 5, 5, 5, 5, 5 });
+                yield return ("var a = 5; int[] result = int[a++] => ++a;", new[] { 7, 8, 9, 10, 11 });
+
+                yield return ("var result = int[] { 1, 2 };", new[] { 1, 2 });
+                yield return ("var result = int[] => 1, 2;", new[] { 1, 2 });
+                yield return ("var result = string[] => \"1\", \"a\";", new[] { "1", "a" });
+                yield return ("var result = object[] => 1, \"a\";", new object[] { 1, "a" });
+
+                yield return ("var result = [] { 1, 2};", new[] { 1, 2 });
+                yield return ("var result = [] => 1, 2;", new[] { 1, 2 });
+                yield return ("var result = [2] => 1, 2;", new[] { 1, 2 });
+                yield return ("var result = [2] => 3;", new[] { 3, 3 });
+                yield return ("var result = [] { [] { 1 }, [] { 2 } };", new[] { new[] { 1 }, new[] { 2 } });
+                yield return ("var result = [] { [] => 1 , [] => 2 };", new object[][] { new object[] { 1, new object[] { 2 } } });
+                yield return ("var result = [] { ([] => 1), ([] => 2) };", new[] { new[] { 1 }, new[] { 2 } });
+                yield return ("var result = [2] => ([] => 3);", new[] { new[] { 3 }, new[] { 3 } });
+                yield return ("var result = [] => 1, \"a\";", new object[] { 1, "a" });
+                yield return ("var result = [2] => 1, \"a\";", new object[] { 1, "a" });
+
+                yield return ("var result = [1];", new[] { 1 });
+                yield return ("var result = [1, 4];", new[] { 1, 4 });
+                yield return ("var result = [\"a\"];", new[] { "a" });
+                yield return ("var result = [77, \"a\"];", new object[] { 77, "a" });
+
+                yield return ("var a = [] => 1, 2, 3; var result = a[1];", 2);
+                yield return ("var a = [[1, 2], [3, 4], [5, 6]]; var result = a[1][0];", 3);
+            }
         }
+
+        #endregion Arrays
+
+        [Theory]
+        [InlineData("var a = 0; if (a == 0) a = 10; var result = a;", 10)]
+        [InlineData("var a = 4; if (a == 0) a = 10; var result = a;", 4)]
+        [InlineData("var a = 0; if (a == 0) a = 10; else a = 34; var result = a;", 10)]
+        [InlineData("var a = 4; if (a == 0) a = 10; else a = 32; var result = a;", 32)]
+        public void Evaluator_Computes_IfStatements(string text, int expectedValue) => AssertValue(text, expectedValue);
+
+        [Theory]
+        [InlineData("var a = 0; while (a < 10) a = a + 1; var result = a;", 10)]
+        [InlineData("var result = 0; for (var i = 0; i <= 10; ++i) result = result + i;", 55)]
+        public void Evaluator_Computes_LoopStatements(string text, int expectedValue) => AssertValue(text, expectedValue);
+
+        #region typeof
+
+        [Theory]
+        [MemberData(nameof(GettypeofStatementsData))]
+        public void Evaluator_Computes_typeofStatements(string text, string expectedValue) => AssertValue(text, expectedValue);
+
+        public static IEnumerable<object[]> GettypeofStatementsData()
+        {
+            foreach (var (statement, result) in GetStatements())
+            {
+                yield return new object[] { statement, result };
+            }
+
+            static IEnumerable<(string statement, object result)> GetStatements()
+            {
+                yield return ("var result = typeof(string);", Types.String.Name);
+                yield return ("var result = typeof(int);", Types.Int.Name);
+                yield return ("var result = typeof(bool);", Types.Boolean.Name);
+                yield return ("var result = typeof(string[]);", Types.Array.MakeConcreteType(Types.String).Name);
+                yield return ("var result = typeof(string[][][]);", Types.Array.MakeConcreteType(Types.Array.MakeConcreteType(Types.Array.MakeConcreteType(Types.String))).Name);
+            }
+        }
+
+        #endregion typeof
+
+        [Theory]
+        [InlineData("var a = 0; var result = nameof(a);", "a")]
+        public void Evaluator_Computes_nameofStatements(string text, string expectedValue) => AssertValue(text, expectedValue);
+
+        [Theory]
+        [InlineData("var a = 3; var result = nameof(a); // gets the name of result\n", "a")]
+        [InlineData("var result = 5; //nameof(a); \n", 5)]
+        [InlineData("var result = //comment; \n 5;", 5)]
+        [InlineData("var result = /* inline comment */ 5;", 5)]
+        [InlineData("var result = /*\n inline comment\n */ 5;", 5)]
+        [InlineData("var result = /*\n inline comment\n */\n\n\n 5;", 5)]
+        public void Evaluator_Computes_StatementsWithComments(string text, object expectedValue) => AssertValue(text, expectedValue);
+
+        [Theory]
+        [InlineData("string Ret() => \"a\"; var result = Ret();", "a")]
+        [InlineData("def Ret() => \"a\"; var result = Ret();", "a")]
+        [InlineData("def Ret(bool b) { if (b) return \"a\"; else return \"b\"; } var result = Ret(true);", "a")]
+        public void Evaluator_Computes_MethodDeclarations(string text, string expectedValue) => AssertValue(text, expectedValue);
+
+        [Theory]
+        [InlineData("string Ret(string s) => s; var result = \"a\" |> Ret();", "a")]
+        [InlineData("string Ret(string s) => s; var result = \"a\" |> Ret(_);", "a")]
+        [InlineData("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\");", "ba")]
+        [InlineData("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\", _);", "ba")]
+        [InlineData("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(_, \"b\");", "ab")]
+        public void Evaluator_Computes_PipeCallStatements(string text, string expectedValue) => AssertValue(text, expectedValue);
+
+        #region Namespace
+
+        [Theory]
+        [MemberData(nameof(GetNamespaceStatementsData))]
+        public void Evaluator_Computes_NamespaceStatements(string text, object expectedValue) => AssertValue(text, expectedValue);
+
+        public static IEnumerable<object[]> GetNamespaceStatementsData()
+        {
+            foreach (var (statement, result) in GetStatements())
+            {
+                yield return new object[] { statement, result };
+            }
+
+            static IEnumerable<(string statement, object result)> GetStatements()
+            {
+                yield return (@"
+                    var result = A.GetVal();
+
+                    namespace A;
+                    def GetVal() => ""a"";",
+                   "a");
+                yield return (@"
+                    // Combination of simple and bodied statement
+                    var result = B.GetVal();
+
+                    namespace A;
+
+                    namespace B
+                    {
+                        def GetVal() => ""a"";
+                    }",
+                    "a");
+                yield return (@"
+                    namespace A;
+
+                    def GetVal()
+                    {
+                        with Sys;
+
+                        Console.Write(""test"");
+
+                        return ""a"";
+                    }
+
+                    namespace B {}
+
+                    with A;
+                    var result = GetVal();",
+                    "a");
+                yield return (@"
+                    namespace A;
+
+                    def GetVal()
+                    {
+                        with Sys;
+
+                        Console.Write(""test"");
+
+                        return ""a"";
+                    }
+
+                    namespace A.B;
+
+                    def GetValB() => GetVal();
+
+                    namespace B {}
+                    var result = A.B.GetValB();",
+                    "a");
+            }
+        }
+
+        #endregion Namespace
+
+        #region WithNamespace
+
+        [Theory]
+        [MemberData(nameof(GetWithNamespaceStatementsData))]
+        public void Evaluator_Computes_WithNamespaceStatements(string text, object expectedValue) => AssertValue(text, expectedValue);
+
+        public static IEnumerable<object[]> GetWithNamespaceStatementsData()
+        {
+            foreach (var (statement, result) in GetStatements())
+            {
+                yield return new object[] { statement, result };
+            }
+
+            static IEnumerable<(string statement, object result)> GetStatements()
+            {
+                yield return (@"
+                    namespace A;
+
+                    def GetVal() => ""a"";
+
+                    namespace B {}
+
+                    with A;
+                    var result = GetVal();",
+                    "a");
+
+                yield return (@"
+                    with A
+                    {
+                        def GetValB() => GetVal();
+
+                        namespace A;
+
+                        def GetVal()
+                        {
+                            with Sys;
+
+                            Console.Write(""test"");
+
+                            return ""a"";
+                        }
+                    }
+
+                    namespace B {}
+                    var result = GetValB();",
+                    "a");
+
+                yield return (@"
+                    namespace A
+                    {
+                        def GetValue()
+                        {
+                            return GetValueB();
+
+                            def GetValueB() => ""a"";
+                        }
+                    }
+
+                    var result = A.GetValue();",
+                    "a");
+            }
+        }
+
+        #endregion WithNamespace
+
+        #region WithNamespace
+
+        [Theory]
+        [MemberData(nameof(GetWithMethodAliasStatementsData))]
+        public void Evaluator_Computes_WithMethodAliasStatements(string text, object expectedValue) => AssertValue(text, expectedValue);
+
+        public static IEnumerable<object[]> GetWithMethodAliasStatementsData()
+        {
+            foreach (var (statement, result) in GetStatements())
+            {
+                yield return new object[] { statement, result };
+            }
+
+            static IEnumerable<(string statement, object result)> GetStatements()
+            {
+                yield return ("def getValue() => \"a\"; with call = getValue; var result = call();", "a");
+                yield return (@"
+                    namespace A;
+
+                    def getValue() => ""a"";
+
+                    namespace B { }
+
+                    with call = A.getValue;
+                    var result = call();",
+                    "a");
+
+                yield return (@"
+                    namespace A;
+
+                    def getValue() => ""a"";
+
+                    namespace B { }
+
+                    with A;
+                    with call = getValue;
+                    var result = call();",
+                    "a");
+            }
+        }
+
+        #endregion WithNamespace
+
+        [Theory]
+        [InlineData("object result = false;", false)]
+        public void Evaluator_Computes_ImplicitUpcastStatements(string text, bool expectedValue) => AssertValue(text, expectedValue);
+
+        [Theory]
+        [InlineData("set length = 2; var result = [length] => 5, 5;", new[] { 5, 5 })]
+        public void Evaluator_Computes_CompileTimeConstants(string text, object expectedValue) => AssertValue(text, expectedValue);
+
+        #endregion Evaluates
 
         #region Reports
 
@@ -677,359 +1117,10 @@ namespace DrakeLang.Tests
 
         #endregion Reports
 
-        public static IEnumerable<object[]> GetStatementsData()
-        {
-            foreach (var (statement, result) in GetStatements())
-                yield return new object[] { statement + "\r\nvar resultX = result; result = resultX;", result };
-
-            static IEnumerable<(string statement, object result)> GetStatements()
-            {
-                // Bool statements
-                yield return ("var result = true;", true);
-                yield return ("var result = false;", false);
-                yield return ("var result = !true;", false);
-                yield return ("var result = !false;", true);
-                yield return ("var result = true || true;", true);
-                yield return ("var result = true || false;", true);
-                yield return ("var result = false || true;", true);
-                yield return ("var result = false || false;", false);
-                yield return ("var result = true && true;", true);
-                yield return ("var result = true && false;", false);
-                yield return ("var result = false && true;", false);
-                yield return ("var result = false && false;", false);
-
-                // Bool comparisons
-                yield return ("var result = false == false;", true);
-                yield return ("var result = true == false;", false);
-                yield return ("var result = false != false;", false);
-                yield return ("var result = true != false;", true);
-
-                // Bool bitwise operations
-                yield return ("var result = false | false;", false);
-                yield return ("var result = false | true;", true);
-                yield return ("var result = true | false;", true);
-                yield return ("var result = true | true;", true);
-                yield return ("var result = false & false;", false);
-                yield return ("var result = false & true;", false);
-                yield return ("var result = true & false;", false);
-                yield return ("var result = true & true;", true);
-                yield return ("var result = false ^ false;", false);
-                yield return ("var result = false ^ true;", true);
-                yield return ("var result = true ^ false;", true);
-                yield return ("var result = true ^ true;", false);
-
-                // Int statements
-                yield return ("var result = 1;", 1);
-                yield return ("var result = +1;", 1);
-                yield return ("var result = -1;", -1);
-                yield return ("var result = ~1;", ~1);
-                yield return ("var result = 14 + 12;", 26);
-                yield return ("var result = 12 - 3;", 9);
-                yield return ("var result = 4 * 2;", 8);
-                yield return ("var result = 9 / 3;", 3);
-                yield return ("var result = (10);", 10);
-
-                // Int comparisons
-                yield return ("var result = 12 == 3;", false);
-                yield return ("var result = 3 == 3;", true);
-                yield return ("var result = 12 != 3;", true);
-                yield return ("var result = 3 != 3;", false);
-                yield return ("var result = 3 < 4;", true);
-                yield return ("var result = 5 < 4;", false);
-                yield return ("var result = 4 <= 4;", true);
-                yield return ("var result = 4 <= 5;", true);
-                yield return ("var result = 5 <= 4;", false);
-                yield return ("var result = 4 > 3;", true);
-                yield return ("var result = 4 > 5;", false);
-                yield return ("var result = 4 >= 4;", true);
-                yield return ("var result = 5 >= 4;", true);
-                yield return ("var result = 4 >= 5;", false);
-
-                // Int bitwise operations
-                yield return ("var result = 1 | 2;", 3);
-                yield return ("var result = 1 | 0;", 1);
-                yield return ("var result = 1 & 2;", 0);
-                yield return ("var result = 1 & 1;", 1);
-                yield return ("var result = 1 & 0;", 0);
-                yield return ("var result = 1 ^ 0;", 1);
-                yield return ("var result = 0 ^ 1;", 1);
-                yield return ("var result = 1 ^ 3;", 2);
-
-                // Int variable & assignment
-                yield return ("var a = 0; var result = (a = 10) * a;", 100);
-                yield return ("var a = 11; var result = ++a;", 12);
-                yield return ("var a = 11; var result = --a;", 10);
-                yield return ("var a = 11; var result = a++;", 11);
-                yield return ("var a = 11; var result = a--;", 11);
-                yield return ("var a = 11; ++a; var result = a;", 12);
-                yield return ("var a = 11; --a; var result = a;", 10);
-                yield return ("var a = 11; a++; var result = a;", 12);
-                yield return ("var a = 11; a--; var result = a;", 10);
-                yield return ("var a = 11; var result = a += -1;", 10);
-                yield return ("var a = 11; var result = a -= 1;", 10);
-                yield return ("var a = 10; var result = a *= 2;", 20);
-                yield return ("var a = 10; var result = a /= 2;", 5);
-
-                // Float statements
-                yield return ("var result = 1f;", 1d);
-                yield return ("var result = +1f;", 1d);
-                yield return ("var result = -1f;", -1d);
-                yield return ("var result = 14f + 12f;", 26d);
-                yield return ("var result = 12f - 3f;", 9d);
-                yield return ("var result = 4f * 2f;", 8d);
-                yield return ("var result = 9f / 3f;", 3d);
-                yield return ("var result = (10f);", 10d);
-
-                // Float comparisons
-                yield return ("var result = 12f == 3f;", false);
-                yield return ("var result = 3f == 3f;", true);
-                yield return ("var result = 12f != 3f;", true);
-                yield return ("var result = 3f != 3f;", false);
-                yield return ("var result = 3f < 4f;", true);
-                yield return ("var result = 5f < 4f;", false);
-                yield return ("var result = 4f <= 4f;", true);
-                yield return ("var result = 4f <= 5f;", true);
-                yield return ("var result = 5f <= 4f;", false);
-                yield return ("var result = 4f > 3f;", true);
-                yield return ("var result = 4f > 5f;", false);
-                yield return ("var result = 4f >= 4f;", true);
-                yield return ("var result = 5f >= 4f;", true);
-                yield return ("var result = 4f >= 5f;", false);
-
-                // Float variable & assignment
-                yield return ("var a = 0f; var result = (a = 10f) * a;", 100d);
-                yield return ("var a = 11f; var result = ++a;", 12d);
-                yield return ("var a = 11f; var result = --a;", 10d);
-                yield return ("var a = 11f; var result = a++;", 11d);
-                yield return ("var a = 11f; var result = a--;", 11d);
-                yield return ("var a = 11f; ++a; var result = a;", 12d);
-                yield return ("var a = 11f; --a; var result = a;", 10d);
-                yield return ("var a = 11f; a++; var result = a;", 12d);
-                yield return ("var a = 11f; a--; var result = a;", 10d);
-                yield return ("var a = 11f; var result = a += -1f;", 10d);
-                yield return ("var a = 11f; var result = a -= 1f;", 10d);
-                yield return ("var a = 10f; var result = a *= 2f;", 20d);
-                yield return ("var a = 10f; var result = a /= 2f;", 5d);
-
-                // String
-
-                yield return ("var result = \"abc\";", "abc");
-                yield return ("var a = \"abc\"; var result = a[1];", 'b');
-                yield return ("var result = \"abc\"[2];", 'c');
-
-                // Array
-
-                yield return ("var result = int[2] { 1, 2 };", new[] { 1, 2 });
-                yield return ("var result = int[2] => 1, 2;", new[] { 1, 2 });
-                yield return ("var result = int[2] => 3;", new[] { 3, 3 });
-                yield return ("var result = string[2] => \"a\", \"b\";", new[] { "a", "b" });
-                yield return ("var result = string[2] => \"c\";", new[] { "c", "c" });
-                yield return ("var result = object[2] => 1, \"b\";", new object[] { 1, "b" });
-                yield return ("var result = object[2] => \"c\";", new[] { "c", "c" });
-                yield return ("var result = [] {};", Array.Empty<object>());
-
-                yield return ("int[] result = int[2] { 1, 2 };", new[] { 1, 2 });
-                yield return ("var result = int[2] { 1, 2 + 10 };", new[] { 1, 12 });
-                yield return ("var a = 5; int[] result = int[2] { 1, a };", new[] { 1, 5 });
-                yield return ("var a = 5; int[] result = int[a] => a;", new[] { 5, 5, 5, 5, 5 });
-                yield return ("var a = 5; int[] result = int[a++] => ++a;", new[] { 7, 8, 9, 10, 11 });
-
-                yield return ("var result = int[] { 1, 2 };", new[] { 1, 2 });
-                yield return ("var result = int[] => 1, 2;", new[] { 1, 2 });
-                yield return ("var result = string[] => \"1\", \"a\";", new[] { "1", "a" });
-                yield return ("var result = object[] => 1, \"a\";", new object[] { 1, "a" });
-
-                yield return ("var result = [] { 1, 2};", new[] { 1, 2 });
-                yield return ("var result = [] => 1, 2;", new[] { 1, 2 });
-                yield return ("var result = [2] => 1, 2;", new[] { 1, 2 });
-                yield return ("var result = [2] => 3;", new[] { 3, 3 });
-                yield return ("var result = [] { [] { 1 }, [] { 2 } };", new[] { new[] { 1 }, new[] { 2 } });
-                yield return ("var result = [] { [] => 1 , [] => 2 };", new object[][] { new object[] { 1, new object[] { 2 } } });
-                yield return ("var result = [] { ([] => 1), ([] => 2) };", new[] { new[] { 1 }, new[] { 2 } });
-                yield return ("var result = [2] => ([] => 3);", new[] { new[] { 3 }, new[] { 3 } });
-                yield return ("var result = [] => 1, \"a\";", new object[] { 1, "a" });
-                yield return ("var result = [2] => 1, \"a\";", new object[] { 1, "a" });
-
-                yield return ("var result = [1];", new[] { 1 });
-                yield return ("var result = [1, 4];", new[] { 1, 4 });
-                yield return ("var result = [\"a\"];", new[] { "a" });
-                yield return ("var result = [77, \"a\"];", new object[] { 77, "a" });
-
-                yield return ("var a = [] => 1, 2, 3; var result = a[1];", 2);
-
-                // If-else-statement
-                yield return ("var a = 0; if (a == 0) a = 10; var result = a;", 10);
-                yield return ("var a = 4; if (a == 0) a = 10; var result = a;", 4);
-                yield return ("var a = 0; if (a == 0) a = 10; else a = 34; var result = a;", 10);
-                yield return ("var a = 4; if (a == 0) a = 10; else a = 32; var result = a;", 32);
-
-                // While, for statement
-                yield return ("var a = 0; while (a < 10) a = a + 1; var result = a;", 10);
-                yield return ("var result = 0; for (var i = 0; i <= 10; ++i) result = result + i;", 55);
-
-                // Typeof
-                yield return ("var result = typeof(string);", Types.String.Name);
-                yield return ("var result = typeof(int);", Types.Int.Name);
-                yield return ("var result = typeof(bool);", Types.Boolean.Name);
-
-                // Nameof
-                yield return ("var a = 0; var result = nameof(a);", "a");
-
-                // Line comment
-                yield return ("var a = 3; var result = nameof(a); // gets the name of result\n", "a");
-                yield return ("var result = 5; //nameof(a); \n", 5);
-
-                // Method declarations
-                yield return ("string Ret() => \"a\"; var result = Ret();", "a");
-                yield return ("def Ret() => \"a\"; var result = Ret();", "a");
-                yield return ("def Ret(bool b) { if (b) return \"a\"; else return \"b\"; } var result = Ret(true);", "a");
-
-                // Piping
-                yield return ("string Ret(string s) => s; var result = \"a\" |> Ret();", "a");
-                yield return ("string Ret(string s) => s; var result = \"a\" |> Ret(_);", "a");
-                yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\");", "ba");
-                yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(\"b\", _);", "ba");
-                yield return ("string Ret(string s, string b) => s + b; var result = \"a\" |> Ret(_, \"b\");", "ab");
-
-                // Namespaces
-                yield return (@"
-                    var result = A.GetVal();
-
-                    namespace A;
-                    def GetVal() => ""a"";
-
-                    namespace B {} // Because of the way we avoid optimizing away variables, we have to escape the previous namespace.",
-                    "a");
-                yield return (@"
-                    // Combination of simple and bodied statement
-                    var result = B.GetVal();
-
-                    namespace A;
-
-                    namespace B
-                    {
-                        def GetVal() => ""a"";
-                    }",
-                    "a");
-                yield return (@"
-                    namespace A;
-
-                    def GetVal()
-                    {
-                        with Sys;
-
-                        Console.Write(""test"");
-
-                        return ""a"";
-                    }
-
-                    namespace B {} // Because of the way we avoid optimizing away variables, we have to escape the previous namespace.
-
-                    with A;
-                    var result = GetVal();",
-                    "a");
-                yield return (@"
-                    namespace A;
-
-                    def GetVal()
-                    {
-                        with Sys;
-
-                        Console.Write(""test"");
-
-                        return ""a"";
-                    }
-
-                    namespace A.B;
-
-                    def GetValB() => GetVal();
-
-                    namespace B {} // Because of the way we avoid optimizing away variables, we have to escape the previous namespace.
-                    var result = A.B.GetValB();",
-                    "a");
-
-                // With namespace
-                yield return (@"
-                    namespace A;
-
-                    def GetVal() => ""a"";
-
-                    namespace B {}
-
-                    with A;
-                    var result = GetVal();",
-                    "a");
-                yield return (@"
-                    with A
-                    {
-                        def GetValB() => GetVal();
-
-                        namespace A;
-
-                        def GetVal()
-                        {
-                            with Sys;
-
-                            Console.Write(""test"");
-
-                            return ""a"";
-                        }
-                    }
-
-                    namespace B {}
-                    var result = GetValB();",
-                    "a");
-                yield return (@"
-                    namespace A
-                    {
-                        def GetValue()
-                        {
-                            return GetValueB();
-
-                            def GetValueB() => ""a"";
-                        }
-                    }
-
-                    var result = A.GetValue();",
-                    "a");
-
-                // With method alias
-                yield return ("def getValue() => \"a\"; with call = getValue; var result = call();", "a");
-                yield return (@"
-                    namespace A;
-
-                    def getValue() => ""a"";
-
-                    namespace B { }
-
-                    with call = A.getValue;
-                    var result = call();",
-                    "a");
-
-                yield return (@"
-                    namespace A;
-
-                    def getValue() => ""a"";
-
-                    namespace B { }
-
-                    with A;
-                    with call = getValue;
-                    var result = call();",
-                    "a");
-
-                // Implicit upcast
-                yield return (@"object result = false;", false);
-
-                // Compile time constants
-                yield return ("set length = 2; var result = [length] => 5, 5;", new[] { 5, 5 });
-            }
-        }
-
         private static void AssertValue(string text, object expectedValue)
         {
             var syntaxTree = SyntaxTree.FromString(text);
-            var compilation = new Compilation(syntaxTree);
+            var compilation = new Compilation(syntaxTree, new() { Optimize = false });
             var variables = new Dictionary<VariableSymbol, object>();
             var result = compilation.Evaluate(variables);
 

@@ -26,16 +26,30 @@ using System.Threading;
 
 namespace DrakeLang
 {
+    public sealed record CompilationOptions
+    {
+        /// <summary>
+        /// Gets or sets a value indicating if the compiled program should be optimized.
+        /// </summary>
+        /// <value>Default is true.</value>
+        public bool Optimize { get; init; } = true;
+    }
+
     public sealed class Compilation
     {
         private BindingResult? _bindingResult;
 
-        public Compilation(SyntaxTree syntaxTree)
+        public Compilation(SyntaxTree syntaxTree) : this(syntaxTree, new())
+        { }
+
+        public Compilation(SyntaxTree syntaxTree, CompilationOptions options)
         {
             SyntaxTree = syntaxTree;
+            Options = options;
         }
 
         public SyntaxTree SyntaxTree { get; }
+        public CompilationOptions Options { get; }
 
         public BindingResult BindingResult
         {
@@ -43,7 +57,7 @@ namespace DrakeLang
             {
                 if (_bindingResult is null)
                 {
-                    var result = Binder.Bind(SyntaxTree.CompilationUnits);
+                    var result = Binder.Bind(SyntaxTree.CompilationUnits, Options);
                     result = new BindingResult(result.Methods, result.Diagnostics);
 
                     Interlocked.CompareExchange(ref _bindingResult, result, null);

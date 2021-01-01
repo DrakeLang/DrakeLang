@@ -120,6 +120,7 @@ namespace DrakeLang.Symbols
         {
             _genericTypeDefinition = genericType;
 
+            BaseType = genericType.BaseType;
             IsGenericTypeDefinition = false;
             IsGenericType = true;
             IsConcreteType = typeArguments.All(arg => arg.IsConcreteType);

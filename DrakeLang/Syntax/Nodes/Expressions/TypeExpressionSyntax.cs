@@ -19,34 +19,43 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace DrakeLang.Syntax
 {
     public sealed class TypeExpressionSyntax : ExpressionSyntax
     {
-        internal TypeExpressionSyntax(SyntaxToken typeIdentifier)
+        private TypeExpressionSyntax(SyntaxToken typeToken, ImmutableArray<SyntaxToken>? extraTokens = null)
         {
-            TypeIdentifiers = ImmutableArray.Create(typeIdentifier);
+            TypeToken = typeToken;
+            ExtraTokens = extraTokens ?? ImmutableArray<SyntaxToken>.Empty;
         }
 
-        internal TypeExpressionSyntax(ImmutableArray<SyntaxToken> typeIdentifiers)
-        {
-            if (typeIdentifiers.Length == 0)
-                throw new ArgumentException("A type expression has to consist of at least one token.", nameof(typeIdentifiers));
+        internal static TypeExpressionSyntax Create(SyntaxToken typeToken) => new(typeToken);
 
-            TypeIdentifiers = typeIdentifiers;
+        internal static TypeExpressionSyntax CreateArray(SyntaxToken typeToken, ImmutableArray<SyntaxToken> bracketTokens)
+        {
+            if (bracketTokens.Length % 2 != 0)
+                throw new ArgumentException("Bracket tokens must be of a length dividable by two (opening and closing bracket pairs).", nameof(bracketTokens));
+
+            return new(typeToken, bracketTokens);
         }
 
         public override SyntaxKind Kind => SyntaxKind.TypeExpression;
-        public ImmutableArray<SyntaxToken> TypeIdentifiers { get; }
-        public bool IsArray => TypeIdentifiers.Length > 1;
+        public SyntaxToken TypeToken { get; }
+        public ImmutableArray<SyntaxToken> ExtraTokens { get; }
+        public bool IsArray => ExtraTokens.Length > 0;
 
-        public int GetArraySize() => TypeIdentifiers.Length / 2;
+        public TypeExpressionSyntax GetArrayTypeArgument() =>
+            IsArray ?
+                new(TypeToken, ExtraTokens.SkipLast(2).ToImmutableArray()) :
+                throw new InvalidOperationException("Type expression does not represent an array.");
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            foreach (var item in TypeIdentifiers)
-                yield return item;
+            yield return TypeToken;
+            foreach (var token in ExtraTokens)
+                yield return token;
         }
     }
 }

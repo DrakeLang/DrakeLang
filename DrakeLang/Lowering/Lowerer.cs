@@ -25,22 +25,29 @@ using Statements = System.Collections.Immutable.ImmutableArray<DrakeLang.Binding
 
 namespace DrakeLang.Lowering
 {
+    internal record LowererOptions
+    {
+        public bool Optimize { get; init; } = true;
+    }
+
     internal sealed class Lowerer : BoundTreeRewriter
     {
+        private readonly LowererOptions _options;
         private readonly LabelGenerator _labelGenerator;
 
-        private Lowerer(LabelGenerator labelGenerator)
+        private Lowerer(LabelGenerator labelGenerator, LowererOptions? options = null)
         {
+            _options = options ?? new();
             _labelGenerator = labelGenerator;
         }
 
         #region Methods
 
-        public static ImmutableArray<BoundMethodDeclaration> Lower(ImmutableArray<BoundMethodDeclaration> methods, LabelGenerator labelGenerator)
-            => new Lowerer(labelGenerator).RewriteMethodDeclarations(methods);
+        public static ImmutableArray<BoundMethodDeclaration> Lower(ImmutableArray<BoundMethodDeclaration> methods, LabelGenerator labelGenerator, LowererOptions? options = null)
+            => new Lowerer(labelGenerator, options).RewriteMethodDeclarations(methods);
 
-        public static Statements Lower(Statements statements, LabelGenerator labelGenerator)
-            => new Lowerer(labelGenerator).Lower(statements);
+        public static Statements Lower(Statements statements, LabelGenerator labelGenerator, LowererOptions? options = null)
+            => new Lowerer(labelGenerator, options).Lower(statements);
 
         #endregion Methods
 
@@ -52,7 +59,10 @@ namespace DrakeLang.Lowering
             do
             {
                 result = RewriteStatements(result);
-                result = FlattenAndClean(result, out reRunLowering);
+                if (!_options.Optimize)
+                    break;
+
+                result = Optimize(result, out reRunLowering);
             } while (reRunLowering);
 
             return result.SequenceEqual(statements) ? statements : result;
@@ -214,15 +224,33 @@ namespace DrakeLang.Lowering
             return RewriteStatements(result.MoveToImmutable());
         }
 
+        protected override Statements? RewriteExpressionStatement(BoundExpressionStatement node)
+        {
+            var expression = RewriteExpression(node.Expression);
+
+            // Remove expression statements with no side effects.
+            if (_options.Optimize && HasNoSideEffects(expression))
+            {
+                // Removed expressions may affect variable usage.
+                VariableUsage.Values.ForEach(varUsage => varUsage.Remove(expression));
+                return Statements.Empty;
+            }
+
+            if (expression == node.Expression)
+                return null;
+
+            return Wrap(new BoundExpressionStatement(expression));
+        }
+
         #endregion RewriteStatement
 
         #region Helpers
 
         /// <summary>
-        /// Flattens into a single block statement, removing unused labels and similar statements.
+        /// Optimizes the given statements by removing statements that have no side-effects.
         /// </summary>
         /// <param name="reRunLowering">True if the lowering has to be re-run due to changed state.</param>
-        private Statements FlattenAndClean(Statements statements, out bool reRunLowering)
+        private Statements Optimize(Statements statements, out bool reRunLowering)
         {
             reRunLowering = false;
 

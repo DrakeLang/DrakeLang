@@ -424,7 +424,7 @@ namespace DrakeLang.Syntax
                 left = ParsePrimaryExpression();
             }
 
-            if (Current.Kind == SyntaxKind.OpenBracketToken)
+            while (Current.Kind == SyntaxKind.OpenBracketToken)
                 left = ParseIndexerExpression(left);
 
             while (true)
@@ -557,7 +557,7 @@ namespace DrakeLang.Syntax
             return new NameofExpressionSyntax(nameofKeyword, leftParenthesis, identifierToken, rightParenthesis);
         }
 
-        private TypeExpressionSyntax ParseTypeExpression(bool isArray = false)
+        private TypeExpressionSyntax ParseTypeExpression(bool isArrayDeclaration = false)
         {
             if (!Current.Kind.IsExplicitTypeKeyword())
             {
@@ -565,26 +565,30 @@ namespace DrakeLang.Syntax
             }
 
             var typeToken = NextToken();
-            var type = new TypeExpressionSyntax(typeToken);
-
-            return TryParseArrayTypeExpression(type, isArray);
+            return TryParseArrayTypeExpression(typeToken, isArrayDeclaration);
         }
 
-        private TypeExpressionSyntax TryParseArrayTypeExpression(TypeExpressionSyntax currentTypeExpression, bool isArray = false)
+        private TypeExpressionSyntax TryParseArrayTypeExpression(SyntaxToken typeToken, bool isArrayDeclaration = false)
         {
-            if (Current.Kind != SyntaxKind.OpenBracketToken || LookAhead.Kind != SyntaxKind.CloseBracketToken)
-                return currentTypeExpression;
-
-            if (isArray)
+            var bracketBuilder = ImmutableArray.CreateBuilder<SyntaxToken>();
+            while (true)
             {
-                if (LookAhead.Kind == SyntaxKind.CloseBracketToken && Peek(2).Kind != SyntaxKind.OpenBracketToken)
-                    return currentTypeExpression;
+                if (Current.Kind != SyntaxKind.OpenBracketToken ||
+                    LookAhead.Kind != SyntaxKind.CloseBracketToken ||
+                    (isArrayDeclaration && Peek(2).Kind != SyntaxKind.OpenBracketToken))
+                {
+                    if (bracketBuilder.Count == 0)
+                        return TypeExpressionSyntax.Create(typeToken);
+                    else
+                        return TypeExpressionSyntax.CreateArray(typeToken, bracketBuilder.ToImmutable());
+                }
+
+                var openBracket = NextToken();
+                var closeBracket = NextToken();
+
+                bracketBuilder.Add(openBracket);
+                bracketBuilder.Add(closeBracket);
             }
-
-            var openBracket = NextToken();
-            var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
-
-            return new(currentTypeExpression.TypeIdentifiers.AddRange(new[] { openBracket, closeBracket }));
         }
 
         private LiteralExpressionSyntax ParseBooleanLiteral(bool isTrue)
@@ -654,7 +658,7 @@ namespace DrakeLang.Syntax
 
         private ArrayInitializationExpressionSyntax ParseArrayInitializationExpression()
         {
-            var typeKeyword = Current.Kind.IsExplicitTypeKeyword() ? ParseTypeExpression(isArray: true) : null;
+            var typeKeyword = Current.Kind.IsExplicitTypeKeyword() ? ParseTypeExpression(isArrayDeclaration: true) : null;
             var openBracket = MatchToken(SyntaxKind.OpenBracketToken);
             var sizeOrFirstElementExpression = Current.Kind is not SyntaxKind.CloseBracketToken ? ParseExpression() : null;
 

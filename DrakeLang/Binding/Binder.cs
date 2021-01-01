@@ -48,21 +48,24 @@ namespace DrakeLang.Binding
         private readonly Dictionary<BoundNode, SyntaxNode> _boundNodeToSyntaxMap = new();
         private readonly List<BoundMethodDeclaration> _generatedMainMethods = new();
 
+        private readonly CompilationOptions _options;
         private BoundScope _scope;
 
         #region Constructors
 
-        private Binder()
+        private Binder(CompilationOptions options)
         {
+            _options = options;
+
             var rootScope = GetRootScope();
             _scope = new BoundScope(rootScope, capturesVariables: false);
         }
 
-        public static BindingResult Bind(ImmutableArray<CompilationUnitSyntax> units)
+        public static BindingResult Bind(ImmutableArray<CompilationUnitSyntax> units, CompilationOptions options)
         {
             var statements = units.SelectMany(u => u.Statements);
 
-            var binder = new Binder();
+            var binder = new Binder(options);
 
             binder.DeclareMethods(statements);
 
@@ -83,7 +86,7 @@ namespace DrakeLang.Binding
             binder.ValidateMainMethod();
 
             var methods = binder._methodDeclarations.Values.ToImmutableArray();
-            methods = Lowerer.Lower(methods, binder._labelGenerator);
+            methods = Lowerer.Lower(methods, binder._labelGenerator, new() { Optimize = options.Optimize });
 
             var diagnostics = binder.Diagnostics.ToImmutableArray();
 
@@ -1381,13 +1384,16 @@ namespace DrakeLang.Binding
 
         #region Utilities
 
-        private static TypeSymbol? ResolveType(TypeExpressionSyntax typeExpression)
+        private static TypeSymbol ResolveType(TypeExpressionSyntax typeExpression)
         {
-            var type = ResolveType(typeExpression.TypeIdentifiers[0].Kind) ?? Types.Error;
             if (typeExpression.IsArray)
-                return Types.Array.MakeConcreteType(type);
+            {
+                var typeArgumentExpression = typeExpression.GetArrayTypeArgument();
+                var typeArgument = ResolveType(typeArgumentExpression);
+                return Types.Array.MakeConcreteType(typeArgument);
+            }
             else
-                return type;
+                return ResolveType(typeExpression.TypeToken.Kind) ?? Types.Error;
         }
 
         private static TypeSymbol? ResolveType(SyntaxKind typeKeyword)
