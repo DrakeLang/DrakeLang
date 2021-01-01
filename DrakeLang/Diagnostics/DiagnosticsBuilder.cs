@@ -60,12 +60,6 @@ namespace DrakeLang
             Report(span, message);
         }
 
-        public void ReportArraySizeMismatch(TextSpan span)
-        {
-            string message = "Size of array initializer must be the same as explicitly specified size.";
-            Report(span, message);
-        }
-
         public void ReportBadCharacter(int position, char character)
         {
             TextSpan span = new TextSpan(position, 1);
@@ -208,12 +202,6 @@ namespace DrakeLang
         public void ReportNoExplicitConversion(TextSpan span, TypeSymbol fromType, TypeSymbol toType)
         {
             string message = $"No explicit convertion exists for type '{fromType}' to '{toType}'.";
-            Report(span, message);
-        }
-
-        public void ReportSizeMustBeConstantWithInitializer(TextSpan span)
-        {
-            string message = "Array size must be a constant value when using an array initializer.";
             Report(span, message);
         }
 

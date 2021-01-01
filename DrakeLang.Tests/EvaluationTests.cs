@@ -193,43 +193,42 @@ namespace DrakeLang.Tests
 
             static IEnumerable<(string statement, object result)> GetStatements()
             {
-                yield return ("var result = int[2] { 1, 2 };", new[] { 1, 2 });
-                yield return ("var result = int[2] => 1, 2;", new[] { 1, 2 });
-                yield return ("var result = int[2] => 3;", new[] { 3, 3 });
-                yield return ("var result = string[2] => \"a\", \"b\";", new[] { "a", "b" });
-                yield return ("var result = string[2] => \"c\";", new[] { "c", "c" });
-                yield return ("var result = object[2] => 1, \"b\";", new object[] { 1, "b" });
-                yield return ("var result = object[2] => \"c\";", new[] { "c", "c" });
+                yield return ("var result = int[2] => 1;", new[] { 1, 1 });
+                yield return ("var a = 2; var result = int[a] => 1;", new[] { 1, 1 });
+                yield return ("var result = int[1];", new[] { 1 });
+                yield return ("var result = int[1, 2];", new[] { 1, 2 });
+                yield return ("var result = string[] { \"1\", };", new[] { "1" });
+                yield return ("var result = object[] { 1, \"2\" };", new object[] { 1, "2" });
+
+                yield return ("var result = [2] => 1;", new[] { 1, 1 });
+                yield return ("var a = 2; var result = [a] => 1;", new[] { 1, 1 });
+                yield return ("var result = [1];", new[] { 1 });
+                yield return ("var result = [1, 2];", new[] { 1, 2 });
+                yield return ("var result = [] { \"1\", };", new[] { "1" });
+                yield return ("var result = [] { 1, \"2\" };", new object[] { 1, "2" });
+
+                yield return ("int[] result = [2] => 1;", new[] { 1, 1 });
+                yield return ("var a = 2; int[] result = [a] => 1;", new[] { 1, 1 });
+                yield return ("int[] result = [1];", new[] { 1 });
+                yield return ("int[] result = [1, 2];", new[] { 1, 2 });
+                yield return ("string[] result = [] { \"1\", };", new[] { "1" });
+                yield return ("object[] result = [] { 1, \"2\" };", new object[] { 1, "2" });
+
+                yield return ("var result = [0] => 1;", Array.Empty<object>());
+                yield return ("var a = 0; var result = [a] => 1;", Array.Empty<object>());
                 yield return ("var result = [] {};", Array.Empty<object>());
 
-                yield return ("int[] result = int[2] { 1, 2 };", new[] { 1, 2 });
-                yield return ("var result = int[2] { 1, 2 + 10 };", new[] { 1, 12 });
-                yield return ("var a = 5; int[] result = int[2] { 1, a };", new[] { 1, 5 });
+                yield return ("var result = int[] { 1, 2 + 10 };", new[] { 1, 12 });
+                yield return ("var a = 5; int[] result = int[] { 1, a };", new[] { 1, 5 });
                 yield return ("var a = 5; int[] result = int[a] => a;", new[] { 5, 5, 5, 5, 5 });
                 yield return ("var a = 5; int[] result = int[a++] => ++a;", new[] { 7, 8, 9, 10, 11 });
 
-                yield return ("var result = int[] { 1, 2 };", new[] { 1, 2 });
-                yield return ("var result = int[] => 1, 2;", new[] { 1, 2 });
-                yield return ("var result = string[] => \"1\", \"a\";", new[] { "1", "a" });
-                yield return ("var result = object[] => 1, \"a\";", new object[] { 1, "a" });
-
-                yield return ("var result = [] { 1, 2};", new[] { 1, 2 });
-                yield return ("var result = [] => 1, 2;", new[] { 1, 2 });
-                yield return ("var result = [2] => 1, 2;", new[] { 1, 2 });
                 yield return ("var result = [2] => 3;", new[] { 3, 3 });
                 yield return ("var result = [] { [] { 1 }, [] { 2 } };", new[] { new[] { 1 }, new[] { 2 } });
-                yield return ("var result = [] { [] => 1 , [] => 2 };", new object[][] { new object[] { 1, new object[] { 2 } } });
-                yield return ("var result = [] { ([] => 1), ([] => 2) };", new[] { new[] { 1 }, new[] { 2 } });
-                yield return ("var result = [2] => ([] => 3);", new[] { new[] { 3 }, new[] { 3 } });
-                yield return ("var result = [] => 1, \"a\";", new object[] { 1, "a" });
-                yield return ("var result = [2] => 1, \"a\";", new object[] { 1, "a" });
+                yield return ("var result = [2] => [3];", new[] { new[] { 3 }, new[] { 3 } });
+                yield return ("var result = [1, \"a\"];", new object[] { 1, "a" });
 
-                yield return ("var result = [1];", new[] { 1 });
-                yield return ("var result = [1, 4];", new[] { 1, 4 });
-                yield return ("var result = [\"a\"];", new[] { "a" });
-                yield return ("var result = [77, \"a\"];", new object[] { 77, "a" });
-
-                yield return ("var a = [] => 1, 2, 3; var result = a[1];", 2);
+                yield return ("var a = [1, 2, 3]; var result = a[1];", 2);
                 yield return ("var a = [[1, 2], [3, 4], [5, 6]]; var result = a[1][0];", 3);
             }
         }
@@ -513,14 +512,6 @@ namespace DrakeLang.Tests
 
         #endregion Implicit upcast
 
-        #region Compile time constant
-
-        [Theory]
-        [InlineData("set length = 2; var result = [length] => 5, 5;", new[] { 5, 5 })]
-        public void Evaluator_Computes_CompileTimeConstants(string text, object expectedValue) => AssertValue(text, expectedValue);
-
-        #endregion Compile time constant
-
         #endregion Evaluates
 
         #region Reports
@@ -557,20 +548,6 @@ namespace DrakeLang.Tests
 
             string diagnostics = @"
                 Reference is ambiguous between the following symbols: 'A.GetVal', 'B.GetVal'.
-            ";
-
-            AssertDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
-        public void Evaluator_ArrayInit_Reports_SizeMismatch()
-        {
-            var text = @"
-                var a = \[5\] => [1, 2, 3];
-            ";
-
-            string diagnostics = @"
-                Size of array initializer must be the same as explicitly specified size.
             ";
 
             AssertDiagnostics(text, diagnostics);
@@ -875,21 +852,6 @@ namespace DrakeLang.Tests
 
             string diagnostics = @"
                 No explicit convertion exists for type 'string' to 'int'.
-            ";
-
-            AssertDiagnostics(text, diagnostics);
-        }
-
-        [Fact]
-        public void Evaluator_ArrayInit_Reports_RequiresConstantSize()
-        {
-            string text = @"
-                var size = 3;
-                var a = \[[size]\] => 1, 2, 3;
-            ";
-
-            string diagnostics = @"
-                Array size must be a constant value when using an array initializer.
             ";
 
             AssertDiagnostics(text, diagnostics);

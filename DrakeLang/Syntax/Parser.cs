@@ -660,10 +660,34 @@ namespace DrakeLang.Syntax
         {
             var typeKeyword = Current.Kind.IsExplicitTypeKeyword() ? ParseTypeExpression(isArrayDeclaration: true) : null;
             var openBracket = MatchToken(SyntaxKind.OpenBracketToken);
-            var sizeOrFirstElementExpression = Current.Kind is not SyntaxKind.CloseBracketToken ? ParseExpression() : null;
 
-            if (sizeOrFirstElementExpression is not null &&
-                (Current.Kind is SyntaxKind.CommaToken || (Current.Kind is SyntaxKind.CloseBracketToken && LookAhead.Kind is not SyntaxKind.EqualsGreaterToken and not SyntaxKind.OpenBraceToken)))
+            if (Current.Kind == SyntaxKind.CloseBracketToken)
+            {
+                // Bodied initializer
+
+                var closeBracket = NextToken();
+
+                var openBrace = MatchToken(SyntaxKind.OpenBraceToken);
+                var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken, allowTrailingSeparator: true);
+                var closeBrace = MatchToken(SyntaxKind.CloseBraceToken);
+
+                return new BodiedArrayInitializationExpressionSyntax(typeKeyword, openBracket, closeBracket, openBrace, initializer, closeBrace);
+            }
+
+            var sizeOrFirstElementExpression = ParseExpression();
+
+            if (LookAhead.Kind == SyntaxKind.EqualsGreaterToken)
+            {
+                // Dynamically Sized initializer
+
+                var sizeExpression = sizeOrFirstElementExpression;
+                var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
+                var lamdaToken = MatchToken(SyntaxKind.EqualsGreaterToken);
+                var initExpression = ParseExpression();
+
+                return new DynamicallySizedArrayInitializationExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, lamdaToken, initExpression);
+            }
+            else
             {
                 // Simple array initializer
 
@@ -685,32 +709,7 @@ namespace DrakeLang.Syntax
                 }
                 var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
 
-                return new SimpleArrayInitializerExpressionSyntax(openBracket, initializer, closeBracket);
-            }
-            else
-            {
-                var sizeExpression = sizeOrFirstElementExpression;
-                var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
-
-                if (Current.Kind == SyntaxKind.EqualsGreaterToken)
-                {
-                    // Lambda initializer
-
-                    var lambdaOperator = NextToken();
-                    var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken);
-
-                    return new LambdaArrayInitializerExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, lambdaOperator, initializer);
-                }
-                else
-                {
-                    // Bodied initializer
-
-                    var openBrace = MatchToken(SyntaxKind.OpenBraceToken);
-                    var initializer = ParseSyntaxList(() => ParseExpression(), SyntaxKind.CommaToken);
-                    var closeBrace = MatchToken(SyntaxKind.CloseBraceToken);
-
-                    return new BodiedArrayInitializationExpressionSyntax(typeKeyword, openBracket, sizeExpression, closeBracket, openBrace, initializer, closeBrace);
-                }
+                return new SimpleArrayInitializerExpressionSyntax(typeKeyword, openBracket, initializer, closeBracket);
             }
         }
 
@@ -754,7 +753,7 @@ namespace DrakeLang.Syntax
                                                           SyntaxKind seperator,
                                                           Func<bool>? escapeConditions = null,
                                                           ImmutableArray<SyntaxNode>.Builder? builder = null,
-                                                          bool withTrailingSeparator = false)
+                                                          bool allowTrailingSeparator = false)
             where T : SyntaxNode
         {
             builder ??= ImmutableArray.CreateBuilder<SyntaxNode>();
@@ -785,7 +784,7 @@ namespace DrakeLang.Syntax
                 if (currentToken == Current)
                     break;
 
-                if (withTrailingSeparator && escapeConditions())
+                if (allowTrailingSeparator && escapeConditions())
                     break;
             } while (true);
 
@@ -796,7 +795,7 @@ namespace DrakeLang.Syntax
         {
             return ParseSyntaxList(() => MatchToken(SyntaxKind.IdentifierToken), SyntaxKind.DotToken,
                 () => LookAhead.Kind is not SyntaxKind.IdentifierToken and not SyntaxKind.DotToken,
-                withTrailingSeparator: true);
+                allowTrailingSeparator: true);
         }
 
         private SeparatedSyntaxList<SyntaxToken>? ParseOptionalNamespacePrefix()

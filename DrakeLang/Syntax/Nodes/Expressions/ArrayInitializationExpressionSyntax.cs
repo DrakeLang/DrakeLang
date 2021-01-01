@@ -23,32 +23,68 @@ namespace DrakeLang.Syntax
     public abstract class ArrayInitializationExpressionSyntax : ExpressionSyntax
     {
         internal ArrayInitializationExpressionSyntax(
-            TypeExpressionSyntax? typeToken,
-            SyntaxToken openBracketToken, ExpressionSyntax? sizeExpression, SyntaxToken closeBracketToken, SeparatedSyntaxList<ExpressionSyntax> initializer)
+            TypeExpressionSyntax? typeToken, SyntaxToken openBracketToken, SyntaxToken closeBracketToken)
         {
             TypeToken = typeToken;
             OpenBracketToken = openBracketToken;
-            SizeExpression = sizeExpression;
             CloseBracketToken = closeBracketToken;
-            Initializer = initializer;
         }
 
         public override SyntaxKind Kind => SyntaxKind.ArrayInitializationExpression;
 
         public TypeExpressionSyntax? TypeToken { get; }
         public SyntaxToken OpenBracketToken { get; }
-        public ExpressionSyntax? SizeExpression { get; }
         public SyntaxToken CloseBracketToken { get; }
+    }
+
+    public sealed class DynamicallySizedArrayInitializationExpressionSyntax : ArrayInitializationExpressionSyntax
+    {
+        public DynamicallySizedArrayInitializationExpressionSyntax(
+            TypeExpressionSyntax? typeToken, SyntaxToken openBracketToken, ExpressionSyntax sizeExpression, SyntaxToken closeBracketToken,
+            SyntaxToken lambdaToken, ExpressionSyntax initializationExpression)
+            : base(typeToken, openBracketToken, closeBracketToken)
+        {
+            SizeExpression = sizeExpression;
+            LambdaToken = lambdaToken;
+            InitializationExpression = initializationExpression;
+        }
+
+        public ExpressionSyntax SizeExpression { get; }
+        public SyntaxToken LambdaToken { get; }
+        public ExpressionSyntax InitializationExpression { get; }
+
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            if (TypeToken is not null)
+                yield return TypeToken;
+
+            yield return OpenBracketToken;
+            yield return SizeExpression;
+            yield return CloseBracketToken;
+            yield return LambdaToken;
+            yield return InitializationExpression;
+        }
+    }
+
+    public abstract class FixedSizedArrayInitializationExpressionSyntax : ArrayInitializationExpressionSyntax
+    {
+        internal FixedSizedArrayInitializationExpressionSyntax(
+            TypeExpressionSyntax? typeToken, SyntaxToken openBracketToken, SyntaxToken closeBracketToken, SeparatedSyntaxList<ExpressionSyntax> initializer)
+            : base(typeToken, openBracketToken, closeBracketToken)
+        {
+            Initializer = initializer;
+        }
+
         public SeparatedSyntaxList<ExpressionSyntax> Initializer { get; }
     }
 
-    public sealed class BodiedArrayInitializationExpressionSyntax : ArrayInitializationExpressionSyntax
+    public sealed class BodiedArrayInitializationExpressionSyntax : FixedSizedArrayInitializationExpressionSyntax
     {
         internal BodiedArrayInitializationExpressionSyntax(
             TypeExpressionSyntax? typeToken,
-            SyntaxToken openBracketToken, ExpressionSyntax? sizeExpression, SyntaxToken closeBracketToken,
+            SyntaxToken openBracketToken, SyntaxToken closeBracketToken,
             SyntaxToken openBraceToken, SeparatedSyntaxList<ExpressionSyntax> initializer, SyntaxToken closeBraceToken)
-            : base(typeToken, openBracketToken, sizeExpression, closeBracketToken, initializer)
+            : base(typeToken, openBracketToken, closeBracketToken, initializer)
         {
             OpenBraceToken = openBraceToken;
             CloseBraceToken = closeBraceToken;
@@ -63,10 +99,6 @@ namespace DrakeLang.Syntax
                 yield return TypeToken;
 
             yield return OpenBracketToken;
-
-            if (SizeExpression is not null)
-                yield return SizeExpression;
-
             yield return CloseBracketToken;
 
             yield return OpenBraceToken;
@@ -78,47 +110,18 @@ namespace DrakeLang.Syntax
         }
     }
 
-    public sealed class LambdaArrayInitializerExpressionSyntax : ArrayInitializationExpressionSyntax
+    public sealed class SimpleArrayInitializerExpressionSyntax : FixedSizedArrayInitializationExpressionSyntax
     {
-        internal LambdaArrayInitializerExpressionSyntax(
-            TypeExpressionSyntax? typeToken,
-            SyntaxToken openBracketToken, ExpressionSyntax? sizeExpression, SyntaxToken closeBracketToken,
-            SyntaxToken lambdaOperator, SeparatedSyntaxList<ExpressionSyntax> initializer)
-            : base(typeToken, openBracketToken, sizeExpression, closeBracketToken, initializer)
-        {
-            LambdaOperator = lambdaOperator;
-        }
-
-        public SyntaxToken LambdaOperator { get; }
+        internal SimpleArrayInitializerExpressionSyntax(
+            TypeExpressionSyntax? typeToken, SyntaxToken openBracketToken, SeparatedSyntaxList<ExpressionSyntax> initializer, SyntaxToken closeBracketToken)
+            : base(typeToken, openBracketToken, closeBracketToken, initializer)
+        { }
 
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             if (TypeToken is not null)
                 yield return TypeToken;
 
-            yield return OpenBracketToken;
-
-            if (SizeExpression is not null)
-                yield return SizeExpression;
-
-            yield return CloseBracketToken;
-            yield return LambdaOperator;
-
-            foreach (var item in Initializer.GetWithSeparators())
-            {
-                yield return item;
-            }
-        }
-    }
-
-    public sealed class SimpleArrayInitializerExpressionSyntax : ArrayInitializationExpressionSyntax
-    {
-        internal SimpleArrayInitializerExpressionSyntax(SyntaxToken openBracketToken, SeparatedSyntaxList<ExpressionSyntax> initializer, SyntaxToken closeBracketToken)
-            : base(typeToken: null, openBracketToken, sizeExpression: null, closeBracketToken, initializer)
-        { }
-
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
             yield return OpenBracketToken;
 
             foreach (var item in Initializer.GetWithSeparators())

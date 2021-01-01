@@ -954,62 +954,35 @@ namespace DrakeLang.Binding
             if (syntax.TypeToken is not null)
                 itemType = ResolveType(syntax.TypeToken) ?? Types.Error;
 
-            var boundInitializer = ImmutableArray.CreateBuilder<BoundExpression>();
-            var sizeExpression = syntax.SizeExpression is not null ? BindExpression(syntax.SizeExpression, Types.Int) : null;
-
-            if (syntax is LambdaArrayInitializerExpressionSyntax lambdaInitialization &&
-                lambdaInitialization.Initializer.Count == 1)
+            if (syntax is DynamicallySizedArrayInitializationExpressionSyntax dynamicallySizedArray)
             {
-                boundInitializer.Add(BindExpression(lambdaInitialization.Initializer[0], itemType));
-                itemType ??= boundInitializer[0].Type;
+                var sizeExpression = BindExpression(dynamicallySizedArray.SizeExpression, Types.Int);
+                var initializationExpression = BindExpression(dynamicallySizedArray.InitializationExpression, itemType);
+                var arrayType = Types.Array.MakeConcreteType(itemType ?? initializationExpression.Type);
+
+                return new BoundArrayInitializationExpression(arrayType, sizeExpression, ImmutableArray.Create(initializationExpression));
             }
-            else
+            else if (syntax is FixedSizedArrayInitializationExpressionSyntax fixedSizedArray)
             {
-                BindArrayInitializer(syntax.Initializer);
+                var boundInitializer = ImmutableArray.CreateBuilder<BoundExpression>();
+
+                var explicitItemType = itemType;
+                foreach (var expression in fixedSizedArray.Initializer)
+                {
+                    var boundExpression = BindExpression(expression, explicitItemType);
+                    boundInitializer.Add(boundExpression);
+
+                    if (itemType is null)
+                        itemType = boundExpression.Type;
+                    else if (itemType != Types.Object)
+                        itemType = itemType.FindCommonAncestor(boundExpression.Type);
+                }
+
+                var arrayType = Types.Array.MakeConcreteType(itemType ?? Types.Object);
+                var sizeExpression = new BoundLiteralExpression(boundInitializer.Count);
+                return new BoundArrayInitializationExpression(arrayType, sizeExpression, boundInitializer.ToImmutable());
             }
-
-            var arrayType = Types.Array.MakeConcreteType(itemType ?? Types.Object);
-            sizeExpression ??= new BoundLiteralExpression(boundInitializer.Count);
-            return new BoundArrayInitializationExpression(arrayType, sizeExpression, boundInitializer.ToImmutable());
-
-            void BindArrayInitializer(SeparatedSyntaxList<ExpressionSyntax> initializer)
-            {
-                if (sizeExpression is null)
-                {
-                    BindArrayInitializer(initializer.Count);
-                }
-                else if (ExpressionIsConstant(sizeExpression, out var value))
-                {
-                    BindArrayInitializer(value);
-                }
-                else
-                {
-                    var span = syntax.SizeExpression!.Span;
-                    DiagnosticsBuilder.ReportSizeMustBeConstantWithInitializer(span);
-                    itemType ??= Types.Error;
-                }
-
-                void BindArrayInitializer(object size)
-                {
-                    if (!size.Equals(initializer.Count))
-                    {
-                        DiagnosticsBuilder.ReportArraySizeMismatch(initializer.Span);
-                    }
-
-                    foreach (var expression in initializer)
-                    {
-                        boundInitializer.Add(BindExpression(expression, itemType));
-                    }
-
-                    foreach (var expression in boundInitializer)
-                    {
-                        if (itemType is null)
-                            itemType = expression.Type;
-                        else if (itemType != Types.Object)
-                            itemType = itemType.FindCommonAncestor(expression.Type);
-                    }
-                }
-            }
+            else throw new Exception($"Unsupported array initialization type '{syntax.GetType()}'.");
         }
 
         #endregion BindExpression
