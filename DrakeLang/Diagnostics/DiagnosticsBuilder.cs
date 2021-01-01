@@ -97,6 +97,12 @@ namespace DrakeLang
             Report(span, message);
         }
 
+        public void ReportCannotInferReturnType(TextSpan span, string? name)
+        {
+            string message = $"Implicit return type of method '{name}' cannot be infered.";
+            Report(span, message);
+        }
+
         public void ReportCanOnlyPipeToMethods(TextSpan span)
         {
             string message = $"Expressions can only be piped into methods.";
@@ -253,12 +259,17 @@ namespace DrakeLang
             Report(span, message);
         }
 
+        public void ReportUnrecognizedEscapeSequence(TextSpan span)
+        {
+            string message = $"Unrecognized escape sequence.";
+            Report(span, message);
+        }
+
         public void ReportUnterminatedCharacterLiteral(TextSpan span)
         {
             string message = "Unterminated character literal.";
             Report(span, message);
         }
-
         public void ReportUnterminatedString(TextSpan span)
         {
             string message = "Unterminated string literal.";
@@ -282,13 +293,6 @@ namespace DrakeLang
             string message = $"Parameter '{parameterName}' in method '{methodName}' requires value of type '{expected}', but recieved value of type '{actual}'.";
             Report(span, message);
         }
-
-        public void ReportCannotInferReturnType(TextSpan span, string? name)
-        {
-            string message = $"Implicit return type of method '{name}' cannot be infered.";
-            Report(span, message);
-        }
-
         #endregion Report
 
         #region Helpers

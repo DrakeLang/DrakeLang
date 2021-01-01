@@ -169,11 +169,31 @@ namespace DrakeLang.Tests
         #region String
 
         [Theory]
-        [InlineData("var result = \"abc\";", "abc")]
-        [InlineData("var result = \"abc\"; result += \"def\";", "abcdef")]
-        [InlineData("var result = \"abc\"; result += 'd';", "abcd")]
-        [InlineData("var a = \"abc\"; var result = a[1];", 'b')]
-        [InlineData("var result = \"abc\"[2];", 'c')]
+        [InlineData(@"var result = 'a';", 'a')]
+        [InlineData(@"var result = '\\';", '\\')]
+        [InlineData(@"var result = '\'';", '\'')]
+        [InlineData(@"var result = '\0';", '\0')]
+        [InlineData(@"var result = '\n';", '\n')]
+        [InlineData(@"var result = '\r';", '\r')]
+        [InlineData(@"var result = '\t';", '\t')]
+        public void Evaluator_Computes_CharStatements(string text, object expectedValue) => AssertValue(text, expectedValue);
+
+        #endregion String
+
+        #region String
+
+        [Theory]
+        [InlineData(@"var result = ""abc"";", "abc")]
+        [InlineData(@"var result = ""\\"";", "\\")]
+        [InlineData(@"var result = ""\"""";", "\"")]
+        [InlineData(@"var result = ""\0"";", "\0")]
+        [InlineData(@"var result = ""\n"";", "\n")]
+        [InlineData(@"var result = ""\r"";", "\r")]
+        [InlineData(@"var result = ""\t"";", "\t")]
+        [InlineData(@"var result = ""abc""; result += ""def"";", "abcdef")]
+        [InlineData(@"var result = ""abc""; result += 'd';", "abcd")]
+        [InlineData(@"var a = ""abc""; var result = a[1];", 'b')]
+        [InlineData(@"var result = ""abc""[2];", 'c')]
         public void Evaluator_Computes_StringStatements(string text, object expectedValue) => AssertValue(text, expectedValue);
 
         #endregion String
@@ -649,6 +669,29 @@ namespace DrakeLang.Tests
         }
 
         [Fact]
+        public void Evaluator_Implicit_Recursive_Method_Return_Type_Reports_Unable_To_Infer()
+        {
+            var text = @"
+                def Main() { }
+                def [A](bool b) => B(b);
+                def [B](bool b)
+                {
+                    if (b)
+                        return A(b);
+                    else
+                        return A(!b);
+                }
+            ";
+
+            string diagnostics = @"
+                Implicit return type of method 'A' cannot be infered.
+                Implicit return type of method 'B' cannot be infered.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
         public void Evaluator_Piped_Reports_OnlySupportedForMethods()
         {
             string text = @"
@@ -1003,6 +1046,26 @@ namespace DrakeLang.Tests
         }
 
         [Fact]
+        public void Evaluator_CharOrStringLiteral_Reports_UnrecognizedEscapeSequence()
+        {
+            string text = @"
+                char a = '[\2]';
+                char b = '[\""]';
+                string c = ""[\2]"";
+                string d = ""[\']"";
+            ";
+
+            string diagnostics = @"
+                Unrecognized escape sequence.
+                Unrecognized escape sequence.
+                Unrecognized escape sequence.
+                Unrecognized escape sequence.
+            ";
+
+            AssertDiagnostics(text, diagnostics);
+        }
+
+        [Fact]
         public void Evaluator_CharLiteral_Reports_Unterminated()
         {
             string text = @"
@@ -1086,28 +1149,7 @@ namespace DrakeLang.Tests
             AssertDiagnostics(text, diagnostics);
         }
 
-        [Fact]
-        public void Evaluator_Implicit_Recursive_Method_Return_Type_Reports_Unable_To_Infer()
-        {
-            var text = @"
-                def Main() { }
-                def [A](bool b) => B(b);
-                def [B](bool b)
-                {
-                    if (b)
-                        return A(b);
-                    else
-                        return A(!b);
-                }
-            ";
-
-            string diagnostics = @"
-                Implicit return type of method 'A' cannot be infered.
-                Implicit return type of method 'B' cannot be infered.
-            ";
-
-            AssertDiagnostics(text, diagnostics);
-        }
+ 
 
         [Fact]
         public void Evaluator_Call_Reports_CannotConvertParameter()

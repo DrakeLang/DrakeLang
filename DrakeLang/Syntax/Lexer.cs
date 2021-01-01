@@ -376,20 +376,32 @@ namespace DrakeLang.Syntax
 
                 _value = default(char);
                 Next();
+                return;
             }
-            else if (Current is '\n' or '\r' || LookAhead is not '\'')
+
+            bool escape = false;
+            if (Current is '\\')
+            {
+                _position++;
+                escape = true;
+            }
+
+            if (Current is '\n' or '\r' || LookAhead is not '\'')
             {
                 var span = new TextSpan(_start, 1);
                 Diagnostics.ReportUnterminatedCharacterLiteral(span);
                 _value = default(char);
 
                 // don't consume any more characters.
+                return;
             }
+
+            if (escape && TryEscapeCharacter(contextIsStr: false, out var escaped))
+                _value = escaped;
             else
-            {
                 _value = Current;
-                _position += 2;
-            }
+
+            _position += 2;
         }
 
         private void ReadString()
@@ -413,37 +425,32 @@ namespace DrakeLang.Syntax
                         done = true;
                         break;
 
-                    case '"':
+                    case '"' when !escape:
                         _position++;
-                        if (escape)
-                        {
-                            sb.Append('"');
-                            escape = false;
-                        }
-                        else
-                        {
-                            done = true;
-                        }
+                        done = true;
                         break;
 
-                    case '\\':
+                    case '\\' when !escape:
                         _position++;
-                        if (escape)
-                        {
-                            sb.Append('\\');
-                            escape = false;
-                        }
-                        else
-                        {
-                            escape = true;
-                        }
-
+                        escape = true;
                         break;
 
                     default:
-                        sb.Append(Current);
+                        if (escape)
+                        {
+                            if (TryEscapeCharacter(contextIsStr: true, out var escaped))
+                                sb.Append(escaped);
+                            else
+                                sb.Append(Current);
+
+                            escape = false;
+                        }
+                        else
+                        {
+                            sb.Append(Current);
+                            escape = false;
+                        }
                         _position++;
-                        escape = false;
                         break;
                 }
             }
@@ -512,6 +519,58 @@ namespace DrakeLang.Syntax
             _position++;
         }
 
+        private bool TryEscapeCharacter(bool contextIsStr, out char escapedChar)
+        {
+            if (IsEscapable(Current, contextIsStr, out escapedChar))
+                return true;
+
+            var span = new TextSpan(_position - 1, 2);
+            Diagnostics.ReportUnrecognizedEscapeSequence(span);
+            return false;
+        }
+
         #endregion Helpers
+
+        #region Utilities
+
+        private static bool IsEscapable(char c, bool contextIsStr, out char escapedChar)
+        {
+            switch (c)
+            {
+                case '\\':
+                    escapedChar = '\\';
+                    return true;
+
+                case '0':
+                    escapedChar = '\0';
+                    return true;
+
+                case 'n':
+                    escapedChar = '\n';
+                    return true;
+
+                case 'r':
+                    escapedChar = '\r';
+                    return true;
+
+                case 't':
+                    escapedChar = '\t';
+                    return true;
+
+                case '\'':
+                    escapedChar = '\'';
+                    return !contextIsStr;
+
+                case '"':
+                    escapedChar = '"';
+                    return contextIsStr;
+
+                default:
+                    escapedChar = default;
+                    return false;
+            }
+        }
+
+        #endregion Utilities
     }
 }

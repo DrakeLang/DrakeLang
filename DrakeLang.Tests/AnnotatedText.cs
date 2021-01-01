@@ -74,7 +74,10 @@ namespace DrakeLang.Tests
                 else
                 {
                     if (c == '\\')
-                        i++;
+                    {
+                        if (i < text.Length - 1 && text[i + 1] is '[' or ']')
+                            i++;
+                    }
 
                     position++;
                     textBuilder.Append(text[i]);
