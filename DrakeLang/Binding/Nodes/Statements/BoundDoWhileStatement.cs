@@ -18,31 +18,36 @@
 
 using DrakeLang.Symbols;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace DrakeLang.Binding
 {
-    internal sealed class BoundConditionalGotoStatement : BoundStatement
+    internal sealed class BoundDoWhileStatement : BoundLoopStatement
     {
-        public BoundConditionalGotoStatement(LabelSymbol label, BoundExpression condition, bool jumpIfTrue = true)
+        public BoundDoWhileStatement(ImmutableArray<BoundStatement> body,
+                                   BoundExpression condition,
+                                   LabelSymbol continueLabel,
+                                   LabelSymbol breakLabel)
+            : base(body, continueLabel, breakLabel)
         {
-            Label = label;
             Condition = condition;
-            JumpIfTrue = jumpIfTrue;
         }
 
         #region Properties
 
-        public override BoundNodeKind Kind => BoundNodeKind.ConditionalGotoStatement;
+        public override BoundNodeKind Kind => BoundNodeKind.DoWhileStatement;
 
-        public LabelSymbol Label { get; }
         public BoundExpression Condition { get; }
-        public bool JumpIfTrue { get; }
 
         #endregion Properties
 
         public override IEnumerable<BoundNode> GetChildren()
         {
             yield return Condition;
+            foreach (var statement in Body)
+            {
+                yield return statement;
+            }
         }
     }
 }

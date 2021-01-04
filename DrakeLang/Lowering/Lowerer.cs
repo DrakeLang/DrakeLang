@@ -102,7 +102,7 @@ namespace DrakeLang.Lowering
                 var endLabel = _labelGenerator.GenerateLabel(LabelCategory.End);
                 var endLabelStatement = new BoundLabelStatement(endLabel);
 
-                var conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfFalse: true);
+                var conditionalGotoEnd = new BoundConditionalGotoStatement(endLabel, node.Condition, jumpIfTrue: false);
 
                 var result = ImmutableArray.CreateBuilder<BoundStatement>(2 + node.ThenBody.Length);
                 result.Add(conditionalGotoEnd);
@@ -137,7 +137,7 @@ namespace DrakeLang.Lowering
                 var elseLabelStatement = new BoundLabelStatement(elseLabel);
                 var endLabelStatement = new BoundLabelStatement(endLabel);
 
-                var conditionalGotoElse = new BoundConditionalGotoStatement(elseLabel, node.Condition, jumpIfFalse: true);
+                var conditionalGotoElse = new BoundConditionalGotoStatement(elseLabel, node.Condition, jumpIfTrue: false);
                 var gotoEnd = new BoundGotoStatement(endLabel);
 
                 var result = ImmutableArray.CreateBuilder<BoundStatement>(4 + node.ThenBody.Length + node.ElseBody.Length);
@@ -162,26 +162,60 @@ namespace DrakeLang.Lowering
              *
              * -------->
              *
-             * check:
-             * gotoFalse <condition> end
+             * continue:
+             * gotoFalse <condition> break
              * <body>
-             * goto check
-             * end:
+             * goto continue
+             * break:
              *
              */
 
-            var checkLabelStatement = new BoundLabelStatement(node.ContinueLabel);
-            var endLabelStatement = new BoundLabelStatement(node.BreakLabel);
+            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
+            var breakLabelStatement = new BoundLabelStatement(node.BreakLabel);
 
             var gotoCheck = new BoundGotoStatement(node.ContinueLabel);
-            var conditionalGotoEnd = new BoundConditionalGotoStatement(node.BreakLabel, node.Condition, jumpIfFalse: true);
+            var conditionalGotoEnd = new BoundConditionalGotoStatement(node.BreakLabel, node.Condition, jumpIfTrue: false);
 
             var result = ImmutableArray.CreateBuilder<BoundStatement>(4 + node.Body.Length);
-            result.Add(checkLabelStatement);
+            result.Add(continueLabelStatement);
             result.Add(conditionalGotoEnd);
             result.AddRange(node.Body);
             result.Add(gotoCheck);
-            result.Add(endLabelStatement);
+            result.Add(breakLabelStatement);
+
+            return RewriteStatements(result.MoveToImmutable());
+        }
+
+        protected override Statements? RewriteDoWhileStatement(BoundDoWhileStatement node)
+        {
+            /**
+             *
+             * do
+             *    <body>
+             * while <condition>
+             *
+             * -------->
+             *
+             * loop:
+             * <body>
+             * continue:
+             * gotoTrue <condition> loop
+             * break:
+             *
+             */
+
+            var loopLabelStatement = new BoundLabelStatement(_labelGenerator.GenerateLabel(LabelCategory.Loop));
+            var continueLabelStatement = new BoundLabelStatement(node.ContinueLabel);
+            var breakLabelStatement = new BoundLabelStatement(node.BreakLabel);
+
+            var conditionalGotoLoop = new BoundConditionalGotoStatement(loopLabelStatement.Label, node.Condition);
+
+            var result = ImmutableArray.CreateBuilder<BoundStatement>(4 + node.Body.Length);
+            result.Add(loopLabelStatement);
+            result.AddRange(node.Body);
+            result.Add(continueLabelStatement);
+            result.Add(conditionalGotoLoop);
+            result.Add(breakLabelStatement);
 
             return RewriteStatements(result.MoveToImmutable());
         }

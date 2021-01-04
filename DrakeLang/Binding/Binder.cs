@@ -354,8 +354,9 @@ namespace DrakeLang.Binding
 
                         SyntaxKind.VariableDeclarationStatement => BindVariableDeclarationStatement((VariableDeclarationStatementSyntax)syntax),
                         SyntaxKind.IfStatement => BindIfStatement((IfStatementSyntax)syntax),
-                        SyntaxKind.WhileStatement => BindLoopStatement((WhileStatementSyntax)syntax),
-                        SyntaxKind.ForStatement => BindLoopStatement((ForStatementSyntax)syntax),
+                        SyntaxKind.WhileStatement => BindLoopStatement((LoopStatementSyntax)syntax),
+                        SyntaxKind.DoWhileStatement => BindLoopStatement((LoopStatementSyntax)syntax),
+                        SyntaxKind.ForStatement => BindLoopStatement((LoopStatementSyntax)syntax),
                         SyntaxKind.GoToStatement => BindGoToStatement((GoToStatementSyntax)syntax),
                         SyntaxKind.ReturnStatement => BindReturnStatement((ReturnStatementSyntax)syntax),
                         SyntaxKind.LabelStatement => BindLabelStatement((LabelStatementSyntax)syntax),
@@ -507,6 +508,7 @@ namespace DrakeLang.Binding
                 return syntax.Kind switch
                 {
                     SyntaxKind.WhileStatement => BindWhileStatement((WhileStatementSyntax)syntax, continueLabel, breakLabel),
+                    SyntaxKind.DoWhileStatement => BindDoWhileStatement((DoWhileStatementSyntax)syntax, continueLabel, breakLabel),
                     SyntaxKind.ForStatement => BindForStatement((ForStatementSyntax)syntax, continueLabel, breakLabel),
 
                     _ => throw new Exception($"Unexpected syntax {syntax.Kind}"),
@@ -524,6 +526,14 @@ namespace DrakeLang.Binding
             var body = BindStatement(syntax.Body);
 
             return new BoundWhileStatement(condition, body, continueLabel, breakLabel);
+        }
+
+        private BoundStatement BindDoWhileStatement(DoWhileStatementSyntax syntax, LabelSymbol continueLabel, LabelSymbol breakLabel)
+        {
+            var body = BindStatement(syntax.Body);
+            var condition = BindExpression(syntax.Condition, Types.Boolean);
+
+            return new BoundDoWhileStatement(body, condition, continueLabel, breakLabel);
         }
 
         private BoundStatement BindForStatement(ForStatementSyntax syntax, LabelSymbol continueLabel, LabelSymbol breakLabel)

@@ -270,6 +270,9 @@ namespace DrakeLang.Tests
 
         [Theory]
         [InlineData("var a = 0; while (a < 10) a = a + 1; var result = a;", 10)]
+        [InlineData("var a = 0; while (false) a = 10; var result = a;", 0)]
+        [InlineData("var a = 0; do a = a + 1; while a < 10; var result = a;", 10)]
+        [InlineData("var a = 0; do a = 10; while false; var result = a;", 10)]
         [InlineData("var result = 0; for (var i = 0; i <= 10; ++i) result = result + i;", 55)]
         public void Evaluator_Computes_LoopStatements(string text, int expectedValue) => AssertValue(text, expectedValue);
 

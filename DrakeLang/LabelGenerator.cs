@@ -25,7 +25,7 @@ namespace DrakeLang
     {
         Continue,
         Break,
-        Check,
+        Loop,
         Else,
         End,
     }

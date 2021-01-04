@@ -16,33 +16,34 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //------------------------------------------------------------------------------
 
-using DrakeLang.Symbols;
 using System.Collections.Generic;
 
-namespace DrakeLang.Binding
+namespace DrakeLang.Syntax
 {
-    internal sealed class BoundConditionalGotoStatement : BoundStatement
+    public sealed class DoWhileStatementSyntax : LoopStatementSyntax
     {
-        public BoundConditionalGotoStatement(LabelSymbol label, BoundExpression condition, bool jumpIfTrue = true)
+        public DoWhileStatementSyntax(SyntaxToken doKeyword, StatementSyntax body, SyntaxToken whileKeyword, ExpressionSyntax condition, SyntaxToken semicolon) : base(body)
         {
-            Label = label;
+            DoKeyword = doKeyword;
+            WhileKeyword = whileKeyword;
             Condition = condition;
-            JumpIfTrue = jumpIfTrue;
+            Semicolon = semicolon;
         }
 
-        #region Properties
+        public override SyntaxKind Kind => SyntaxKind.DoWhileStatement;
 
-        public override BoundNodeKind Kind => BoundNodeKind.ConditionalGotoStatement;
+        public SyntaxToken DoKeyword { get; }
+        public SyntaxToken WhileKeyword { get; }
+        public ExpressionSyntax Condition { get; }
+        public SyntaxToken Semicolon { get; }
 
-        public LabelSymbol Label { get; }
-        public BoundExpression Condition { get; }
-        public bool JumpIfTrue { get; }
-
-        #endregion Properties
-
-        public override IEnumerable<BoundNode> GetChildren()
+        public override IEnumerable<SyntaxNode> GetChildren()
         {
+            yield return DoKeyword;
+            yield return Body;
+            yield return WhileKeyword;
             yield return Condition;
+            yield return Semicolon;
         }
     }
 }

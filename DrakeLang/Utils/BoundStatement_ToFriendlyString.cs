@@ -62,7 +62,7 @@ namespace DrakeLang.Binding
 
         private static string StringifyConditionalGotoStatement(BoundConditionalGotoStatement statement)
         {
-            return "goto " + statement.Label + (statement.JumpIfFalse ? " on false" : " on true");
+            return "goto " + statement.Label + (statement.JumpIfTrue ? " on true" : " on false");
         }
 
         private static string StringifyReturnStatement(BoundReturnStatement statement)

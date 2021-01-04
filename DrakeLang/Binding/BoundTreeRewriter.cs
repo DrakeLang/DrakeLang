@@ -142,6 +142,7 @@ namespace DrakeLang.Binding
                     BoundNodeKind.VariableDeclarationStatement => RewriteVariableDeclarationStatement((BoundVariableDeclarationStatement)node),
                     BoundNodeKind.IfStatement => RewriteIfStatement((BoundIfStatement)node),
                     BoundNodeKind.WhileStatement => RewriteWhileStatement((BoundWhileStatement)node),
+                    BoundNodeKind.DoWhileStatement => RewriteDoWhileStatement((BoundDoWhileStatement)node),
                     BoundNodeKind.ForStatement => RewriteForStatement((BoundForStatement)node),
                     BoundNodeKind.LabelStatement => RewriteLabelStatement((BoundLabelStatement)node),
                     BoundNodeKind.GotoStatement => RewriteGotoStatement((BoundGotoStatement)node),
@@ -208,6 +209,17 @@ namespace DrakeLang.Binding
             return Wrap(new BoundWhileStatement(condition, body, node.ContinueLabel, node.BreakLabel));
         }
 
+        protected virtual Statements? RewriteDoWhileStatement(BoundDoWhileStatement node)
+        {
+            var body = RewriteStatements(node.Body);
+            var condition = RewriteExpression(node.Condition);
+
+            if (body == node.Body && condition == node.Condition)
+                return null;
+
+            return Wrap(new BoundDoWhileStatement(body, condition, node.ContinueLabel, node.BreakLabel));
+        }
+
         protected virtual Statements? RewriteForStatement(BoundForStatement node)
         {
             var initializationStatement = RewriteStatements(node.InitializationStatement);
@@ -235,19 +247,19 @@ namespace DrakeLang.Binding
             var condition = RewriteExpression(node.Condition);
             if (condition is BoundLiteralExpression literalCondition)
             {
-                if (node.JumpIfFalse.Equals(literalCondition.Value))
-                    return Statements.Empty;
-                else
+                if (node.JumpIfTrue.Equals(literalCondition.Value))
                 {
                     var result = new BoundGotoStatement(node.Label);
                     return RewriteStatement(result);
                 }
+                else
+                    return Statements.Empty;
             }
 
             if (condition == node.Condition)
                 return null;
 
-            return Wrap(new BoundConditionalGotoStatement(node.Label, condition, node.JumpIfFalse));
+            return Wrap(new BoundConditionalGotoStatement(node.Label, condition, node.JumpIfTrue));
         }
 
         protected virtual Statements? RewriteReturnStatement(BoundReturnStatement node)

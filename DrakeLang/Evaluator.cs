@@ -146,7 +146,9 @@ namespace DrakeLang
             {
                 bool condition = (bool)EvaluateExpression(s.Condition);
 
-                return condition ^ s.JumpIfFalse;
+                return s.JumpIfTrue ? 
+                    condition : 
+                    !condition;
             }
 
             #endregion EvaluateStatement

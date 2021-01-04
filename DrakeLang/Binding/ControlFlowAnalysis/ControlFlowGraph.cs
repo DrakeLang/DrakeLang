@@ -129,8 +129,8 @@ namespace DrakeLang.Binding.CFA
                                 var condition = cgs.Condition;
                                 var negatedCondition = NegateCondition(condition);
 
-                                ConnectBlocks(current, cgsBlock, cgs.JumpIfFalse ? negatedCondition : condition);
-                                ConnectBlocks(current, next, cgs.JumpIfFalse ? condition : negatedCondition);
+                                ConnectBlocks(current, cgsBlock, cgs.JumpIfTrue ? condition : negatedCondition);
+                                ConnectBlocks(current, next, cgs.JumpIfTrue ? negatedCondition : condition);
                                 break;
 
                             case BoundNodeKind.ReturnStatement:

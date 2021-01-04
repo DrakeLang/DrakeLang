@@ -162,7 +162,7 @@ namespace DrakeLang.Binding
             context.Writer.WriteSyntaxKind(node.Kind);
             context.Writer.Write(" ");
             context.Writer.WriteLabel(node.Label);
-            context.Writer.WriteClr(node.JumpIfFalse ? " on false" : " on true", ConsoleColor.Cyan);
+            context.Writer.WriteClr(node.JumpIfTrue ? " on true" : " on false", ConsoleColor.Cyan);
 
             context.Writer.WriteLine();
 

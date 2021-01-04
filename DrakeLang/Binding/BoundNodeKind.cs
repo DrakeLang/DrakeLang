@@ -25,6 +25,7 @@ namespace DrakeLang.Binding
         VariableDeclarationStatement,
         IfStatement,
         WhileStatement,
+        DoWhileStatement,
         ForStatement,
         LabelStatement,
         GotoStatement,

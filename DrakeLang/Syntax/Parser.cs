@@ -133,6 +133,7 @@ namespace DrakeLang.Syntax
                 SyntaxKind.DefKeyword => ParseMethodDeclarationStatement(),
                 SyntaxKind.IfKeyword => ParseIfStatement(),
                 SyntaxKind.WhileKeyword => ParseWhileStatement(),
+                SyntaxKind.DoKeyword => ParseDoWhileStatement(),
                 SyntaxKind.ForKeyword => ParseForStatement(),
                 SyntaxKind.GoToKeyword => ParseGoToStatement(),
                 SyntaxKind.IdentifierToken when LookAhead.Kind == SyntaxKind.ColonToken => ParseLabelDeclarationStatement(),
@@ -223,6 +224,19 @@ namespace DrakeLang.Syntax
                 Diagnostics.ReportCannotDeclareConditional(statement.Span);
 
             return new WhileStatementSyntax(keyword, condition, statement);
+        }
+          private DoWhileStatementSyntax ParseDoWhileStatement()
+        {
+            var doKeyword = MatchToken(SyntaxKind.DoKeyword);
+            var statement = ParseStatement();
+            var whileKeyword = MatchToken(SyntaxKind.WhileKeyword);
+            var condition = ParseExpression();
+            var semicolon = MatchToken(SyntaxKind.SemicolonToken);
+
+            if (statement.Kind == SyntaxKind.VariableDeclarationStatement)
+                Diagnostics.ReportCannotDeclareConditional(statement.Span);
+
+            return new DoWhileStatementSyntax(doKeyword, statement, whileKeyword, condition, semicolon);
         }
 
         private ForStatementSyntax ParseForStatement()
